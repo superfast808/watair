@@ -37,6 +37,8 @@ jobs:
 
           curl -fsS http://127.0.0.1:8099/ > /tmp/home.html
           curl -fsS http://127.0.0.1:8099/products > /tmp/products.html
+          curl -fsS http://127.0.0.1:8099/products/home-office > /tmp/products-home.html
+          curl -fsS http://127.0.0.1:8099/products/commercial-industrial > /tmp/products-commercial.html
           curl -fsS http://127.0.0.1:8099/products/pw-hr-15l > /tmp/product.html
           curl -fsS http://127.0.0.1:8099/faqs > /tmp/faqs.html
           curl -fsS http://127.0.0.1:8099/contact > /tmp/contact.html
@@ -47,6 +49,12 @@ jobs:
 
           grep -q 'application/ld+json' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
+          grep -q 'PW HR-15L' /tmp/products-home.html
+          grep -q 'PW HR-60L' /tmp/products-home.html
+          grep -q 'PW HR-80L' /tmp/products-commercial.html
+          grep -q 'PW HR-10000L' /tmp/products-commercial.html
+          grep -q 'Choose a model' /tmp/products-home.html
+          grep -q 'Choose a model' /tmp/products-commercial.html
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
           grep -q 'rel="icon" href="/favicon.svg"' /tmp/home.html
