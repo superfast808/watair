@@ -2,13 +2,14 @@
 <main>
 <%
   const pageImages = {
-    'how-it-works': settings.hero_image,
-    'about': 'https://www.watairuk.co.uk/media/1010/pw-hr-5000l.png',
-    'plastic-bottles': 'https://www.watairuk.co.uk/media/1003/pw-hr-30l.png',
-    'mains-water': 'https://www.watairuk.co.uk/media/1008/pw-hr-1000l.png',
-    'resellers': 'https://www.watairuk.co.uk/media/1006/pw-hr-250l.png',
-    'leasing': 'https://www.watairuk.co.uk/media/1040/25l-1x.png'
+    'how-it-works': '/uploads/imported/legacy/images/how-it-works/hydrologic-cycle.svg',
+    'about': '/uploads/imported/legacy/media/1023/about-us-banner.jpg',
+    'plastic-bottles': '/uploads/imported/legacy/media/1026/our-environment-banner.jpg',
+    'mains-water': '/uploads/imported/legacy/media/1024/mains-water-banner.jpg',
+    'resellers': '/uploads/imported/legacy/media/1027/contact-banner.jpg',
+    'leasing': '/uploads/imported/legacy/media/1040/25l-1x.png'
   };
+  const photoHeroSlugs = new Set(['about','plastic-bottles','mains-water','resellers']);
   const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
   const crumbs = [
     { label: 'Home', href: '/' },
@@ -24,7 +25,7 @@
     <h1><%= page.hero %></h1>
     <p><%= page.intro %></p>
   </div>
-  <div class="page-hero-art">
+  <div class="page-hero-art <%= photoHeroSlugs.has(page.slug) ? 'page-hero-photo' : '' %>">
     <img src="<%= pageImages[page.slug] || settings.hero_image %>" alt="" aria-hidden="true">
   </div>
 </section>
