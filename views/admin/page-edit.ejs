@@ -1,1 +1,147 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Pages</p><h1>Edit <%= page.title %></h1></div><a href="/<%= page.slug %>" target="_blank">Preview ↗</a></header><form class="admin-form" method="post"><input type="hidden" name="_csrf" value="<%= csrf %>"><section class="admin-card form-grid"><label>Page title<input name="title" value="<%= page.title %>" required></label><label>Eyebrow<input name="eyebrow" value="<%= page.eyebrow %>"></label><label class="full">Hero heading<input name="hero" value="<%= page.hero %>" required></label><label class="full">Intro<textarea name="intro" rows="3"><%= page.intro %></textarea></label><label class="full">Body HTML<textarea class="code-area" name="body_html" rows="18"><%= page.body_html %></textarea></label><label>SEO title<input name="seo_title" value="<%= page.seo_title %>"></label><label>SEO description<textarea name="seo_description" rows="3"><%= page.seo_description %></textarea></label><label class="check"><input type="checkbox" name="published" <%= page.published?'checked':'' %>> Published</label></section><button class="admin-button">Save page</button></form><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+<%
+  const publicPaths = {
+    'how-it-works':'/how-it-works',
+    'about':'/about',
+    'plastic-bottles':'/environment/plastic-bottles',
+    'mains-water':'/environment/mains-water',
+    'resellers':'/resellers',
+    'leasing':'/leasing'
+  };
+  const publicPath = publicPaths[page.slug] || '/' + page.slug;
+%>
+
+<form class="admin-form admin-editor" method="post" action="/admin/pages/<%= page.id %>">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <header class="admin-page-head">
+    <div>
+      <p><a href="/admin/pages">Website pages</a> / Edit page</p>
+      <h1><%= page.title %></h1>
+      <span class="page-help">Change the headings, hero image, page content and search information.</span>
+    </div>
+    <div class="admin-head-actions">
+      <a class="secondary-button button-link" href="<%= publicPath %>" target="_blank">Preview ↗</a>
+      <button class="admin-button" type="submit">Save changes</button>
+    </div>
+  </header>
+
+  <div class="editor-layout">
+    <div class="editor-main">
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">1</span>
+          <div><h2>Page heading</h2><p>The content visitors see first.</p></div>
+        </div>
+        <div class="form-grid">
+          <label>Page name
+            <input name="title" value="<%= page.title %>" required>
+            <small>Used in the CMS and browser title.</small>
+          </label>
+          <label>Small heading
+            <input name="eyebrow" value="<%= page.eyebrow %>" placeholder="e.g. How it works">
+            <small>The small uppercase label above the main heading.</small>
+          </label>
+          <label class="full field-large">Hero heading
+            <input name="hero" value="<%= page.hero %>" required>
+          </label>
+          <label class="full">Intro paragraph
+            <textarea name="intro" rows="4"><%= page.intro %></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">2</span>
+          <div><h2>Page content</h2><p>Edit the page like a normal document. HTML is handled for you.</p></div>
+        </div>
+
+        <div class="rich-wrapper" data-rich-wrapper>
+          <div class="rich-toolbar" aria-label="Text formatting">
+            <button type="button" data-rich-command="formatBlock" data-rich-value="p">Paragraph</button>
+            <button type="button" data-rich-command="formatBlock" data-rich-value="h2">Heading</button>
+            <button type="button" data-rich-command="formatBlock" data-rich-value="h3">Subheading</button>
+            <span></span>
+            <button type="button" data-rich-command="bold"><strong>B</strong></button>
+            <button type="button" data-rich-command="italic"><em>I</em></button>
+            <button type="button" data-rich-command="insertUnorderedList">• List</button>
+            <button type="button" data-rich-command="createLink">Link</button>
+          </div>
+          <div class="rich-editor" contenteditable="true" data-rich-editor><%- page.body_html %></div>
+          <textarea name="body_html" hidden><%= page.body_html %></textarea>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">3</span>
+          <div><h2>Search engine information</h2><p>Optional. Leave blank to use the page title and introduction automatically.</p></div>
+        </div>
+        <div class="form-grid">
+          <label class="full">SEO page title
+            <input name="seo_title" value="<%= page.seo_title %>" placeholder="<%= page.title %> | WatAir UK">
+            <small>Aim for roughly 50–60 characters.</small>
+          </label>
+          <label class="full">SEO description
+            <textarea name="seo_description" rows="3" placeholder="Short summary for search results."><%= page.seo_description %></textarea>
+            <small>Aim for roughly 140–160 characters.</small>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="editor-side">
+      <section class="admin-card editor-section">
+        <div class="section-heading compact">
+          <div><h2>Hero image</h2><p>Choose the image or graphic shown at the top of this page.</p></div>
+        </div>
+        <div class="media-field <%= page.hero_image ? 'has-image' : '' %>" data-media-field>
+          <div class="media-preview">
+            <img src="<%= page.hero_image || '' %>" alt="" data-media-preview <%= page.hero_image ? '' : 'hidden' %>>
+            <div class="media-empty" data-media-empty <%= page.hero_image ? 'hidden' : '' %>>
+              <strong>Using the page default</strong>
+              <span>Choose an image to override it</span>
+            </div>
+          </div>
+          <input type="hidden" name="hero_image" value="<%= page.hero_image || '' %>" data-media-url>
+          <div class="media-field-actions">
+            <label class="secondary-button upload-label">Upload
+              <input type="file" accept="image/jpeg,image/png,image/webp" data-media-direct-upload hidden>
+            </label>
+            <button class="secondary-button" type="button" data-media-choose>Choose library</button>
+            <button class="text-button" type="button" data-media-clear>Use default</button>
+          </div>
+        </div>
+
+        <label class="field-stack">Hero image style
+          <select name="hero_style">
+            <option value="" <%= !page.hero_style ? 'selected' : '' %>>Automatic</option>
+            <option value="photo" <%= page.hero_style==='photo' ? 'selected' : '' %>>Full background photo</option>
+            <option value="graphic" <%= page.hero_style==='graphic' ? 'selected' : '' %>>Product / graphic image</option>
+          </select>
+          <small>Automatic uses the recommended style for this page.</small>
+        </label>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading compact"><div><h2>Publishing</h2></div></div>
+        <label class="switch-row">
+          <span><strong>Published</strong><small>Visible on the public website</small></span>
+          <input type="checkbox" name="published" <%= page.published?'checked':'' %>>
+        </label>
+        <div class="editor-meta">
+          <span>Public page</span>
+          <code><%= publicPath %></code>
+        </div>
+      </section>
+
+      <div class="sticky-save">
+        <button class="admin-button wide-button" type="submit">Save page</button>
+        <span>Your changes go live when saved.</span>
+      </div>
+    </aside>
+  </div>
+</form>
+
+<%- include('../partials/admin-foot') %>
