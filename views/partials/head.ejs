@@ -1,16 +1,238 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
+<%
+  const seoTitle = meta?.title || settings.site_name;
+  const seoDescription = meta?.description || settings.hero_text;
+  const canonicalUrl = baseUrl + (path === '/' ? '/' : path);
+  const absoluteUrl = value => {
+    if (!value) return baseUrl + '/uploads/imported/legacy/images/home/products.jpg';
+    if (/^https?:\/\//i.test(value)) return value;
+    return baseUrl + (value.startsWith('/') ? value : '/' + value);
+  };
+  const defaultImage = absoluteUrl('/uploads/imported/legacy/images/home/products.jpg');
+  const seoImage = absoluteUrl(meta?.image || (
+    typeof product !== 'undefined' && product?.image_url ? product.image_url :
+    typeof page !== 'undefined' && page?.slug === 'about' ? '/uploads/imported/legacy/media/1023/about-us-banner.jpg' :
+    typeof page !== 'undefined' && page?.slug === 'mains-water' ? '/uploads/imported/legacy/media/1024/mains-water-banner.jpg' :
+    typeof page !== 'undefined' && page?.slug === 'plastic-bottles' ? '/uploads/imported/legacy/media/1026/our-environment-banner.jpg' :
+    defaultImage
+  ));
+  const orgId = baseUrl + '/#organization';
+  const websiteId = baseUrl + '/#website';
+  const schemaGraph = [];
+
+  schemaGraph.push({
+    '@type': 'Organization',
+    '@id': orgId,
+    name: settings.site_name || 'WatAir UK',
+    alternateName: 'WatAir',
+    url: baseUrl + '/',
+    logo: {
+      '@type': 'ImageObject',
+      url: absoluteUrl('/images/logo-header.svg')
+    },
+    image: seoImage,
+    email: settings.email,
+    telephone: settings.phone,
+    areaServed: { '@type': 'Country', name: 'United Kingdom' },
+    sameAs: ['https://uk.linkedin.com/company/watair-uk'],
+    contactPoint: [{
+      '@type': 'ContactPoint',
+      contactType: 'sales and customer enquiries',
+      email: settings.email,
+      telephone: settings.phone,
+      areaServed: 'GB',
+      availableLanguage: 'en'
+    }]
+  });
+
+  schemaGraph.push({
+    '@type': 'WebSite',
+    '@id': websiteId,
+    url: baseUrl + '/',
+    name: settings.site_name || 'WatAir UK',
+    description: settings.hero_text,
+    publisher: { '@id': orgId },
+    inLanguage: 'en-GB'
+  });
+
+  let breadcrumbItems = [{ name: 'Home', url: baseUrl + '/' }];
+
+  if (typeof product !== 'undefined' && product) {
+    const categoryName = product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial';
+    const categoryUrl = product.category === 'home-office' ? '/products/home-office' : '/products/commercial-industrial';
+    breadcrumbItems.push(
+      { name: 'Atmospheric Water Generators', url: baseUrl + '/products' },
+      { name: categoryName, url: baseUrl + categoryUrl },
+      { name: product.name, url: canonicalUrl }
+    );
+
+    schemaGraph.push({
+      '@type': 'Product',
+      '@id': canonicalUrl + '#product',
+      name: product.name + (product.subtitle ? ' – ' + product.subtitle : ''),
+      model: product.name,
+      description: product.summary,
+      url: canonicalUrl,
+      image: [absoluteUrl(product.image_url)],
+      category: categoryName + ' Atmospheric Water Generator',
+      brand: { '@id': orgId },
+      manufacturer: { '@id': orgId },
+      additionalProperty: Object.entries(product.specs || {}).map(([name,value]) => ({
+        '@type': 'PropertyValue',
+        name,
+        value: String(value)
+      })),
+      subjectOf: {
+        '@type': 'DigitalDocument',
+        name: product.name + ' technical datasheet',
+        encodingFormat: 'application/pdf',
+        url: canonicalUrl + '/datasheet.pdf'
+      }
+    });
+  } else if (typeof products !== 'undefined' && Array.isArray(products)) {
+    const categoryName = typeof category !== 'undefined' && category === 'home-office'
+      ? 'Home & Office Atmospheric Water Generators'
+      : typeof category !== 'undefined' && category === 'commercial-industrial'
+        ? 'Commercial & Industrial Atmospheric Water Generators'
+        : 'Atmospheric Water Generators';
+
+    breadcrumbItems.push({ name: 'Atmospheric Water Generators', url: baseUrl + '/products' });
+    if (typeof category !== 'undefined' && category === 'home-office') {
+      breadcrumbItems.push({ name: 'Home & Office', url: canonicalUrl });
+    } else if (typeof category !== 'undefined' && category === 'commercial-industrial') {
+      breadcrumbItems.push({ name: 'Commercial & Industrial', url: canonicalUrl });
+    }
+
+    schemaGraph.push({
+      '@type': 'CollectionPage',
+      '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl,
+      name: seoTitle,
+      description: seoDescription,
+      isPartOf: { '@id': websiteId },
+      about: { '@id': orgId },
+      primaryImageOfPage: { '@type': 'ImageObject', url: seoImage },
+      inLanguage: 'en-GB',
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListOrder: 'https://schema.org/ItemListOrderAscending',
+        numberOfItems: products.length,
+        itemListElement: products.map((item,index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          url: baseUrl + '/products/' + item.slug,
+          name: item.name + (item.subtitle ? ' – ' + item.subtitle : '')
+        }))
+      }
+    });
+  } else if (typeof faqs !== 'undefined' && Array.isArray(faqs)) {
+    breadcrumbItems.push(
+      { name: 'How it works', url: baseUrl + '/how-it-works' },
+      { name: 'FAQs', url: canonicalUrl }
+    );
+
+    schemaGraph.push({
+      '@type': 'FAQPage',
+      '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl,
+      name: seoTitle,
+      description: seoDescription,
+      isPartOf: { '@id': websiteId },
+      about: { '@id': orgId },
+      inLanguage: 'en-GB',
+      mainEntity: faqs.map(faq => ({
+        '@type': 'Question',
+        name: faq[0],
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq[1]
+        }
+      }))
+    });
+  } else if (typeof page !== 'undefined' && page) {
+    breadcrumbItems.push({ name: page.title, url: canonicalUrl });
+    schemaGraph.push({
+      '@type': page.slug === 'about' ? 'AboutPage' : 'WebPage',
+      '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl,
+      name: seoTitle,
+      headline: page.hero || page.title,
+      description: seoDescription,
+      isPartOf: { '@id': websiteId },
+      about: { '@id': orgId },
+      primaryImageOfPage: { '@type': 'ImageObject', url: seoImage },
+      inLanguage: 'en-GB'
+    });
+  } else if (path === '/contact') {
+    breadcrumbItems.push({ name: 'Contact', url: canonicalUrl });
+    schemaGraph.push({
+      '@type': 'ContactPage',
+      '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl,
+      name: seoTitle,
+      description: seoDescription,
+      isPartOf: { '@id': websiteId },
+      about: { '@id': orgId },
+      inLanguage: 'en-GB'
+    });
+  } else {
+    schemaGraph.push({
+      '@type': 'WebPage',
+      '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl,
+      name: seoTitle,
+      description: seoDescription,
+      isPartOf: { '@id': websiteId },
+      about: { '@id': orgId },
+      primaryImageOfPage: { '@type': 'ImageObject', url: seoImage },
+      inLanguage: 'en-GB'
+    });
+  }
+
+  if (breadcrumbItems.length > 1) {
+    schemaGraph.push({
+      '@type': 'BreadcrumbList',
+      '@id': canonicalUrl + '#breadcrumb',
+      itemListElement: breadcrumbItems.map((item,index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: item.url
+      }))
+    });
+  }
+
+  const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': schemaGraph }).replace(/</g, '\\u003c');
+%>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= meta?.title || settings.site_name %></title>
-  <meta name="description" content="<%= meta?.description || settings.hero_text %>">
-  <meta name="theme-color" content="#072f3c">
-  <link rel="canonical" href="<%= baseUrl + path %>">
-  <meta property="og:title" content="<%= meta?.title || settings.site_name %>">
-  <meta property="og:description" content="<%= meta?.description || settings.hero_text %>">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="<%= baseUrl + path %>">
+  <title><%= seoTitle %></title>
+  <meta name="description" content="<%= seoDescription %>">
+  <meta name="robots" content="<%= meta?.noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %>">
+  <meta name="theme-color" content="#062632">
+
+  <link rel="canonical" href="<%= canonicalUrl %>">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <meta property="og:site_name" content="<%= settings.site_name || 'WatAir UK' %>">
+  <meta property="og:title" content="<%= seoTitle %>">
+  <meta property="og:description" content="<%= seoDescription %>">
+  <meta property="og:type" content="<%= typeof product !== 'undefined' && product ? 'product' : 'website' %>">
+  <meta property="og:url" content="<%= canonicalUrl %>">
+  <meta property="og:image" content="<%= seoImage %>">
+  <meta property="og:image:alt" content="<%= typeof product !== 'undefined' && product ? product.name : 'WatAir atmospheric water generation' %>">
+  <meta property="og:locale" content="en_GB">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= seoTitle %>">
+  <meta name="twitter:description" content="<%= seoDescription %>">
+  <meta name="twitter:image" content="<%= seoImage %>">
+
+  <script type="application/ld+json"><%- jsonLd %></script>
   <link rel="stylesheet" href="/css/site.css">
 </head>
 <body>
