@@ -55,3 +55,41 @@ document.querySelectorAll('[data-product-jump]').forEach(select => {
     if (select.value) window.location.assign(select.value);
   });
 });
+
+
+/* Progressive section entrances — deliberately subtle and disabled for reduced motion. */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (!reduceMotion && 'IntersectionObserver' in window) {
+  document.documentElement.classList.add('motion-ready');
+
+  const revealTargets = [
+    ...document.querySelectorAll('main > section:not(.hero):not(.product-hero):not(.page-hero)'),
+    ...document.querySelectorAll('.product-card, .process-grid > div, .application-grid article, .metric-band > div, .faq-group, .resource-card, .page-side-card')
+  ];
+
+  const uniqueTargets = [...new Set(revealTargets)];
+  uniqueTargets.forEach((el, index) => {
+    el.classList.add('reveal-item');
+    el.style.setProperty('--reveal-delay', `${Math.min(index % 5, 4) * 55}ms`);
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    });
+  }, {
+    rootMargin: '0px 0px -8% 0px',
+    threshold: 0.08
+  });
+
+  uniqueTargets.forEach(el => observer.observe(el));
+
+  const hero = document.querySelector('.hero, .product-hero, .page-hero, .contact-modern');
+  if (hero) {
+    hero.classList.add('hero-enter');
+    requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add('is-visible')));
+  }
+}
