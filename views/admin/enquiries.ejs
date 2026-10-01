@@ -1,1 +1,44 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Lead inbox</p><h1>Enquiries</h1></div></header><div class="enquiry-list"><% enquiries.forEach(e=>{ %><article class="admin-card enquiry"><div class="card-head"><div><span class="pill"><%= e.status %></span><h2><%= e.name %><% if(e.company){ %> · <%= e.company %><% } %></h2><p><a href="mailto:<%= e.email %>"><%= e.email %></a><% if(e.phone){ %> · <%= e.phone %><% } %></p></div><small><%= e.created_at %></small></div><p><strong>Interest:</strong> <%= e.interest || 'General' %></p><div class="message"><%= e.message %></div><% if(e.status==='new'){ %><form method="post" action="/admin/enquiries/<%= e.id %>/read"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="secondary-button">Mark read</button></form><% } %></article><% }) %></div><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Customer leads</p>
+    <h1>Enquiries</h1>
+    <span class="page-help">Messages sent through the WatAir website contact form.</span>
+  </div>
+</header>
+
+<% if(enquiries.length){ %>
+  <div class="enquiry-list">
+    <% enquiries.forEach(e=>{ %>
+      <article class="admin-card enquiry <%= e.status === 'new' ? 'enquiry-new' : '' %>">
+        <div class="card-head">
+          <div>
+            <div class="enquiry-title-line"><span class="pill <%= e.status === 'new' ? '' : 'pill-draft' %>"><%= e.status %></span><span><%= e.interest || 'General enquiry' %></span></div>
+            <h2><%= e.name %><% if(e.company){ %> <span>· <%= e.company %></span><% } %></h2>
+            <div class="enquiry-contact">
+              <a href="mailto:<%= e.email %>"><%= e.email %></a>
+              <% if(e.phone){ %><a href="tel:<%= e.phone.replace(/\s/g,'') %>"><%= e.phone %></a><% } %>
+            </div>
+          </div>
+          <small><%= new Date(e.created_at).toLocaleString('en-GB') %></small>
+        </div>
+        <div class="message"><%= e.message %></div>
+        <div class="enquiry-actions">
+          <a class="admin-button button-link" href="mailto:<%= e.email %>?subject=Re: WatAir enquiry">Reply by email</a>
+          <% if(e.phone){ %><a class="secondary-button button-link" href="tel:<%= e.phone.replace(/\s/g,'') %>">Call</a><% } %>
+          <% if(e.status==='new'){ %>
+            <form method="post" action="/admin/enquiries/<%= e.id %>/read">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <button class="secondary-button">Mark as read</button>
+            </form>
+          <% } %>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+<% } else { %>
+  <section class="admin-card empty-state"><strong>No enquiries yet</strong><span>New contact-form submissions will appear here.</span></section>
+<% } %>
+
+<%- include('../partials/admin-foot') %>
