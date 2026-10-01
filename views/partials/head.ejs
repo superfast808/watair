@@ -78,7 +78,6 @@
       image: [absoluteUrl(product.image_url)],
       category: categoryName + ' Atmospheric Water Generator',
       brand: { '@id': orgId },
-      manufacturer: { '@id': orgId },
       additionalProperty: Object.entries(product.specs || {}).map(([name,value]) => ({
         '@type': 'PropertyValue',
         name,
