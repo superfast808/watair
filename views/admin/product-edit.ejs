@@ -1,1 +1,139 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Products</p><h1>Edit <%= product.name %></h1></div><a href="/products/<%= product.slug %>" target="_blank">Preview ↗</a></header><form class="admin-form" method="post"><input type="hidden" name="_csrf" value="<%= csrf %>"><section class="admin-card form-grid"><label>Name<input name="name" value="<%= product.name %>" required></label><label>Subtitle<input name="subtitle" value="<%= product.subtitle %>"></label><label>Category<select name="category"><option value="home-office" <%= product.category==='home-office'?'selected':'' %>>Home & Office</option><option value="commercial-industrial" <%= product.category==='commercial-industrial'?'selected':'' %>>Commercial & Industrial</option></select></label><label>Capacity (L/day)<input type="number" name="capacity_lpd" value="<%= product.capacity_lpd %>"></label><label class="full">Summary<textarea name="summary" rows="4"><%= product.summary %></textarea></label><label class="full">Image URL<input name="image_url" value="<%= product.image_url %>" placeholder="/uploads/example.webp"></label><label class="full">Specifications JSON<textarea class="code-area" name="specs_json" rows="16"><%= JSON.stringify(product.specs, null, 2) %></textarea></label><label>Sort order<input type="number" name="sort_order" value="<%= product.sort_order %>"></label><label class="check"><input type="checkbox" name="featured" <%= product.featured?'checked':'' %>> Feature on homepage</label><label class="check"><input type="checkbox" name="published" <%= product.published?'checked':'' %>> Published</label></section><button class="admin-button">Save product</button></form><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+
+<form class="admin-form admin-editor" method="post" action="<%= isNew ? '/admin/products/new' : '/admin/products/' + product.id %>">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <header class="admin-page-head">
+    <div>
+      <p><a href="/admin/products">Products</a> / <%= isNew ? 'Add product' : 'Edit product' %></p>
+      <h1><%= isNew ? 'Add a product' : product.name %></h1>
+      <span class="page-help"><%= isNew ? 'Start with the basics. You can leave it as a draft until it is ready.' : 'Update the product information, image and technical specifications below.' %></span>
+    </div>
+    <div class="admin-head-actions">
+      <% if(!isNew){ %><a class="secondary-button button-link" href="/products/<%= product.slug %>" target="_blank">Preview ↗</a><% } %>
+      <button class="admin-button" type="submit"><%= isNew ? 'Create product' : 'Save changes' %></button>
+    </div>
+  </header>
+
+  <div class="editor-layout">
+    <div class="editor-main">
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">1</span>
+          <div><h2>Product details</h2><p>The customer-facing name and short description.</p></div>
+        </div>
+        <div class="form-grid">
+          <label class="full field-large">Product name
+            <input name="name" value="<%= product.name %>" required placeholder="e.g. PW HR-100L">
+            <small>Use the model name customers will recognise.</small>
+          </label>
+          <label>Optional subtitle
+            <input name="subtitle" value="<%= product.subtitle %>" placeholder="e.g. Low Power Consumption">
+          </label>
+          <label>Product range
+            <select name="category">
+              <option value="home-office" <%= product.category==='home-office'?'selected':'' %>>Home & Office</option>
+              <option value="commercial-industrial" <%= product.category==='commercial-industrial'?'selected':'' %>>Commercial & Industrial</option>
+            </select>
+          </label>
+          <label>Rated output
+            <div class="input-suffix"><input type="number" min="0" name="capacity_lpd" value="<%= product.capacity_lpd %>"><span>litres/day</span></div>
+          </label>
+          <label>Display order
+            <input type="number" name="sort_order" value="<%= product.sort_order %>">
+          </label>
+          <label class="full">Short description
+            <textarea name="summary" rows="4" placeholder="A concise explanation of where this model fits and who it is for."><%= product.summary %></textarea>
+            <small>This appears on product cards, the product page and search metadata.</small>
+          </label>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">2</span>
+          <div><h2>Technical specifications</h2><p>No JSON required. Add each label and value as a simple row.</p></div>
+        </div>
+
+        <div class="spec-preset-bar">
+          <span>Quick add:</span>
+          <% ['Water Production','Storage Capacity','Working Temperature','Working Humidity','Dimensions','Net Weight','Refrigerant','Rated Power','Filtration','Certifications'].forEach(label => { %>
+            <button type="button" class="mini-button" data-spec-preset="<%= label %>">+ <%= label %></button>
+          <% }) %>
+        </div>
+
+        <div class="spec-editor">
+          <div class="spec-editor-head"><span>Specification</span><span>Value</span><span></span></div>
+          <div data-spec-list>
+            <% Object.entries(product.specs || {}).forEach(([key,value]) => { %>
+              <div class="spec-row" data-spec-row>
+                <input name="spec_name" value="<%= key %>" placeholder="e.g. Dimensions">
+                <input name="spec_value" value="<%= value %>" placeholder="e.g. 45 × 44 × 56 cm">
+                <button type="button" class="icon-button danger-soft" data-remove-spec aria-label="Remove specification">×</button>
+              </div>
+            <% }) %>
+          </div>
+          <button type="button" class="secondary-button add-row-button" data-add-spec>+ Add specification</button>
+        </div>
+
+        <template data-spec-template>
+          <div class="spec-row" data-spec-row>
+            <input name="spec_name" placeholder="Specification name">
+            <input name="spec_value" placeholder="Value">
+            <button type="button" class="icon-button danger-soft" data-remove-spec aria-label="Remove specification">×</button>
+          </div>
+        </template>
+      </section>
+    </div>
+
+    <aside class="editor-side">
+      <section class="admin-card editor-section">
+        <div class="section-heading compact">
+          <div><h2>Product image</h2><p>Upload a new image or choose one already in the media library.</p></div>
+        </div>
+        <div class="media-field <%= product.image_url ? 'has-image' : '' %>" data-media-field>
+          <div class="media-preview">
+            <img src="<%= product.image_url || '' %>" alt="" data-media-preview <%= product.image_url ? '' : 'hidden' %>>
+            <div class="media-empty" data-media-empty <%= product.image_url ? 'hidden' : '' %>>
+              <strong>No image selected</strong>
+              <span>JPG, PNG or WebP</span>
+            </div>
+          </div>
+          <input type="hidden" name="image_url" value="<%= product.image_url %>" data-media-url>
+          <div class="media-field-actions">
+            <label class="secondary-button upload-label">Upload
+              <input type="file" accept="image/jpeg,image/png,image/webp" data-media-direct-upload hidden>
+            </label>
+            <button class="secondary-button" type="button" data-media-choose>Choose library</button>
+            <button class="text-button danger-text" type="button" data-media-clear>Remove</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading compact"><div><h2>Publishing</h2><p>Control where this product appears.</p></div></div>
+        <label class="switch-row">
+          <span><strong>Published</strong><small>Visible on the public website</small></span>
+          <input type="checkbox" name="published" <%= product.published?'checked':'' %>>
+        </label>
+        <label class="switch-row">
+          <span><strong>Homepage feature</strong><small>Include in featured products</small></span>
+          <input type="checkbox" name="featured" <%= product.featured?'checked':'' %>>
+        </label>
+        <% if(!isNew){ %>
+          <div class="editor-meta">
+            <span>Page address</span>
+            <code>/products/<%= product.slug %></code>
+          </div>
+        <% } %>
+      </section>
+
+      <div class="sticky-save">
+        <button class="admin-button wide-button" type="submit"><%= isNew ? 'Create product' : 'Save product' %></button>
+        <span>Changes are only published when you save.</span>
+      </div>
+    </aside>
+  </div>
+</form>
+
+<%- include('../partials/admin-foot') %>
