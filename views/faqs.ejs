@@ -1,4 +1,53 @@
 <%- include('partials/head') %><%- include('partials/header') %>
-<main><section class="page-hero"><p class="eyebrow">Knowledge base</p><h1>Atmospheric Water Generator FAQs</h1><p>Practical answers about how water-from-air systems work, what they need and how to size one.</p></section>
-<section class="section-pad faq-list"><% faqs.forEach((faq,i)=>{ %><details <%= i===0?'open':'' %>><summary><span><%= String(i+1).padStart(2,'0') %></span><%= faq[0] %></summary><p><%= faq[1] %></p></details><% }) %></section></main>
+<main>
+<%- include('partials/breadcrumbs', { items: [
+  { label: 'Home', href: '/' },
+  { label: 'How it works', href: '/how-it-works' },
+  { label: 'FAQs' }
+] }) %>
+
+<section class="page-hero scenic-hero faq-hero">
+  <div class="page-hero-copy">
+    <p class="eyebrow">Knowledge base</p>
+    <h1>Questions about water from air?</h1>
+    <p>Practical answers about performance, sizing, installation, water treatment, maintenance and commercial projects.</p>
+    <div class="hero-inline-stats"><span><strong><%= faqs.length %></strong> answers</span><a href="/contact">Still have a question? →</a></div>
+  </div>
+  <div class="page-hero-art">
+    <img src="https://www.watairuk.co.uk/media/1003/pw-hr-30l.png" alt="" aria-hidden="true">
+  </div>
+</section>
+
+<%
+  const groups = [...new Set(faqs.map(f => f[2] || 'General'))];
+  const groupId = name => name.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+%>
+<section class="section-tight faq-layout">
+  <aside class="faq-index">
+    <p class="eyebrow">Browse topics</p>
+    <% groups.forEach((group, gi) => { %><a href="#<%= groupId(group) %>"><span><%= String(gi+1).padStart(2,'0') %></span><%= group %></a><% }) %>
+  </aside>
+
+  <div class="faq-groups">
+    <% groups.forEach((group, gi) => { %>
+      <section class="faq-group" id="<%= groupId(group) %>">
+        <div class="faq-group-head"><span><%= String(gi+1).padStart(2,'0') %></span><div><p class="eyebrow">FAQ topic</p><h2><%= group %></h2></div></div>
+        <div class="faq-list">
+          <% faqs.filter(f => (f[2] || 'General') === group).forEach((faq,i)=>{ %>
+            <details <%= gi===0 && i===0?'open':'' %>>
+              <summary><%= faq[0] %><span class="faq-plus" aria-hidden="true">+</span></summary>
+              <p><%= faq[1] %></p>
+            </details>
+          <% }) %>
+        </div>
+      </section>
+    <% }) %>
+  </div>
+</section>
+
+<section class="cta-panel cta-dark">
+  <div><p class="eyebrow">Need something specific?</p><h2>Tell us about the site and the water requirement.</h2><p>We can help with model selection, site conditions, capacity, storage and the next technical steps.</p></div>
+  <a class="button button-aqua" href="/contact">Ask WatAir</a>
+</section>
+</main>
 <%- include('partials/footer') %>
