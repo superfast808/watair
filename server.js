@@ -446,6 +446,19 @@ app.post('/admin/logout', requireAdmin, requireCsrf, (req,res) => {
 });
 
 app.use('/admin', requireAdmin, (req,res,next) => {
+  const current = db.prepare('SELECT id,email,display_name,updated_at FROM admins WHERE id=?').get(req.admin.sub);
+  if (!current) {
+    res.clearCookie('watair_admin', { path: '/' });
+    return res.redirect('/admin/login');
+  }
+
+  const updatedAt = Math.floor(new Date(current.updated_at + 'Z').getTime() / 1000);
+  if (Number.isFinite(updatedAt) && req.admin.iat && req.admin.iat < updatedAt) {
+    res.clearCookie('watair_admin', { path: '/' });
+    return res.redirect('/admin/login');
+  }
+
+  res.locals.adminAccount = current;
   res.locals.csrf = csrfFor(req);
   next();
 });
