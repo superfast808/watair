@@ -1,0 +1,92 @@
+<%- include('../partials/admin-head') %>
+<header class="admin-page-head">
+  <div><p>Legacy content migration</p><h1>Media Import</h1></div>
+  <a href="https://www.watairuk.co.uk" target="_blank" rel="noopener">Open existing site ↗</a>
+</header>
+
+<% if (reqQuery?.relinked) { %>
+  <div class="notice-success"><strong>Local media relink complete.</strong> Updated <%= reqQuery.relinked %> product/setting reference(s).</div>
+<% } %>
+
+<section class="admin-card media-import-hero">
+  <div>
+    <p class="admin-kicker">Owner-authorised import</p>
+    <h2>Bring WatAir’s existing media into this repository.</h2>
+    <p>The importer crawls only <strong>watairuk.co.uk</strong>, finds images and documents used across its pages and stylesheets, and stores them under <code>public/uploads/imported/legacy/</code>. It also creates a manifest so the media can be reviewed and mapped into the rebuild.</p>
+  </div>
+  <form method="post" action="/admin/media/import">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <button class="admin-button" type="submit" <%= importState.running ? 'disabled' : '' %>><%= importState.running ? 'Import running…' : (summary.count ? 'Refresh legacy media' : 'Import legacy media') %></button>
+  </form>
+</section>
+
+<section class="media-status-grid">
+  <div class="admin-card media-stat"><strong><%= summary.count %></strong><span>Imported assets</span></div>
+  <div class="admin-card media-stat"><strong><%= summary.images %></strong><span>Images</span></div>
+  <div class="admin-card media-stat"><strong><%= summary.documents %></strong><span>Documents</span></div>
+  <div class="admin-card media-stat"><strong><%= (summary.bytes / 1024 / 1024).toFixed(1) %> MB</strong><span>Repository-ready media</span></div>
+</section>
+
+<section class="admin-card media-live" data-media-status data-running="<%= importState.running ? '1' : '0' %>">
+  <div class="card-head">
+    <div><p class="admin-kicker">Importer status</p><h2><%= importState.running ? 'Import in progress' : 'Import status' %></h2></div>
+    <span class="pill <%= importState.running ? 'pill-running' : '' %>" data-status-pill><%= importState.running ? 'running' : 'ready' %></span>
+  </div>
+  <div class="import-progress">
+    <div><span>Pages scanned</span><strong data-pages><%= importState.pagesScanned %></strong></div>
+    <div><span>Assets found</span><strong data-found><%= importState.assetsFound %></strong></div>
+    <div><span>Assets imported</span><strong data-imported><%= importState.assetsImported %></strong></div>
+    <div><span>Imported</span><strong data-bytes><%= (importState.bytesImported / 1024 / 1024).toFixed(1) %> MB</strong></div>
+  </div>
+  <p class="import-message" data-message><%= importState.message %></p>
+  <code class="import-current" data-current><%= importState.current || '' %></code>
+</section>
+
+<% if (summary.count) { %>
+<section class="admin-card media-actions">
+  <div class="card-head">
+    <div><p class="admin-kicker">Next step</p><h2>Make imported assets part of the rebuild</h2></div>
+  </div>
+  <p>The first button replaces product and homepage image references that still point at the legacy host with their imported local equivalents. The files themselves remain reviewable before wider hero/background mapping.</p>
+  <div class="media-action-row">
+    <form method="post" action="/admin/media/relink">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <button class="admin-button" type="submit">Relink known product images locally</button>
+    </form>
+    <a class="secondary-button button-link" href="/uploads/imported/legacy/manifest.json" target="_blank">View manifest ↗</a>
+  </div>
+  <div class="git-instructions">
+    <strong>When you are happy with the import, commit it from the Plesk host:</strong>
+    <pre>cd /opt/watair
+git status --short public/uploads/imported
+git add public/uploads/imported
+git commit -m "Import legacy WatAir media"
+git push</pre>
+    <p>Once that commit is on GitHub, I can inspect the exact imported assets and wire the best imagery into heroes, product families and content sections.</p>
+  </div>
+</section>
+
+<section class="admin-card">
+  <div class="card-head"><div><p class="admin-kicker">Media library</p><h2>Imported assets</h2></div><span><%= summary.generatedAt ? new Date(summary.generatedAt).toLocaleString('en-GB') : '' %></span></div>
+  <div class="media-grid">
+    <% summary.assets.slice(0, 180).forEach(asset => { %>
+      <article class="media-card">
+        <% if ((asset.content_type || '').startsWith('image/')) { %>
+          <a href="<%= asset.public_url %>" target="_blank" class="media-thumb"><img src="<%= asset.public_url %>" alt="" loading="lazy"></a>
+        <% } else { %>
+          <a href="<%= asset.public_url %>" target="_blank" class="media-thumb media-document"><strong><%= (asset.content_type || 'file').split('/').pop().toUpperCase() %></strong></a>
+        <% } %>
+        <div>
+          <strong title="<%= asset.local_path %>"><%= asset.local_path.split('/').pop() %></strong>
+          <small><%= (asset.bytes / 1024).toFixed(asset.bytes > 1024*1024 ? 0 : 1) %> KB · <%= asset.content_type || 'unknown' %></small>
+          <a href="<%= asset.source_url %>" target="_blank" rel="noopener">Source ↗</a>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+  <% if (summary.assets.length > 180) { %><p class="media-more">Showing the first 180 of <%= summary.assets.length %> imported assets. The manifest contains the complete list.</p><% } %>
+</section>
+<% } %>
+
+<script src="/js/admin-media.js" defer></script>
+<%- include('../partials/admin-foot') %>
