@@ -1,64 +1,106 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 <main>
-  <section class="hero">
+  <section class="hero hero-premium">
     <div class="hero-copy">
-      <p class="eyebrow">Atmospheric Water Generation</p>
+      <p class="eyebrow">Atmospheric Water Generation · United Kingdom</p>
       <h1><%= settings.hero_title %></h1>
-      <p class="hero-text"><%= settings.hero_text %></p>
+      <p class="hero-text"><%= settings.hero_text %> Generate fresh water at the point of use, without a mains water feed.</p>
       <div class="hero-actions">
-        <a class="button" href="/products">Explore systems</a>
-        <a class="text-link" href="/how-it-works">See how it works <span>↗</span></a>
+        <a class="button button-aqua" href="/products">Explore the range</a>
+        <a class="text-link text-link-light" href="/how-it-works">How the technology works <span>↗</span></a>
       </div>
-      <div class="hero-points"><span>No mains water feed</span><span>15–10,000 L/day range</span><span>Home to industrial scale</span></div>
+      <div class="hero-facts">
+        <div><strong>16–10,000</strong><span>litres/day across the range</span></div>
+        <div><strong>No mains feed</strong><span>water generated from ambient air</span></div>
+        <div><strong>UK support</strong><span>home, commercial & industrial</span></div>
+      </div>
     </div>
-    <div class="hero-visual" style="--hero:url('<%= settings.hero_image %>')">
-      <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
-      <div class="water-chip"><strong>Water from air</strong><span>Generated at the point of use</span></div>
-    </div>
-  </section>
-
-  <section class="statement section-pad">
-    <p class="eyebrow">A different source</p>
-    <h2>Fresh water does not always need to arrive by pipe, tanker or bottle.</h2>
-    <p>WatAir systems extract moisture already present in the atmosphere and turn it into a local water supply. From a compact dispenser to industrial-scale production, the same principle scales with the requirement.</p>
-  </section>
-
-  <section class="dark-section section-pad">
-    <div class="split-heading"><div><p class="eyebrow">The WatAir approach</p><h2>Air in. Fresh water out.</h2></div><a class="button button-light" href="/how-it-works">Explore the technology</a></div>
-    <div class="process-grid home-process">
-      <div><span>01</span><h3>Draw in air</h3><p>Ambient air enters the system through filtration.</p></div>
-      <div><span>02</span><h3>Condense moisture</h3><p>Cooling creates the conditions for water to form.</p></div>
-      <div><span>03</span><h3>Treat the water</h3><p>Filtration and sterilisation prepare it for use.</p></div>
-      <div><span>04</span><h3>Use it locally</h3><p>Water is stored and dispensed where it was generated.</p></div>
+    <div class="hero-visual">
+      <img src="<%= settings.hero_image %>" alt="WatAir atmospheric water generator range">
+      <div class="hero-caption"><span>Water from air</span><strong>One technology. Multiple scales.</strong></div>
     </div>
   </section>
 
-  <section class="section-pad products-feature">
-    <div class="split-heading"><div><p class="eyebrow">Solutions at every scale</p><h2>Choose the output that fits.</h2></div><a class="text-link" href="/products">View all <%= allProducts.length %> systems →</a></div>
+  <section class="marquee-band" aria-label="WatAir capabilities">
+    <span>Atmospheric Water Generation</span><i></i><span>Home & Office</span><i></i><span>Commercial</span><i></i><span>Industrial</span><i></i><span>Water resilience</span>
+  </section>
+
+  <section class="story-grid section-tight">
+    <div class="story-kicker">
+      <p class="eyebrow">A different water source</p>
+      <strong class="big-number">Air → Water</strong>
+    </div>
+    <div class="story-copy">
+      <h2>Generate water where it is actually needed.</h2>
+      <p>WatAir systems draw in humid air, condense the moisture and pass the collected water through filtration and treatment stages. The result is a local source of fresh water that can scale from a compact dispenser to industrial production.</p>
+      <div class="story-links"><a href="/how-it-works">Understand the process →</a><a href="/about">About WatAir →</a></div>
+    </div>
+  </section>
+
+  <section class="dark-section process-section">
+    <div class="section-inner">
+      <div class="split-heading">
+        <div><p class="eyebrow">The process</p><h2>Air in. Fresh water out.</h2></div>
+        <p class="heading-note">Output varies with ambient temperature and relative humidity. Every system is specified around the actual site conditions and daily requirement.</p>
+      </div>
+      <div class="process-grid">
+        <div><span>01</span><h3>Air intake</h3><p>Ambient air is drawn into the generator and filtered.</p></div>
+        <div><span>02</span><h3>Condensation</h3><p>Moisture in the air is condensed into collected water.</p></div>
+        <div><span>03</span><h3>Treatment</h3><p>Model-specific filtration and sterilisation prepare the water for use.</p></div>
+        <div><span>04</span><h3>Local supply</h3><p>Water is stored and dispensed where it was generated.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight products-feature">
+    <div class="split-heading">
+      <div><p class="eyebrow">Products</p><h2>Solutions at every scale.</h2></div>
+      <a class="text-link" href="/products">View all <%= allProducts.length %> systems →</a>
+    </div>
     <div class="product-grid featured-grid">
       <% featured.forEach(product => { %>
-        <a class="product-card" href="/products/<%= product.slug %>">
-          <div class="product-art"><span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span><div class="drop-shape"></div></div>
-          <div class="product-card-copy"><span><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span><h3><%= product.name %></h3><p><%= product.summary %></p><strong>Explore system ↗</strong></div>
+        <a class="product-card image-card" href="/products/<%= product.slug %>">
+          <div class="product-art">
+            <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy"><% } %>
+            <span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
+          </div>
+          <div class="product-card-copy">
+            <span><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span>
+            <h3><%= product.name %></h3>
+            <% if(product.subtitle){ %><p class="subtitle"><%= product.subtitle %></p><% } %>
+            <p><%= product.summary %></p>
+            <strong>Explore system ↗</strong>
+          </div>
         </a>
       <% }) %>
     </div>
   </section>
 
-  <section class="applications section-pad">
-    <div class="split-heading"><div><p class="eyebrow">Real-world applications</p><h2>Built around the environment, not the other way round.</h2></div></div>
-    <div class="application-grid">
-      <article><span>01</span><h3>Homes & workplaces</h3><p>Compact water generation close to the people using it.</p></article>
-      <article><span>02</span><h3>Hospitality & facilities</h3><p>Reduce bottled-water handling and create water on site.</p></article>
-      <article><span>03</span><h3>Remote operations</h3><p>Add an independent source where conventional supply is difficult.</p></article>
-      <article><span>04</span><h3>Industrial scale</h3><p>Systems reaching up to 10,000 litres per day for larger demands.</p></article>
+  <section class="scale-panel">
+    <div class="scale-image"><img src="https://www.watairuk.co.uk/media/1010/pw-hr-5000l.png" alt="WatAir PW HR-5000L industrial atmospheric water generator" loading="lazy"></div>
+    <div class="scale-copy">
+      <p class="eyebrow">Commercial & industrial</p>
+      <h2>Scale the same principle to serious daily demand.</h2>
+      <p>WatAir’s commercial and industrial range extends from compact facility systems to machines rated at up to 10,000 litres per day under specified conditions.</p>
+      <div class="scale-stats"><div><strong>80</strong><span>L/day commercial entry point</span></div><div><strong>10,000</strong><span>L/day maximum rated output</span></div></div>
+      <a class="button button-light" href="/products/commercial-industrial">Explore industrial systems</a>
     </div>
   </section>
 
-  <section class="cta-panel">
-    <div><p class="eyebrow">Find the right system</p><h2>Tell us how much water you need.</h2><p>We’ll help match daily demand, site conditions, storage and power to the most appropriate WatAir system.</p></div>
-    <a class="button" href="/contact">Start a conversation</a>
+  <section class="applications section-tight">
+    <div class="split-heading"><div><p class="eyebrow">Applications</p><h2>Water generation for very different environments.</h2></div></div>
+    <div class="application-grid application-dense">
+      <article><span>01</span><h3>Homes & workplaces</h3><p>Compact hot and cold water generation close to the people using it.</p><a href="/products/home-office">Explore →</a></article>
+      <article><span>02</span><h3>Hospitality & facilities</h3><p>Reduce reliance on delivered bottled water and generate supply on site.</p><a href="/products/commercial-industrial">Explore →</a></article>
+      <article><span>03</span><h3>Remote operations</h3><p>Add a local source where conventional supply or water logistics are difficult.</p><a href="/contact">Discuss a site →</a></article>
+      <article><span>04</span><h3>Industrial demand</h3><p>Large-scale systems for buildings, infrastructure and higher-volume applications.</p><a href="/products/commercial-industrial">Explore →</a></article>
+    </div>
+  </section>
+
+  <section class="cta-panel cta-dark">
+    <div><p class="eyebrow">Find the right system</p><h2>Tell us the daily volume. We’ll work from there.</h2><p>Share the location, intended use and approximate water requirement. WatAir can help match capacity, operating conditions, storage and power.</p></div>
+    <a class="button button-aqua" href="/contact">Talk to WatAir</a>
   </section>
 </main>
 <%- include('partials/footer') %>
