@@ -439,3 +439,57 @@ body.media-picker-open{overflow:hidden}
 .admin-toast{position:fixed;right:22px;bottom:22px;z-index:150;background:#0b3b49;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.18);font-size:11px;font-weight:800;opacity:0;transform:translateY(8px);transition:.2s}
 .admin-toast.show{opacity:1;transform:translateY(0)}
 @media(max-width:560px){.admin-toast{left:12px;right:12px;bottom:12px;text-align:center}}
+
+
+/* Admin user management */
+.admin-alert{margin-bottom:17px}
+.users-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:18px;margin-bottom:18px}
+.access-guidance h2{font-size:23px;letter-spacing:-.035em;margin:0 0 8px}
+.access-guidance p{font-size:12px;color:var(--muted)}
+.access-guidance ul{margin:16px 0 0;padding-left:18px;color:#4f6d75;font-size:11px;display:grid;gap:8px}
+.admin-user-form{display:grid;gap:16px}
+.admin-user-form-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.password-field{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:9px;background:#fff;overflow:hidden}
+.password-field input{border:0;border-radius:0;box-shadow:none!important;min-width:0}
+.password-toggle{align-self:stretch;border:0;border-left:1px solid var(--line);background:#f3f7f8;color:#496c75;padding:0 11px;font-size:9px;font-weight:850}
+.generated-password{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;background:#eef8fa;border:1px solid #cce9ed}
+.generated-password span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#52737b;font-weight:850}
+.generated-password code{font-size:11px;color:var(--ink);overflow-wrap:anywhere}
+.admin-users-list-card{padding:0;overflow:visible}
+.admin-users-list-card>.card-head{padding:20px 22px;border-bottom:1px solid var(--line)}
+.admin-users-list{display:grid}
+.admin-user-row{min-height:78px;display:grid;grid-template-columns:46px 1fr 110px 95px;gap:14px;align-items:center;padding:13px 20px;border-top:1px solid var(--line);position:relative}
+.admin-user-row:first-child{border-top:0}
+.admin-user-row.current-user{background:#fbfefe}
+.admin-user-avatar{width:42px;height:42px;border-radius:50%;background:var(--aqua-soft);color:#16859b;display:grid;place-items:center;font-size:15px;font-weight:900}
+.admin-user-identity{display:flex;flex-direction:column;min-width:0}
+.admin-user-identity strong{font-size:12px}
+.admin-user-identity span{font-size:11px;color:#315c66}
+.admin-user-identity small{font-size:9px;color:var(--muted);margin-top:2px}
+.admin-user-status{display:flex;justify-content:flex-start}
+.admin-user-actions{position:relative;justify-self:end}
+.admin-user-actions>summary{list-style:none;min-height:34px;padding:0 11px;border-radius:8px;background:#eef4f5;color:var(--ink);display:inline-flex;align-items:center;font-size:10px;font-weight:850;cursor:pointer}
+.admin-user-actions>summary::-webkit-details-marker{display:none}
+.admin-user-actions[open]>summary{background:#dfecee}
+.admin-user-action-panel{position:absolute;right:0;top:42px;width:330px;z-index:20;background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px;box-shadow:0 18px 45px rgba(7,42,54,.16);display:grid;gap:15px}
+.admin-user-action-panel form{display:grid;gap:10px}
+.admin-user-action-panel form+form{padding-top:14px;border-top:1px solid var(--line)}
+.admin-user-action-panel strong{font-size:12px}
+.admin-user-action-panel label{display:grid;gap:6px;font-size:10px;font-weight:800}
+.inline-actions{display:flex;gap:7px;justify-content:flex-end}
+.danger-button{min-height:38px;border:1px solid #efcaca;border-radius:9px;background:#fff2f2;color:#a23939;font-size:10px;font-weight:850;padding:0 12px}
+.danger-button:hover{background:#ffe8e8}
+.self-delete-note{font-size:9px;color:var(--muted);margin:0}
+@media(max-width:900px){
+  .users-layout{grid-template-columns:1fr}
+  .admin-user-row{grid-template-columns:44px 1fr 90px}
+  .admin-user-status{display:none}
+}
+@media(max-width:640px){
+  .admin-user-row{grid-template-columns:40px 1fr 72px;padding:12px 14px}
+  .admin-user-action-panel{position:fixed;left:12px;right:12px;bottom:12px;top:auto;width:auto;max-height:75vh;overflow:auto}
+  .admin-user-form-actions{justify-content:stretch}
+  .admin-user-form-actions .secondary-button,.admin-user-form-actions .admin-button{flex:1}
+  .generated-password{grid-template-columns:1fr auto}
+  .generated-password span{grid-column:1/-1}
+}
