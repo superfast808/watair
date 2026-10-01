@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="hero-visual <%= heroImageStyle === 'photo' ? 'hero-visual-photo' : '' %>">
-      <img src="<%= localHeroImage %>" alt="WatAir atmospheric water generator range">
+      <img src="<%= localHeroImage %>" alt="WatAir atmospheric water generator range" decoding="async" fetchpriority="high">
       <div class="hero-caption"><span>Water from air</span><strong>One technology. Multiple scales.</strong></div>
     </div>
   </section>
@@ -63,7 +63,7 @@
       <% featured.forEach(product => { %>
         <a class="product-card image-card" href="/products/<%= product.slug %>">
           <div class="product-art">
-            <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy"><% } %>
+            <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy" decoding="async"><% } %>
             <span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
           </div>
           <div class="product-card-copy">
@@ -79,7 +79,7 @@
   </section>
 
   <section class="scale-panel">
-    <div class="scale-image"><img src="/uploads/imported/legacy/media/1010/pw-hr-5000l.png" alt="WatAir PW HR-5000L industrial atmospheric water generator" loading="lazy"></div>
+    <div class="scale-image"><img src="/uploads/imported/legacy/media/1010/pw-hr-5000l.png" alt="WatAir PW HR-5000L industrial atmospheric water generator" loading="lazy" decoding="async"></div>
     <div class="scale-copy">
       <p class="eyebrow">Commercial & industrial</p>
       <h2>Scale the same principle to serious daily demand.</h2>
