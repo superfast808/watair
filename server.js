@@ -14,6 +14,7 @@ const PDFDocument = require('pdfkit');
 const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
+const { startLegacyMediaImport, getMediaImportState, getMediaSummary, loadManifest, localAssetForLegacyUrl } = require('./src/media-import');
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -283,13 +284,62 @@ app.post('/admin/logout', requireAdmin, requireCsrf, (req,res) => {
 
 app.use('/admin', requireAdmin, (req,res,next) => { res.locals.csrf = csrfFor(req); next(); });
 app.get('/admin', (req,res) => {
+  const mediaSummary = getMediaSummary();
   const stats = {
     pages: db.prepare('SELECT COUNT(*) c FROM pages').get().c,
     products: db.prepare('SELECT COUNT(*) c FROM products').get().c,
-    enquiries: db.prepare("SELECT COUNT(*) c FROM enquiries WHERE status='new'").get().c
+    enquiries: db.prepare("SELECT COUNT(*) c FROM enquiries WHERE status='new'").get().c,
+    media: mediaSummary.count
   };
   const enquiries = db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC LIMIT 8').all();
-  res.render('admin/dashboard', { stats, enquiries, meta: { title: 'WatAir CMS' } });
+  res.render('admin/dashboard', { stats, enquiries, mediaSummary, importState: getMediaImportState(), meta: { title: 'WatAir CMS' } });
+});
+
+app.get('/admin/media', (req,res) => {
+  res.render('admin/media', {
+    summary: getMediaSummary(),
+    importState: getMediaImportState(),
+    reqQuery: req.query,
+    meta: { title: 'Media Import | WatAir CMS' }
+  });
+});
+
+app.get('/admin/media/status', (req,res) => {
+  res.json(getMediaImportState());
+});
+
+app.post('/admin/media/import', requireCsrf, async (req,res) => {
+  await startLegacyMediaImport();
+  res.redirect('/admin/media');
+});
+
+app.post('/admin/media/relink', requireCsrf, (req,res) => {
+  const manifest = loadManifest();
+  let changed = 0;
+
+  const rows = db.prepare("SELECT id,image_url FROM products WHERE image_url LIKE 'http%'").all();
+  const updateProduct = db.prepare('UPDATE products SET image_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?');
+  const tx = db.transaction(() => {
+    rows.forEach(row => {
+      const local = localAssetForLegacyUrl(row.image_url, manifest);
+      if (local) {
+        updateProduct.run(local, row.id);
+        changed++;
+      }
+    });
+
+    const hero = db.prepare("SELECT value FROM settings WHERE key='hero_image'").get();
+    if (hero?.value?.startsWith('http')) {
+      const localHero = localAssetForLegacyUrl(hero.value, manifest);
+      if (localHero) {
+        db.prepare("UPDATE settings SET value=? WHERE key='hero_image'").run(localHero);
+        changed++;
+      }
+    }
+  });
+  tx();
+
+  res.redirect('/admin/media?relinked=' + changed);
 });
 app.get('/admin/pages', (req,res) => res.render('admin/pages', { pages: db.prepare('SELECT * FROM pages ORDER BY title').all(), meta: { title: 'Pages | WatAir CMS' } }));
 app.get('/admin/pages/:id', (req,res) => {
