@@ -25,12 +25,13 @@
       <div class="success-box"><p class="eyebrow">Enquiry received</p><h2>Thanks — we have your enquiry.</h2><p>It has been logged and the WatAir team can follow up from here.</p><a class="button" href="/products">Browse the range</a></div>
     <% } else { %>
       <div class="form-heading"><p class="eyebrow">Start here</p><h2>Tell us a little about the requirement.</h2><p>We’ll use this to point you toward the most relevant system or next step.</p></div>
+      <% if(selectedProduct){ %><div class="selected-product"><span>Selected model</span><strong><%= selectedProduct.name %><%= selectedProduct.subtitle ? ' – ' + selectedProduct.subtitle : '' %></strong><small><%= selectedProduct.capacity_lpd.toLocaleString('en-GB') %> litres/day rated output</small></div><% } %>
       <% if(error){ %><div class="error-box"><%= error %></div><% } %>
       <form method="post" action="/contact" class="contact-form">
         <div class="two-col"><label>Name<input name="name" required maxlength="150"></label><label>Company<input name="company" maxlength="150"></label></div>
         <div class="two-col"><label>Email<input type="email" name="email" required maxlength="254"></label><label>Phone<input name="phone" maxlength="80"></label></div>
-        <label>What are you interested in?<select name="interest"><option value="">Choose one</option><option>Home & Office</option><option>Commercial & Industrial</option><option>Leasing</option><option>Reseller opportunity</option><option>General enquiry</option></select></label>
-        <label>Tell us about the requirement<textarea name="message" required maxlength="5000" rows="7" placeholder="For example: location, litres per day, number of users, intended use, or the model you are considering."></textarea></label>
+        <label>What are you interested in?<select name="interest"><option value="">Choose one</option><option <%= selectedProduct?.category==='home-office'?'selected':'' %>>Home & Office</option><option <%= selectedProduct?.category==='commercial-industrial'?'selected':'' %>>Commercial & Industrial</option><option>Leasing</option><option>Reseller opportunity</option><option>General enquiry</option></select></label>
+        <label>Tell us about the requirement<textarea name="message" required maxlength="5000" rows="7" placeholder="For example: location, litres per day, number of users, intended use, or the model you are considering."><%= selectedProduct ? 'I am interested in the ' + selectedProduct.name + (selectedProduct.subtitle ? ' (' + selectedProduct.subtitle + ')' : '') + '.\n\n' : '' %></textarea></label>
         <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
         <button class="button button-aqua" type="submit">Send enquiry</button>
       </form>
