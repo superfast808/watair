@@ -1,1 +1,26 @@
-</main></body></html>
+    </main>
+  </div>
+
+  <div class="media-picker" data-media-picker hidden>
+    <div class="media-picker-backdrop" data-media-picker-close></div>
+    <section class="media-picker-panel" role="dialog" aria-modal="true" aria-labelledby="media-picker-title">
+      <header class="media-picker-head">
+        <div><p class="admin-kicker">Media library</p><h2 id="media-picker-title">Choose an image</h2></div>
+        <button type="button" class="icon-button" data-media-picker-close aria-label="Close media library">×</button>
+      </header>
+      <div class="media-picker-tools">
+        <input type="search" placeholder="Search images…" data-media-search>
+        <label class="upload-inline">
+          <input type="file" accept="image/jpeg,image/png,image/webp" data-media-upload hidden>
+          <span class="admin-button">Upload new image</span>
+        </label>
+      </div>
+      <div class="media-picker-grid" data-media-picker-grid>
+        <div class="media-picker-loading">Loading media…</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>
