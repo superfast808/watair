@@ -63,6 +63,7 @@ jobs:
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/pages/1 > /tmp/admin-page-edit.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
 
           grep -q 'Welcome back' /tmp/admin-dashboard.html
@@ -71,4 +72,6 @@ jobs:
           grep -q 'Page content' /tmp/admin-page-edit.html
           grep -q 'Upload an image' /tmp/admin-media.html
           grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Add an admin user' /tmp/admin-users.html
+          grep -q 'Generate secure password' /tmp/admin-users.html
           grep -q '"assets"' /tmp/admin-assets.json
