@@ -1760,3 +1760,130 @@ html.nav-open,body.nav-open{overflow:hidden}
     flex-direction:column;
   }
 }
+
+
+/* Final public-site polish */
+html{scroll-behavior:smooth}
+.sr-only{
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
+}
+.skip-link{
+  position:fixed;z-index:999;left:16px;top:12px;padding:10px 14px;border-radius:9px;
+  background:#fff;color:var(--ink);font-size:12px;font-weight:850;box-shadow:0 10px 35px rgba(0,0,0,.18);
+  transform:translateY(-160%);transition:transform .18s
+}
+.skip-link:focus{transform:translateY(0)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
+  outline:3px solid rgba(35,196,220,.42);outline-offset:3px
+}
+.button:active{transform:translateY(0)}
+.text-link{transition:color .18s,border-color .18s}
+.text-link:hover{color:#0a8199}
+.text-link-light:hover{color:#fff}
+
+.product-grid{align-items:stretch}
+.product-card{
+  display:flex;flex-direction:column;height:100%;text-decoration:none;
+  box-shadow:0 1px 0 rgba(6,38,50,.02)
+}
+.product-card-copy{display:flex;flex-direction:column;flex:1}
+.product-card-copy .card-foot{margin-top:auto}
+.product-card-copy>strong:last-child{margin-top:auto;padding-top:10px}
+.card-foot b,.product-card-copy>strong:last-child{transition:transform .18s,color .18s}
+.product-card:hover .card-foot b{transform:translate(2px,-2px)}
+.product-card:hover .product-card-copy>strong:last-child{color:#087f98}
+.product-card:focus-visible{outline-offset:4px}
+
+.hero-visual img,.page-hero-art img,.product-machine img{backface-visibility:hidden}
+.breadcrumbs a{text-underline-offset:3px}
+.breadcrumbs a:hover{text-decoration:underline}
+
+/* FAQ search */
+.faq-search-shell{padding-bottom:0}
+.faq-search-box{
+  border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,#fff,#f1f9fa);
+  padding:22px 24px;display:grid;grid-template-columns:1fr minmax(320px,520px);gap:20px;align-items:center
+}
+.faq-search-box h2{margin:0;font-size:28px;letter-spacing:-.035em}
+.faq-search-box .eyebrow{margin-bottom:5px}
+.faq-search-field{position:relative;display:block}
+.faq-search-field input{
+  width:100%;min-height:50px;border:1px solid #bfd5d9;border-radius:999px;background:#fff;
+  padding:0 46px 0 18px;font-size:14px;color:var(--ink);outline:0
+}
+.faq-search-field input:focus{border-color:#55bfd0;box-shadow:0 0 0 4px rgba(35,196,220,.11)}
+.faq-search-field>span:last-child{
+  position:absolute;right:17px;top:50%;transform:translateY(-50%);font-size:22px;color:#43838f;pointer-events:none
+}
+.faq-search-status{grid-column:2;margin:-10px 8px 0;color:var(--muted);font-size:10px;font-weight:750;min-height:15px}
+.faq-group[hidden],.faq-list details[hidden]{display:none!important}
+
+/* Product-range capacity filter */
+.capacity-filter{
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-8px 0 24px;padding:12px;
+  border:1px solid var(--line);border-radius:13px;background:#f8fbfb
+}
+.capacity-filter>span{
+  margin:0 6px 0 2px;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:850
+}
+.capacity-filter button{
+  min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;
+  color:#3c626c;font-size:10px;font-weight:800
+}
+.capacity-filter button:hover{border-color:#9bcbd3;color:#087f98}
+.capacity-filter button.selected{background:var(--ink);border-color:var(--ink);color:#fff}
+.capacity-filter small{margin-left:auto;color:var(--muted);font-size:10px;font-weight:750}
+.product-card[hidden]{display:none!important}
+
+/* Footer finish */
+.footer-social{
+  margin-top:9px;display:inline-flex!important;flex-direction:row!important;align-items:center;gap:8px!important;
+  width:max-content;text-decoration:none
+}
+.footer-social .linkedin-mark{width:18px;height:18px;font-size:11px}
+.footer-bottom>div{display:flex;align-items:center;gap:18px}
+.footer-bottom a{color:#a8c6cd;font-weight:750;text-decoration:none}
+.footer-bottom a:hover{color:#fff}
+
+/* Better 404 treatment */
+.not-found{
+  max-width:var(--max);min-height:560px;margin:14px auto 50px;border-radius:26px;overflow:hidden;
+  display:grid;grid-template-columns:1fr .8fr;background:var(--navy);color:#fff
+}
+.not-found>div:first-child{padding:64px clamp(34px,5vw,72px);display:flex;flex-direction:column;justify-content:center}
+.not-found .eyebrow{color:#69dbe8}
+.not-found h1{font-size:clamp(58px,7vw,96px);line-height:.9;letter-spacing:-.065em;margin:0 0 22px}
+.not-found p:not(.eyebrow){font-size:17px;line-height:1.55;color:#bfd4d9;max-width:590px}
+.not-found-art{position:relative;display:grid;place-items:center;background:linear-gradient(145deg,#e7f5f6,#c8e5e9);overflow:hidden}
+.not-found-art>span{position:absolute;z-index:0;font-size:clamp(130px,18vw,250px);font-weight:900;color:rgba(6,38,50,.07);letter-spacing:-.08em}
+.not-found-art img{position:relative;z-index:1;width:90%;height:74%;object-fit:contain;filter:drop-shadow(0 26px 30px rgba(4,45,58,.16))}
+
+/* Small refinements to long-form content */
+.prose a{color:#087f98;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.prose a:hover{color:#055f72}
+.prose ul,.prose ol{padding-left:1.25rem;color:#365c66}
+.prose li+li{margin-top:7px}
+.prose blockquote{margin:26px 0;padding:18px 20px;border-left:3px solid var(--aqua);background:var(--mist);border-radius:0 12px 12px 0}
+
+@media(max-width:900px){
+  html{scroll-behavior:auto}
+  .faq-search-box{grid-template-columns:1fr;gap:14px;padding:18px}
+  .faq-search-status{grid-column:auto;margin:-5px 5px 0}
+  .capacity-filter{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .capacity-filter::-webkit-scrollbar{display:none}
+  .capacity-filter>span,.capacity-filter button,.capacity-filter small{flex:0 0 auto}
+  .capacity-filter small{margin-left:8px}
+  .footer-bottom>div{align-items:flex-start;flex-direction:column;gap:7px}
+  .not-found{margin:10px 12px 45px;grid-template-columns:1fr;min-height:auto;border-radius:20px}
+  .not-found>div:first-child{padding:46px 24px 34px}
+  .not-found-art{min-height:300px}
+}
+@media(max-width:560px){
+  .faq-search-shell{padding-top:42px}
+  .faq-search-box{padding:16px}
+  .faq-search-box h2{font-size:25px}
+  .faq-search-field input{font-size:16px}
+  .not-found{margin-left:8px;margin-right:8px}
+  .not-found h1{font-size:48px}
+}
