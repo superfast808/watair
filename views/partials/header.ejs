@@ -1,10 +1,9 @@
 <div class="utility-bar">
   <div class="utility-inner">
-    <span>Atmospheric Water Generation for the UK</span>
-    <div>
-      <a href="/leasing">Leasing available</a>
-      <a href="/resellers">Become a reseller</a>
-      <a href="mailto:<%= settings.email %>"><%= settings.email %></a>
+    <a class="utility-highlight" href="/leasing">Leasing Available</a>
+    <div class="utility-contact">
+      <a href="mailto:<%= settings.email %>"><span aria-hidden="true">✉</span><%= settings.email %></a>
+      <a href="tel:<%= settings.phone.replace(/\s/g,'') %>"><span aria-hidden="true">☎</span><%= settings.phone %></a>
     </div>
   </div>
 </div>
