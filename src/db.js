@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS enquiries (
 
 ensureColumn('pages', 'hero_image', "TEXT DEFAULT ''");
 ensureColumn('pages', 'hero_style', "TEXT DEFAULT ''");
+ensureColumn('admins', 'display_name', "TEXT DEFAULT ''");
 
 const legacyProductImages = {
   'pw-hr-15l': 'https://www.watairuk.co.uk/media/1002/pw-hr-15l.png',
