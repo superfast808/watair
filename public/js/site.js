@@ -114,3 +114,69 @@ if (!reduceMotion && 'IntersectionObserver' in window) {
     requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add('is-visible')));
   }
 }
+
+
+/* FAQ search */
+const faqSearch = document.querySelector('[data-faq-search]');
+if (faqSearch) {
+  const items = [...document.querySelectorAll('[data-faq-item]')];
+  const groups = [...document.querySelectorAll('[data-faq-group]')];
+  const status = document.querySelector('[data-faq-status]');
+
+  const updateFaqs = () => {
+    const query = faqSearch.value.trim().toLowerCase();
+    let matches = 0;
+
+    items.forEach(item => {
+      const visible = !query || (item.dataset.faqText || '').includes(query);
+      item.hidden = !visible;
+      if (visible) {
+        matches++;
+        if (query) item.open = true;
+      }
+    });
+
+    groups.forEach(group => {
+      group.hidden = ![...group.querySelectorAll('[data-faq-item]')].some(item => !item.hidden);
+    });
+
+    if (status) {
+      status.textContent = query
+        ? `${matches} ${matches === 1 ? 'answer' : 'answers'} found`
+        : '';
+    }
+  };
+
+  faqSearch.addEventListener('input', updateFaqs);
+}
+
+/* Commercial capacity filter */
+const capacityButtons = [...document.querySelectorAll('[data-capacity-filter]')];
+if (capacityButtons.length) {
+  const cards = [...document.querySelectorAll('[data-product-card]')];
+  const count = document.querySelector('[data-capacity-count]');
+
+  const matchesRange = (capacity, range) => {
+    if (range === 'all') return true;
+    if (range === '80-250') return capacity >= 80 && capacity <= 250;
+    if (range === '500-2000') return capacity >= 500 && capacity <= 2000;
+    if (range === '3000-plus') return capacity >= 3000;
+    return true;
+  };
+
+  capacityButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const range = button.dataset.capacityFilter;
+      let visible = 0;
+
+      capacityButtons.forEach(item => item.classList.toggle('selected', item === button));
+      cards.forEach(card => {
+        const show = matchesRange(Number(card.dataset.capacity || 0), range);
+        card.hidden = !show;
+        if (show) visible++;
+      });
+
+      if (count) count.textContent = `${visible} ${visible === 1 ? 'model' : 'models'}`;
+    });
+  });
+}
