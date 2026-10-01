@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const sanitizeHtml = require('sanitize-html');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
+const PDFDocument = require('pdfkit');
 const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
@@ -102,12 +103,87 @@ app.get('/products/commercial-industrial', (req, res) => res.render('products', 
   products: products('published=1 AND category=?', ['commercial-industrial']), category: 'commercial-industrial',
   meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.' }
 }));
+app.get('/products/:slug/datasheet.pdf', (req, res) => {
+  const product = parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(req.params.slug));
+  if (!product) return res.status(404).send('Product not found');
+
+  const categoryLabel = product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial';
+  const filename = `watair-${product.slug}-datasheet.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+  const doc = new PDFDocument({ size: 'A4', margin: 48, info: {
+    Title: `${product.name} WatAir Technical Datasheet`,
+    Author: 'WatAir UK',
+    Subject: 'Atmospheric Water Generator technical datasheet'
+  }});
+  doc.pipe(res);
+
+  const navy = '#062632';
+  const aqua = '#23c4dc';
+  const muted = '#607981';
+  const pageWidth = doc.page.width;
+
+  doc.rect(0, 0, pageWidth, 126).fill(navy);
+  doc.fillColor(aqua).fontSize(10).font('Helvetica-Bold').text('WATAIR UK · ATMOSPHERIC WATER GENERATION', 48, 38);
+  doc.fillColor('#ffffff').fontSize(28).font('Helvetica-Bold').text(product.name, 48, 57, { width: 360 });
+  if (product.subtitle) doc.fillColor('#bfeaf0').fontSize(11).font('Helvetica').text(product.subtitle, 48, 91);
+  doc.fillColor('#ffffff').fontSize(28).font('Helvetica-Bold').text(String(product.capacity_lpd), 455, 55, { width: 90, align: 'right' });
+  doc.fillColor('#9dc3cb').fontSize(9).font('Helvetica').text('LITRES / DAY', 455, 87, { width: 90, align: 'right' });
+
+  doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text(categoryLabel.toUpperCase(), 48, 154);
+  doc.fillColor(muted).fontSize(11).font('Helvetica').text(product.summary, 48, 174, { width: 500, lineGap: 3 });
+
+  let y = Math.max(224, doc.y + 22);
+  doc.fillColor(navy).fontSize(16).font('Helvetica-Bold').text('Technical specification', 48, y);
+  y += 30;
+
+  Object.entries(product.specs).forEach(([key, value], index) => {
+    if (y > 720) {
+      doc.addPage();
+      y = 55;
+    }
+    if (index % 2 === 0) doc.rect(48, y - 6, 499, 27).fill('#f3f8f9');
+    doc.fillColor(muted).fontSize(9.5).font('Helvetica').text(key, 58, y, { width: 205 });
+    doc.fillColor(navy).fontSize(9.5).font('Helvetica-Bold').text(String(value), 270, y, { width: 265 });
+    y += 27;
+  });
+
+  y += 22;
+  if (y > 675) { doc.addPage(); y = 55; }
+  doc.fillColor(navy).fontSize(14).font('Helvetica-Bold').text('Important performance note', 48, y);
+  doc.fillColor(muted).fontSize(9.5).font('Helvetica').text(
+    'Rated water production depends on ambient temperature and relative humidity. Actual site output may differ from the stated rating. Confirm site conditions, electrical requirements, storage and intended use with WatAir before final specification.',
+    48, y + 23, { width: 499, lineGap: 2 }
+  );
+
+  const footerY = doc.page.height - 66;
+  doc.moveTo(48, footerY - 12).lineTo(547, footerY - 12).strokeColor('#d5e3e6').stroke();
+  doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text('WatAir UK', 48, footerY);
+  doc.fillColor(muted).fontSize(8.5).font('Helvetica').text(
+    `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watair.co.uk`,
+    48, footerY + 15
+  );
+  doc.fillColor('#829aa1').fontSize(7.5).text('Generated from the current published WatAir product specification.', 48, footerY + 30);
+
+  doc.end();
+});
+
 app.get('/products/:slug', (req, res) => {
   const product = parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(req.params.slug));
   if (!product) return res.status(404).render('404', { meta: { title: 'Product not found | WatAir UK' } });
-  const related = products('published=1 AND category=? AND id<>?', [product.category, product.id]).slice(0, 3);
+
+  const family = products('published=1 AND category=?', [product.category]);
+  const currentIndex = family.findIndex(p => p.id === product.id);
+  const previousProduct = currentIndex > 0 ? family[currentIndex - 1] : null;
+  const nextProduct = currentIndex >= 0 && currentIndex < family.length - 1 ? family[currentIndex + 1] : null;
+  const related = family
+    .filter(p => p.id !== product.id)
+    .sort((a,b) => Math.abs(a.capacity_lpd - product.capacity_lpd) - Math.abs(b.capacity_lpd - product.capacity_lpd))
+    .slice(0, 3);
+
   res.render('product', {
-    product, related,
+    product, related, family, previousProduct, nextProduct,
     meta: { title: `${product.name}${product.subtitle ? ' – ' + product.subtitle : ''} | WatAir UK`, description: product.summary }
   });
 });
