@@ -10,6 +10,9 @@
     'leasing': '/uploads/imported/legacy/media/1040/25l-1x.png'
   };
   const photoHeroSlugs = new Set(['about','plastic-bottles','mains-water','resellers']);
+  const heroImage = page.hero_image || pageImages[page.slug] || settings.hero_image;
+  const heroStyle = page.hero_style || (photoHeroSlugs.has(page.slug) ? 'photo' : 'graphic');
+  const usePhotoHero = heroStyle === 'photo';
   const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
   const crumbs = [
     { label: 'Home', href: '/' },
@@ -19,14 +22,14 @@
 %>
 <%- include('partials/breadcrumbs', { items: crumbs }) %>
 
-<section class="page-hero scenic-hero page-hero-<%= page.slug %> <%= photoHeroSlugs.has(page.slug) ? 'hero-has-photo' : '' %>">
+<section class="page-hero scenic-hero page-hero-<%= page.slug %> <%= usePhotoHero ? 'hero-has-photo' : '' %>">
   <div class="page-hero-copy">
     <p class="eyebrow"><%= page.eyebrow %></p>
     <h1><%= page.hero %></h1>
     <p><%= page.intro %></p>
   </div>
-  <div class="page-hero-art <%= photoHeroSlugs.has(page.slug) ? 'page-hero-photo' : '' %>">
-    <img src="<%= pageImages[page.slug] || settings.hero_image %>" alt="" aria-hidden="true">
+  <div class="page-hero-art <%= usePhotoHero ? 'page-hero-photo' : '' %>">
+    <img src="<%= heroImage %>" alt="" aria-hidden="true">
   </div>
 </section>
 
