@@ -54,12 +54,23 @@
     <a class="<%= isCommercial?'selected':'' %>" href="/products/commercial-industrial">Commercial & Industrial</a>
   </div>
 
+  <% if(isCommercial && products.length > 6){ %>
+  <div class="capacity-filter" aria-label="Filter commercial products by output">
+    <span>Filter by output</span>
+    <button type="button" class="selected" data-capacity-filter="all">All</button>
+    <button type="button" data-capacity-filter="80-250">80–250 L/day</button>
+    <button type="button" data-capacity-filter="500-2000">500–2,000 L/day</button>
+    <button type="button" data-capacity-filter="3000-plus">3,000+ L/day</button>
+    <small data-capacity-count><%= products.length %> models</small>
+  </div>
+  <% } %>
+
   <% if(products.length){ %>
-  <div class="product-grid catalogue-grid">
+  <div class="product-grid catalogue-grid" data-product-catalogue>
     <% products.forEach(product => { %>
-    <a class="product-card image-card" href="/products/<%= product.slug %>">
+    <a class="product-card image-card" href="/products/<%= product.slug %>" data-product-card data-capacity="<%= product.capacity_lpd %>">
       <div class="product-art">
-        <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy"><% } %>
+        <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy" decoding="async"><% } %>
         <span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
       </div>
       <div class="product-card-copy">
