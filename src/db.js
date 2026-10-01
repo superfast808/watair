@@ -118,6 +118,14 @@ function seed() {
   });
   imageTx();
 
+  // Once the owner's legacy library has been imported, move any remaining
+  // product references off the old host and onto the local repository copy.
+  db.prepare(`
+    UPDATE products
+    SET image_url = REPLACE(image_url, 'https://www.watairuk.co.uk/', '/uploads/imported/legacy/')
+    WHERE image_url LIKE 'https://www.watairuk.co.uk/%'
+  `).run();
+
   const pageCount = db.prepare('SELECT COUNT(*) c FROM pages').get().c;
   if (!pageCount) {
     const insert = db.prepare(`INSERT INTO pages
@@ -146,6 +154,12 @@ function seed() {
 
   db.prepare(`UPDATE settings SET value='Water from air. Wherever you need it.'
     WHERE key='hero_title' AND value='Fresh water. Made from air.'`).run();
+
+  db.prepare(`
+    UPDATE settings
+    SET value = REPLACE(value, 'https://www.watairuk.co.uk/', '/uploads/imported/legacy/')
+    WHERE key='hero_image' AND value LIKE 'https://www.watairuk.co.uk/%'
+  `).run();
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
