@@ -10,6 +10,13 @@ const db = new Database(path.join(dataDir, 'watair.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some(col => col.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS admins (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,6 +70,9 @@ CREATE TABLE IF NOT EXISTS enquiries (
   status TEXT NOT NULL DEFAULT 'new'
 );
 `);
+
+ensureColumn('pages', 'hero_image', "TEXT DEFAULT ''");
+ensureColumn('pages', 'hero_style', "TEXT DEFAULT ''");
 
 const legacyProductImages = {
   'pw-hr-15l': 'https://www.watairuk.co.uk/media/1002/pw-hr-15l.png',
