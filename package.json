@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development node --watch server.js",
-    "check": "node --check server.js && node --check src/db.js && node --check src/auth.js && node --check src/content.js"
+    "check": "node --check server.js && node --check src/db.js && node --check src/auth.js && node --check src/content.js && node --check src/media-import.js && node --check public/js/site.js && node --check public/js/admin-media.js"
   },
   "engines": {
     "node": ">=22"
