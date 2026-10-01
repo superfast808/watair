@@ -436,6 +436,7 @@ app.post('/admin/login', loginLimiter, (req,res) => {
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
     return res.status(401).render('admin/login', { error: 'Incorrect email or password.', meta: { title: 'WatAir CMS Login' } });
   }
+  db.prepare('UPDATE admins SET updated_at=CURRENT_TIMESTAMP WHERE id=?').run(admin.id);
   res.cookie('watair_admin', signAdmin(admin), { httpOnly: true, secure: isProd, sameSite: 'strict', maxAge: 8*60*60*1000, path: '/' });
   res.redirect('/admin');
 });
@@ -633,6 +634,74 @@ app.post('/admin/products/:id', requireCsrf, (req,res) => {
       req.params.id
     );
   res.redirect(`/admin/products/${req.params.id}?saved=1`);
+});
+
+function validateAdminPassword(password, email = '') {
+  const value = String(password || '');
+  if (value.length < 14) return 'Password must be at least 14 characters long.';
+  if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return 'Password must contain at least one letter and one number.';
+  if (email && value.toLowerCase().includes(String(email).split('@')[0].toLowerCase())) return 'Password should not contain the email username.';
+  return null;
+}
+
+app.get('/admin/users', (req,res) => {
+  const admins = db.prepare('SELECT id,email,display_name,created_at,updated_at FROM admins ORDER BY created_at,id').all();
+  res.render('admin/users', {
+    admins,
+    currentAdminId: Number(req.admin.sub),
+    error: req.query.error || '',
+    created: req.query.created === '1',
+    updated: req.query.updated === '1',
+    deleted: req.query.deleted === '1',
+    meta: { title: 'Admin Users | WatAir CMS' }
+  });
+});
+
+app.post('/admin/users', requireCsrf, (req,res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const displayName = String(req.body.display_name || '').trim().slice(0,120);
+  const password = String(req.body.password || '');
+  const confirm = String(req.body.confirm_password || '');
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.redirect('/admin/users?error=' + encodeURIComponent('Enter a valid email address.'));
+  if (password !== confirm) return res.redirect('/admin/users?error=' + encodeURIComponent('The two passwords do not match.'));
+  const passwordError = validateAdminPassword(password, email);
+  if (passwordError) return res.redirect('/admin/users?error=' + encodeURIComponent(passwordError));
+  if (db.prepare('SELECT 1 FROM admins WHERE email=?').get(email)) {
+    return res.redirect('/admin/users?error=' + encodeURIComponent('An admin user with that email address already exists.'));
+  }
+
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare('INSERT INTO admins(email,display_name,password_hash) VALUES(?,?,?)').run(email, displayName, hash);
+  res.redirect('/admin/users?created=1');
+});
+
+app.post('/admin/users/:id/password', requireCsrf, (req,res) => {
+  const target = db.prepare('SELECT id,email FROM admins WHERE id=?').get(req.params.id);
+  if (!target) return res.status(404).send('Admin user not found');
+
+  const password = String(req.body.password || '');
+  const confirm = String(req.body.confirm_password || '');
+  if (password !== confirm) return res.redirect('/admin/users?error=' + encodeURIComponent('The two passwords do not match.'));
+  const passwordError = validateAdminPassword(password, target.email);
+  if (passwordError) return res.redirect('/admin/users?error=' + encodeURIComponent(passwordError));
+
+  db.prepare('UPDATE admins SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .run(bcrypt.hashSync(password, 12), target.id);
+  res.redirect('/admin/users?updated=1');
+});
+
+app.post('/admin/users/:id/delete', requireCsrf, (req,res) => {
+  const id = Number(req.params.id);
+  if (id === Number(req.admin.sub)) {
+    return res.redirect('/admin/users?error=' + encodeURIComponent('You cannot delete the account you are currently signed in with.'));
+  }
+  const count = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
+  if (count <= 1) {
+    return res.redirect('/admin/users?error=' + encodeURIComponent('The last admin account cannot be deleted.'));
+  }
+  db.prepare('DELETE FROM admins WHERE id=?').run(id);
+  res.redirect('/admin/users?deleted=1');
 });
 
 app.get('/admin/settings', (req,res) => {
