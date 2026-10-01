@@ -6,11 +6,15 @@
   </div>
   <div class="footer-grid">
     <div>
-      <a class="brand brand-footer brand-logo" href="/" aria-label="WatAir UK home"><img src="/images/logo-header.svg" alt="WatAir – Water from Air"></a>
+      <a class="brand brand-footer brand-logo" href="/" aria-label="WatAir UK home"><img src="/images/logo-header.svg" alt="WatAir – Water from Air" decoding="async"></a>
       <p><%= settings.footer_text %></p>
+      <a class="footer-social" href="https://uk.linkedin.com/company/watair-uk" target="_blank" rel="noopener">
+        <span class="linkedin-mark" aria-hidden="true">in</span><span>Follow WatAir on LinkedIn</span>
+      </a>
     </div>
     <div>
       <h3>Products</h3>
+      <a href="/products">All systems</a>
       <a href="/products/home-office">Home & Office</a>
       <a href="/products/commercial-industrial">Commercial & Industrial</a>
       <a href="/leasing">Leasing</a>
@@ -18,6 +22,8 @@
     <div>
       <h3>Explore</h3>
       <a href="/how-it-works">How it works</a>
+      <a href="/faqs">FAQs</a>
+      <a href="/about">About WatAir</a>
       <a href="/environment/plastic-bottles">Plastic bottles</a>
       <a href="/environment/mains-water">Mains water</a>
       <a href="/resellers">Become a reseller</a>
@@ -29,7 +35,10 @@
       <span><%= settings.company_location %></span>
     </div>
   </div>
-  <div class="footer-bottom"><span>© <%= currentYear %> WatAir UK. All rights reserved.</span><span>Atmospheric Water Generation · Water from Air</span></div>
+  <div class="footer-bottom">
+    <span>© <%= currentYear %> WatAir UK. All rights reserved.</span>
+    <div><span>Atmospheric Water Generation · Water from Air</span><a href="#top">Back to top ↑</a></div>
+  </div>
 </footer>
 <script src="/js/site.js" defer></script>
 </body>
