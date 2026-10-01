@@ -1,6 +1,24 @@
 (() => {
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+
+  // Friendly confirmation after redirects such as ?saved=1 or ?created=1.
+  const params = new URLSearchParams(window.location.search);
+  const notice = params.get('created') === '1'
+    ? 'Product created successfully.'
+    : params.get('saved') === '1'
+      ? 'Changes saved.'
+      : null;
+  if (notice) {
+    const toast = document.createElement('div');
+    toast.className = 'admin-toast';
+    toast.textContent = notice;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => toast.classList.remove('show'), 2800);
+    setTimeout(() => toast.remove(), 3300);
+  }
+
   // Mobile admin navigation.
   const sidebar = document.querySelector('[data-admin-sidebar]');
   const openNav = document.querySelector('[data-admin-menu-toggle]');
