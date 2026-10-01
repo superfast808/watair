@@ -1,0 +1,148 @@
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Security & access</p>
+    <h1>Admin users</h1>
+    <span class="page-help">Create additional CMS accounts, reset passwords and remove old access.</span>
+  </div>
+</header>
+
+<% if(error){ %><div class="alert admin-alert"><strong>Couldn’t make that change.</strong> <%= error %></div><% } %>
+<% if(created){ %><div class="notice-success"><strong>Admin user created.</strong></div><% } %>
+<% if(updated){ %><div class="notice-success"><strong>Password updated.</strong></div><% } %>
+<% if(deleted){ %><div class="notice-success"><strong>Admin user removed.</strong></div><% } %>
+
+<div class="users-layout">
+  <section class="admin-card">
+    <div class="section-heading">
+      <span class="section-number">1</span>
+      <div>
+        <h2>Add an admin user</h2>
+        <p>Each person should have their own login rather than sharing a password.</p>
+      </div>
+    </div>
+
+    <form method="post" action="/admin/users" class="admin-user-form" data-password-pair>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+      <div class="form-grid">
+        <label>Display name
+          <input name="display_name" maxlength="120" placeholder="e.g. Laura">
+          <small>Optional. Helps identify who the account belongs to.</small>
+        </label>
+
+        <label>Email address
+          <input type="email" name="email" required autocomplete="off" placeholder="name@example.com">
+          <small>This is the username used to sign in.</small>
+        </label>
+
+        <label>Password
+          <div class="password-field">
+            <input type="password" name="password" required minlength="14" autocomplete="new-password" data-password-primary>
+            <button type="button" class="password-toggle" data-password-toggle>Show</button>
+          </div>
+          <small>Minimum 14 characters, including at least one letter and one number.</small>
+        </label>
+
+        <label>Confirm password
+          <div class="password-field">
+            <input type="password" name="confirm_password" required minlength="14" autocomplete="new-password" data-password-confirm>
+            <button type="button" class="password-toggle" data-password-toggle>Show</button>
+          </div>
+        </label>
+      </div>
+
+      <div class="admin-user-form-actions">
+        <button class="secondary-button" type="button" data-generate-password>Generate secure password</button>
+        <button class="admin-button" type="submit">Create admin user</button>
+      </div>
+      <div class="generated-password" data-generated-password hidden>
+        <span>Generated password</span>
+        <code data-generated-password-value></code>
+        <button type="button" class="text-button" data-copy-generated>Copy</button>
+      </div>
+    </form>
+  </section>
+
+  <aside class="admin-card access-guidance">
+    <p class="admin-kicker">Good practice</p>
+    <h2>Keep access individual.</h2>
+    <p>Create one account per person so access can be removed cleanly later without changing everyone else’s password.</p>
+    <ul>
+      <li>Use a unique password for each admin.</li>
+      <li>Remove accounts when someone no longer needs access.</li>
+      <li>Do not email passwords in the same message as the login address if avoidable.</li>
+      <li>You cannot accidentally delete the account you are currently using.</li>
+    </ul>
+  </aside>
+</div>
+
+<section class="admin-card admin-users-list-card">
+  <div class="card-head">
+    <div>
+      <p class="admin-kicker">Current access</p>
+      <h2><%= admins.length %> admin <%= admins.length === 1 ? 'user' : 'users' %></h2>
+    </div>
+  </div>
+
+  <div class="admin-users-list">
+    <% admins.forEach(user => { %>
+      <article class="admin-user-row <%= user.id === currentAdminId ? 'current-user' : '' %>">
+        <div class="admin-user-avatar"><%= (user.display_name || user.email).slice(0,1).toUpperCase() %></div>
+
+        <div class="admin-user-identity">
+          <strong><%= user.display_name || 'Admin user' %></strong>
+          <span><%= user.email %></span>
+          <small>Created <%= new Date(user.created_at).toLocaleDateString('en-GB') %><%= user.id === currentAdminId ? ' · You are signed in with this account' : '' %></small>
+        </div>
+
+        <div class="admin-user-status">
+          <span class="pill"><%= user.id === currentAdminId ? 'Current user' : 'Admin' %></span>
+        </div>
+
+        <details class="admin-user-actions">
+          <summary>Manage</summary>
+          <div class="admin-user-action-panel">
+            <form method="post" action="/admin/users/<%= user.id %>/password" data-password-pair>
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <strong>Reset password</strong>
+              <label>New password
+                <div class="password-field">
+                  <input type="password" name="password" required minlength="14" autocomplete="new-password" data-password-primary>
+                  <button type="button" class="password-toggle" data-password-toggle>Show</button>
+                </div>
+              </label>
+              <label>Confirm password
+                <div class="password-field">
+                  <input type="password" name="confirm_password" required minlength="14" autocomplete="new-password" data-password-confirm>
+                  <button type="button" class="password-toggle" data-password-toggle>Show</button>
+                </div>
+              </label>
+              <div class="inline-actions">
+                <button class="secondary-button" type="button" data-generate-password>Generate</button>
+                <button class="admin-button" type="submit">Save password</button>
+              </div>
+              <div class="generated-password" data-generated-password hidden>
+                <span>Generated password</span>
+                <code data-generated-password-value></code>
+                <button type="button" class="text-button" data-copy-generated>Copy</button>
+              </div>
+            </form>
+
+            <% if(user.id !== currentAdminId){ %>
+              <form method="post" action="/admin/users/<%= user.id %>/delete" onsubmit="return confirm('Remove admin access for <%= user.email %>?')">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <button class="danger-button" type="submit">Remove admin access</button>
+              </form>
+            <% } else { %>
+              <p class="self-delete-note">Your current account cannot be deleted while you are signed in.</p>
+            <% } %>
+          </div>
+        </details>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('../partials/admin-foot') %>
