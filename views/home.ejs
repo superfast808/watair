@@ -1,7 +1,7 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 <main>
-  <% const localHeroImage = settings.hero_image && !settings.hero_image.includes('watairuk.co.uk') ? settings.hero_image : '/uploads/imported/legacy/images/home/products.jpg'; %>
+  <% const localHeroImage = settings.hero_image && !settings.hero_image.includes('watairuk.co.uk') ? settings.hero_image : '/uploads/imported/legacy/images/home/products.jpg'; const heroImageStyle = settings.hero_image_style === 'photo' ? 'photo' : 'graphic'; %>
   <section class="hero hero-premium">
     <div class="hero-copy">
       <p class="eyebrow">Atmospheric Water Generation · United Kingdom</p>
@@ -17,7 +17,7 @@
         <div><strong>UK support</strong><span>home, commercial & industrial</span></div>
       </div>
     </div>
-    <div class="hero-visual">
+    <div class="hero-visual <%= heroImageStyle === 'photo' ? 'hero-visual-photo' : '' %>">
       <img src="<%= localHeroImage %>" alt="WatAir atmospheric water generator range">
       <div class="hero-caption"><span>Water from air</span><strong>One technology. Multiple scales.</strong></div>
     </div>
