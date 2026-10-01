@@ -1,1 +1,42 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Catalogue</p><h1>Products</h1></div></header><section class="admin-card"><table><thead><tr><th>Product</th><th>Category</th><th>Output</th><th>Status</th><th></th></tr></thead><tbody><% products.forEach(p=>{ %><tr><td><strong><%= p.name %></strong><br><small><%= p.subtitle %></small></td><td><%= p.category %></td><td><%= p.capacity_lpd.toLocaleString('en-GB') %> L/day</td><td><span class="pill"><%= p.published?'Published':'Draft' %></span></td><td><a class="edit-link" href="/admin/products/<%= p.id %>">Edit →</a></td></tr><% }) %></tbody></table></section><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Catalogue</p>
+    <h1>Products</h1>
+    <span class="page-help">Edit product details, images and technical specifications.</span>
+  </div>
+  <a class="admin-button button-link" href="/admin/products/new">+ Add product</a>
+</header>
+
+<section class="admin-card admin-list-card">
+  <div class="list-toolbar">
+    <div>
+      <strong><%= products.length %> products</strong>
+      <span>Home & Office and Commercial & Industrial</span>
+    </div>
+    <input class="list-search" type="search" placeholder="Search products…" data-table-search>
+  </div>
+
+  <div class="product-admin-list" data-search-list>
+    <% products.forEach(p => { %>
+      <article class="product-admin-row" data-search-item="<%= (p.name + ' ' + p.subtitle + ' ' + p.category + ' ' + p.capacity_lpd).toLowerCase() %>">
+        <a class="product-admin-thumb" href="/admin/products/<%= p.id %>">
+          <% if(p.image_url){ %><img src="<%= p.image_url %>" alt=""><% } else { %><span>No image</span><% } %>
+        </a>
+        <div class="product-admin-name">
+          <strong><%= p.name %></strong>
+          <% if(p.subtitle){ %><small><%= p.subtitle %></small><% } %>
+        </div>
+        <div class="product-admin-meta">
+          <span><%= p.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span>
+          <strong><%= p.capacity_lpd.toLocaleString('en-GB') %> L/day</strong>
+        </div>
+        <div><span class="pill <%= p.published ? '' : 'pill-draft' %>"><%= p.published ? 'Published' : 'Draft' %></span></div>
+        <a class="edit-button" href="/admin/products/<%= p.id %>">Edit</a>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('../partials/admin-foot') %>
