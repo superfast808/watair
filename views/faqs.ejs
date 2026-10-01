@@ -14,7 +14,7 @@
     <div class="hero-inline-stats"><span><strong><%= faqs.length %></strong> answers</span><a href="/contact">Still have a question? →</a></div>
   </div>
   <div class="page-hero-art faq-hero-art">
-    <img src="/uploads/imported/legacy/images/home/products.jpg" alt="" aria-hidden="true">
+    <img src="/uploads/imported/legacy/images/home/products.jpg" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
   </div>
 </section>
 
@@ -22,7 +22,22 @@
   const groups = [...new Set(faqs.map(f => f[2] || 'General'))];
   const groupId = name => name.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 %>
-<section class="section-tight faq-layout">
+<section class="section-tight faq-search-shell">
+  <div class="faq-search-box">
+    <div>
+      <p class="eyebrow">Find an answer</p>
+      <h2>Search the FAQs</h2>
+    </div>
+    <label class="faq-search-field">
+      <span class="sr-only">Search frequently asked questions</span>
+      <input type="search" placeholder="Try “humidity”, “maintenance” or “power”…" autocomplete="off" data-faq-search>
+      <span aria-hidden="true">⌕</span>
+    </label>
+    <p class="faq-search-status" data-faq-status aria-live="polite"></p>
+  </div>
+</section>
+
+<section class="section-tight faq-layout" data-faq-layout>
   <aside class="faq-index">
     <p class="eyebrow">Browse topics</p>
     <% groups.forEach((group, gi) => { %><a href="#<%= groupId(group) %>"><span><%= String(gi+1).padStart(2,'0') %></span><%= group %></a><% }) %>
@@ -30,11 +45,11 @@
 
   <div class="faq-groups">
     <% groups.forEach((group, gi) => { %>
-      <section class="faq-group" id="<%= groupId(group) %>">
+      <section class="faq-group" id="<%= groupId(group) %>" data-faq-group>
         <div class="faq-group-head"><span><%= String(gi+1).padStart(2,'0') %></span><div><p class="eyebrow">FAQ topic</p><h2><%= group %></h2></div></div>
         <div class="faq-list">
           <% faqs.filter(f => (f[2] || 'General') === group).forEach((faq,i)=>{ %>
-            <details <%= gi===0 && i===0?'open':'' %>>
+            <details <%= gi===0 && i===0?'open':'' %> data-faq-item data-faq-text="<%= (faq[0] + ' ' + faq[1] + ' ' + group).toLowerCase().replace(/"/g,'&quot;') %>">
               <summary><%= faq[0] %><span class="faq-plus" aria-hidden="true">+</span></summary>
               <p><%= faq[1] %></p>
             </details>
