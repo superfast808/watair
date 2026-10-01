@@ -194,3 +194,14 @@
   .faq-groups{gap:42px}.faq-group-head h2{font-size:29px}.faq-list summary{font-size:16px}
   .contact-modern{margin:8px 10px 50px}.contact-modern .contact-intro,.contact-modern .contact-form-wrap{padding:34px 22px}.contact-prompt-grid{grid-template-columns:1fr}.contact-modern .contact-intro h1{font-size:43px}
 }
+
+.brand-footer.brand-logo{height:auto;display:inline-flex;align-items:center}
+.brand-footer.brand-logo img{width:170px;max-height:none}
+.selected-product{margin:0 0 18px;border:1px solid #c8e1e5;background:#eaf7f8;border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:2px}
+.selected-product span{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#438492;font-weight:850}
+.selected-product strong{font-size:15px;color:var(--ink)}
+.selected-product small{font-size:11px;color:var(--muted)}
+@media(max-width:900px){
+  .nav-group:hover>.nav-dropdown{display:none}
+  .nav-group.dropdown-open>.nav-dropdown{display:grid}
+}
