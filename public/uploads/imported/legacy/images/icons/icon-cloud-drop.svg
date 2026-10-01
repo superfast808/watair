@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="87.5" height="89.25" viewBox="0 0 87.5 89.25">
+  <defs>
+    <clipPath id="clip-path">
+      <path id="Path_76" data-name="Path 76" d="M-3.7-5.722l87.5,1.5v87.75l-87.5-1.75Z" fill="none" stroke="#0085ca" stroke-width="3"/>
+    </clipPath>
+  </defs>
+  <g id="Group_57" data-name="Group 57" transform="translate(3.695 5.722)">
+    <g id="Mask_Group_2" data-name="Mask Group 2" clip-path="url(#clip-path)">
+      <path id="Path_72" data-name="Path 72" d="M22.945,54.427h-6.64a15.05,15.05,0,1,1,0-30.1h.32v-3.65a19.843,19.843,0,0,1,39.652-.69h8.474a16.249,16.249,0,0,1,16.213,16.2v2.027A16.261,16.261,0,0,1,64.751,54.427H59.96" transform="translate(-0.964 -0.964)" fill="none" stroke="#0085ca" stroke-linejoin="round" stroke-width="3"/>
+      <path id="Path_73" data-name="Path 73" d="M120.674,166.8a97.475,97.475,0,0,1-6.488,8.378c-10.348,12.155-4.486,28.019,9.679,28.06h.156c14.07-.041,20.029-15.906,9.683-28.06-8.857-10.41-9.683-14.172-9.758-14.689h-.007" transform="translate(-84.019 -123.775)" fill="none" stroke="#0085ca" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      <path id="Path_74" data-name="Path 74" d="M137.947,282.855a8.519,8.519,0,0,0,4.155,6.866" transform="translate(-106.391 -218.15)" fill="none" stroke="#0085ca" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+    </g>
+  </g>
+</svg>
