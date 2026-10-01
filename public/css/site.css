@@ -208,3 +208,50 @@
 
 /* Desktop nav chevrons */
 @media(min-width:901px){.nav-trigger>span{display:inline-flex;align-items:center;justify-content:center;line-height:1;transform:translateY(-1px);font-size:13px}.nav-group.dropdown-open>.nav-trigger>span{transform:translateY(-1px) rotate(180deg)}}
+
+
+/* Progressive entrance motion */
+@media (prefers-reduced-motion: no-preference) {
+  .motion-ready .reveal-item {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity .68s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms),
+      transform .68s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms);
+    will-change: opacity, transform;
+  }
+  .motion-ready .reveal-item.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .motion-ready .hero-enter {
+    opacity: 0;
+    transform: translateY(10px) scale(.995);
+    transition: opacity .72s ease, transform .82s cubic-bezier(.22,.61,.36,1);
+  }
+  .motion-ready .hero-enter.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .motion-ready .product-card.reveal-item,
+  .motion-ready .application-grid article.reveal-item,
+  .motion-ready .process-grid > div.reveal-item,
+  .motion-ready .metric-band > div.reveal-item {
+    transform: translateY(16px);
+  }
+  .motion-ready .product-card.reveal-item.is-visible,
+  .motion-ready .application-grid article.reveal-item.is-visible,
+  .motion-ready .process-grid > div.reveal-item.is-visible,
+  .motion-ready .metric-band > div.reveal-item.is-visible {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
