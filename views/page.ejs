@@ -1,7 +1,49 @@
 <%- include('partials/head') %><%- include('partials/header') %>
 <main>
-<section class="page-hero"><p class="eyebrow"><%= page.eyebrow %></p><h1><%= page.hero %></h1><p><%= page.intro %></p></section>
-<section class="section-pad prose"><%- page.body_html %></section>
-<section class="cta-panel"><div><p class="eyebrow">Talk to WatAir</p><h2>Want to know what this looks like for your site?</h2><p>Share the daily requirement and operating environment and we can discuss the right next step.</p></div><a class="button" href="/contact">Contact us</a></section>
+<%
+  const pageImages = {
+    'how-it-works': settings.hero_image,
+    'about': 'https://www.watairuk.co.uk/media/1010/pw-hr-5000l.png',
+    'plastic-bottles': 'https://www.watairuk.co.uk/media/1003/pw-hr-30l.png',
+    'mains-water': 'https://www.watairuk.co.uk/media/1008/pw-hr-1000l.png',
+    'resellers': 'https://www.watairuk.co.uk/media/1006/pw-hr-250l.png',
+    'leasing': 'https://www.watairuk.co.uk/media/1040/25l-1x.png'
+  };
+  const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
+  const crumbs = [
+    { label: 'Home', href: '/' },
+    ...(isEnvironment ? [{ label: 'Environment', href: '/environment/plastic-bottles' }] : []),
+    { label: page.title }
+  ];
+%>
+<%- include('partials/breadcrumbs', { items: crumbs }) %>
+
+<section class="page-hero scenic-hero page-hero-<%= page.slug %>">
+  <div class="page-hero-copy">
+    <p class="eyebrow"><%= page.eyebrow %></p>
+    <h1><%= page.hero %></h1>
+    <p><%= page.intro %></p>
+  </div>
+  <div class="page-hero-art">
+    <img src="<%= pageImages[page.slug] || settings.hero_image %>" alt="" aria-hidden="true">
+  </div>
+</section>
+
+<section class="section-tight prose-shell">
+  <article class="prose"><%- page.body_html %></article>
+  <aside class="page-side-card">
+    <p class="eyebrow">Explore WatAir</p>
+    <h3>From compact systems to industrial water generation.</h3>
+    <a href="/products/home-office">Home & Office <span>→</span></a>
+    <a href="/products/commercial-industrial">Commercial & Industrial <span>→</span></a>
+    <a href="/faqs">FAQs <span>→</span></a>
+    <a href="/contact">Talk to WatAir <span>→</span></a>
+  </aside>
+</section>
+
+<section class="cta-panel cta-dark">
+  <div><p class="eyebrow">Talk to WatAir</p><h2>Want to know what this looks like for your site?</h2><p>Share the daily requirement and operating environment and we can discuss the right next step.</p></div>
+  <a class="button button-aqua" href="/contact">Contact us</a>
+</section>
 </main>
 <%- include('partials/footer') %>
