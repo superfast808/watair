@@ -65,6 +65,21 @@ function parseProduct(row) {
 function products(where = 'published=1', args = []) {
   return db.prepare(`SELECT * FROM products WHERE ${where} ORDER BY sort_order, capacity_lpd, id`).all(...args).map(parseProduct);
 }
+
+function productsForCategory(category) {
+  let rows = products('published=1 AND LOWER(TRIM(category))=?', [category]);
+
+  // Defensive fallback for older/editable databases where a category value
+  // may have been altered but the capacity still makes the intended range clear.
+  if (!rows.length && category === 'home-office') {
+    rows = products('published=1 AND capacity_lpd < 80');
+  }
+  if (!rows.length && category === 'commercial-industrial') {
+    rows = products('published=1 AND capacity_lpd >= 80');
+  }
+
+  return rows;
+}
 function getPage(slug) {
   return db.prepare('SELECT * FROM pages WHERE slug=? AND published=1').get(slug);
 }
@@ -110,11 +125,11 @@ app.get('/products', (req, res) => res.render('products', {
   meta: { title: 'Atmospheric Water Generators | WatAir UK', description: 'Explore WatAir atmospheric water generators from compact home and office systems to 10,000 litre-per-day industrial units.', image: '/uploads/imported/legacy/images/home/products.jpg' }
 }));
 app.get('/products/home-office', (req, res) => res.render('products', {
-  products: products('published=1 AND category=?', ['home-office']), category: 'home-office',
+  products: productsForCategory('home-office'), category: 'home-office',
   meta: { title: 'Home & Office Atmospheric Water Generators | WatAir UK', description: 'Compact water-from-air systems for homes and workplaces.', image: '/uploads/imported/legacy/media/1003/pw-hr-30l.png' }
 }));
 app.get('/products/commercial-industrial', (req, res) => res.render('products', {
-  products: products('published=1 AND category=?', ['commercial-industrial']), category: 'commercial-industrial',
+  products: productsForCategory('commercial-industrial'), category: 'commercial-industrial',
   meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.', image: '/uploads/imported/legacy/media/1010/pw-hr-5000l.png' }
 }));
 app.get('/products/:slug/datasheet.pdf', (req, res) => {
