@@ -29,7 +29,7 @@
     <p><%= page.intro %></p>
   </div>
   <div class="page-hero-art <%= usePhotoHero ? 'page-hero-photo' : '' %>">
-    <img src="<%= heroImage %>" alt="" aria-hidden="true">
+    <img src="<%= heroImage %>" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
   </div>
 </section>
 
