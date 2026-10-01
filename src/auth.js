@@ -36,7 +36,7 @@ function csrfFor(req) {
 }
 
 function requireCsrf(req, res, next) {
-  const supplied = String(req.body._csrf || '');
+  const supplied = String(req.body?._csrf || req.get('x-csrf-token') || '');
   const expected = csrfFor(req);
   const a = Buffer.from(supplied);
   const b = Buffer.from(expected);
