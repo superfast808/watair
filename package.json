@@ -26,6 +26,7 @@
     "nodemailer": "^6.10.0",
     "sanitize-html": "^2.14.0",
     "dotenv": "^16.4.7",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "cheerio": "^1.1.2"
   }
 }
