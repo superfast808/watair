@@ -20,7 +20,7 @@
     </div>
   </div>
   <div class="product-machine">
-    <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>"><% } else { %><div class="machine-placeholder"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><span>litres / day</span></div><% } %>
+    <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" decoding="async" fetchpriority="high"><% } else { %><div class="machine-placeholder"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><span>litres / day</span></div><% } %>
     <div class="machine-label"><span>Atmospheric Water Generator</span><strong><%= product.name %></strong></div>
   </div>
 </section>
@@ -71,7 +71,7 @@
     <% related.forEach(p=>{ %>
     <a class="product-card image-card compact-card" href="/products/<%= p.slug %>">
       <div class="product-art">
-        <% if(p.image_url){ %><img src="<%= p.image_url %>" alt="<%= p.name %>" loading="lazy"><% } %>
+        <% if(p.image_url){ %><img src="<%= p.image_url %>" alt="<%= p.name %>" loading="lazy" decoding="async"><% } %>
         <span class="capacity"><strong><%= p.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
       </div>
       <div class="product-card-copy"><h3><%= p.name %></h3><p><%= p.summary %></p><strong>View model ↗</strong></div>
