@@ -1,1 +1,19 @@
-<%- include('partials/head') %><%- include('partials/header') %><main id="main-content"><section class="page-hero"><p class="eyebrow">404</p><h1>That page has moved or does not exist.</h1><p>Try the product range or return to the WatAir homepage.</p><div class="hero-actions"><a class="button" href="/">Home</a><a class="text-link" href="/products">Explore products →</a></div></section></main><%- include('partials/footer') %>
+<%- include('partials/head') %><%- include('partials/header') %>
+<main id="main-content">
+  <section class="not-found">
+    <div>
+      <p class="eyebrow">404 · Page not found</p>
+      <h1>That page isn’t here.</h1>
+      <p>It may have moved during the WatAir rebuild. The product range and main website sections are still available below.</p>
+      <div class="hero-actions">
+        <a class="button button-aqua" href="/">Go to homepage</a>
+        <a class="text-link" href="/products">Explore products →</a>
+      </div>
+    </div>
+    <div class="not-found-art" aria-hidden="true">
+      <span>404</span>
+      <img src="/uploads/imported/legacy/images/home/products.jpg" alt="">
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>
