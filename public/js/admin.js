@@ -213,6 +213,19 @@
     }
   });
 
+
+  // Simple filtering for product/page management lists.
+  document.querySelectorAll('[data-table-search]').forEach(search => {
+    const list = search.closest('.admin-card')?.querySelector('[data-search-list]');
+    if (!list) return;
+    search.addEventListener('input', () => {
+      const query = search.value.trim().toLowerCase();
+      list.querySelectorAll('[data-search-item]').forEach(item => {
+        item.hidden = !!query && !String(item.dataset.searchItem || '').includes(query);
+      });
+    });
+  });
+
   // Copy media URLs.
   document.addEventListener('click', async event => {
     const copy = event.target.closest('[data-copy-url]');
