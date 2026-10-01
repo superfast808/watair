@@ -19,7 +19,7 @@
 %>
 <%- include('partials/breadcrumbs', { items: crumbs }) %>
 
-<section class="page-hero scenic-hero page-hero-<%= page.slug %>">
+<section class="page-hero scenic-hero page-hero-<%= page.slug %> <%= photoHeroSlugs.has(page.slug) ? 'hero-has-photo' : '' %>">
   <div class="page-hero-copy">
     <p class="eyebrow"><%= page.eyebrow %></p>
     <h1><%= page.hero %></h1>
