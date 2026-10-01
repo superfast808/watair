@@ -1,0 +1,33 @@
+name: Bootstrap WatAir source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '_bootstrap/watair-part-*'
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct source tree
+        run: |
+          set -euo pipefail
+          cat _bootstrap/watair-part-* | base64 -d | tar -xzf - -C .
+          rm -rf _bootstrap
+          rm -f .github/workflows/bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "Add initial WatAir rebuild"
+          git push origin HEAD:main
