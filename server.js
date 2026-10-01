@@ -323,6 +323,108 @@ app.get('/sitemap.xml', (req,res) => {
 });
 
 // Admin
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+function safeUploadName(originalName) {
+  const ext = path.extname(originalName || '').toLowerCase();
+  const base = path.basename(originalName || 'image', ext)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'image';
+  return `${Date.now()}-${base}${ext}`;
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadDir,
+    filename: (req,file,cb) => cb(null, safeUploadName(file.originalname))
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req,file,cb) => {
+    const allowed = ['image/jpeg','image/png','image/webp'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Please upload a JPG, PNG or WebP image.'));
+    cb(null, true);
+  }
+});
+
+function uploadedMediaAssets() {
+  const typeByExt = { '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png', '.webp':'image/webp' };
+  try {
+    return fs.readdirSync(uploadDir, { withFileTypes: true })
+      .filter(entry => entry.isFile())
+      .map(entry => {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (!typeByExt[ext]) return null;
+        const filePath = path.join(uploadDir, entry.name);
+        const stat = fs.statSync(filePath);
+        return {
+          source: 'upload',
+          name: entry.name,
+          public_url: '/uploads/' + entry.name,
+          content_type: typeByExt[ext],
+          bytes: stat.size,
+          updated_at: stat.mtime.toISOString()
+        };
+      })
+      .filter(Boolean)
+      .sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+  } catch {
+    return [];
+  }
+}
+
+function allAdminImages() {
+  const imported = getMediaSummary().assets
+    .filter(asset => String(asset.content_type || '').startsWith('image/'))
+    .map(asset => ({
+      source: 'imported',
+      name: path.basename(asset.local_path),
+      public_url: asset.public_url,
+      content_type: asset.content_type,
+      bytes: asset.bytes,
+      updated_at: null
+    }));
+  return [...uploadedMediaAssets(), ...imported];
+}
+
+function specsFromBody(body) {
+  const names = Array.isArray(body.spec_name) ? body.spec_name : body.spec_name != null ? [body.spec_name] : [];
+  const values = Array.isArray(body.spec_value) ? body.spec_value : body.spec_value != null ? [body.spec_value] : [];
+  const specs = {};
+  names.forEach((name,index) => {
+    const key = String(name || '').trim();
+    const value = String(values[index] || '').trim();
+    if (key && value) specs[key.slice(0,120)] = value.slice(0,500);
+  });
+  return specs;
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'product';
+}
+
+function uniqueProductSlug(name) {
+  const base = slugify(name);
+  let slug = base;
+  let i = 2;
+  while (db.prepare('SELECT 1 FROM products WHERE slug=?').get(slug)) slug = `${base}-${i++}`;
+  return slug;
+}
+
+function cleanPageBody(value) {
+  return sanitizeHtml(String(value || ''), {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1','h2','h3','section','div','span']),
+    allowedAttributes: { '*': ['class'], 'a': ['href','target','rel'] }
+  });
+}
+
 app.get('/admin/login', (req,res) => {
   if (readAdmin(req)) return res.redirect('/admin');
   res.render('admin/login', { error: null, meta: { title: 'WatAir CMS Login' } });
@@ -342,26 +444,40 @@ app.post('/admin/logout', requireAdmin, requireCsrf, (req,res) => {
   res.redirect('/admin/login');
 });
 
-app.use('/admin', requireAdmin, (req,res,next) => { res.locals.csrf = csrfFor(req); next(); });
+app.use('/admin', requireAdmin, (req,res,next) => {
+  res.locals.csrf = csrfFor(req);
+  next();
+});
+
 app.get('/admin', (req,res) => {
   const mediaSummary = getMediaSummary();
+  const uploads = uploadedMediaAssets();
   const stats = {
     pages: db.prepare('SELECT COUNT(*) c FROM pages').get().c,
     products: db.prepare('SELECT COUNT(*) c FROM products').get().c,
     enquiries: db.prepare("SELECT COUNT(*) c FROM enquiries WHERE status='new'").get().c,
-    media: mediaSummary.count
+    media: mediaSummary.count + uploads.length
   };
-  const enquiries = db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC LIMIT 8').all();
-  res.render('admin/dashboard', { stats, enquiries, mediaSummary, importState: getMediaImportState(), meta: { title: 'WatAir CMS' } });
+  const enquiries = db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC LIMIT 6').all();
+  const recentProducts = products('1=1').slice(0, 6);
+  res.render('admin/dashboard', {
+    stats, enquiries, recentProducts, mediaSummary, uploads, importState: getMediaImportState(),
+    meta: { title: 'WatAir CMS' }
+  });
 });
 
 app.get('/admin/media', (req,res) => {
   res.render('admin/media', {
     summary: getMediaSummary(),
+    uploads: uploadedMediaAssets(),
     importState: getMediaImportState(),
     reqQuery: req.query,
-    meta: { title: 'Media Import | WatAir CMS' }
+    meta: { title: 'Media Library | WatAir CMS' }
   });
+});
+
+app.get('/admin/media/assets.json', (req,res) => {
+  res.json({ assets: allAdminImages() });
 });
 
 app.get('/admin/media/status', (req,res) => {
@@ -376,7 +492,6 @@ app.post('/admin/media/import', requireCsrf, async (req,res) => {
 app.post('/admin/media/relink', requireCsrf, (req,res) => {
   const manifest = loadManifest();
   let changed = 0;
-
   const rows = db.prepare("SELECT id,image_url FROM products WHERE image_url LIKE 'http%'").all();
   const updateProduct = db.prepare('UPDATE products SET image_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?');
   const tx = db.transaction(() => {
@@ -387,7 +502,6 @@ app.post('/admin/media/relink', requireCsrf, (req,res) => {
         changed++;
       }
     });
-
     const hero = db.prepare("SELECT value FROM settings WHERE key='hero_image'").get();
     if (hero?.value?.startsWith('http')) {
       const localHero = localAssetForLegacyUrl(hero.value, manifest);
@@ -398,64 +512,149 @@ app.post('/admin/media/relink', requireCsrf, (req,res) => {
     }
   });
   tx();
-
   res.redirect('/admin/media?relinked=' + changed);
 });
-app.get('/admin/pages', (req,res) => res.render('admin/pages', { pages: db.prepare('SELECT * FROM pages ORDER BY title').all(), meta: { title: 'Pages | WatAir CMS' } }));
+
+app.post('/admin/upload', requireCsrf, upload.single('image'), (req,res) => {
+  if (!req.file) return res.status(400).json({ error: 'No valid image supplied.' });
+  res.json({
+    url: '/uploads/' + req.file.filename,
+    name: req.file.filename,
+    bytes: req.file.size,
+    content_type: req.file.mimetype
+  });
+});
+
+app.post('/admin/media/delete', requireCsrf, (req,res) => {
+  const requested = path.basename(String(req.body.filename || ''));
+  if (!requested || requested !== String(req.body.filename || '')) return res.status(400).send('Invalid file name');
+  const target = path.join(uploadDir, requested);
+  if (!target.startsWith(uploadDir + path.sep)) return res.status(400).send('Invalid file');
+  if (fs.existsSync(target)) fs.unlinkSync(target);
+  res.redirect('/admin/media?deleted=1');
+});
+
+app.get('/admin/pages', (req,res) => {
+  res.render('admin/pages', {
+    pages: db.prepare('SELECT * FROM pages ORDER BY title').all(),
+    meta: { title: 'Website Pages | WatAir CMS' }
+  });
+});
 app.get('/admin/pages/:id', (req,res) => {
   const page = db.prepare('SELECT * FROM pages WHERE id=?').get(req.params.id);
   if (!page) return res.status(404).send('Page not found');
   res.render('admin/page-edit', { page, meta: { title: `Edit ${page.title} | WatAir CMS` } });
 });
 app.post('/admin/pages/:id', requireCsrf, (req,res) => {
-  const body = sanitizeHtml(String(req.body.body_html || ''), {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1','h2','h3','section','div','span']),
-    allowedAttributes: { '*': ['class'], 'a': ['href','target','rel'] }
-  });
-  db.prepare(`UPDATE pages SET title=?,eyebrow=?,hero=?,intro=?,body_html=?,seo_title=?,seo_description=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .run(req.body.title, req.body.eyebrow, req.body.hero, req.body.intro, body, req.body.seo_title, req.body.seo_description, req.body.published ? 1 : 0, req.params.id);
+  const body = cleanPageBody(req.body.body_html);
+  db.prepare(`UPDATE pages SET title=?,eyebrow=?,hero=?,intro=?,body_html=?,hero_image=?,hero_style=?,seo_title=?,seo_description=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .run(
+      String(req.body.title || '').slice(0,180),
+      String(req.body.eyebrow || '').slice(0,120),
+      String(req.body.hero || '').slice(0,300),
+      String(req.body.intro || '').slice(0,1200),
+      body,
+      String(req.body.hero_image || '').slice(0,1200),
+      ['photo','graphic',''].includes(req.body.hero_style) ? req.body.hero_style : '',
+      String(req.body.seo_title || '').slice(0,250),
+      String(req.body.seo_description || '').slice(0,500),
+      req.body.published ? 1 : 0,
+      req.params.id
+    );
   res.redirect(`/admin/pages/${req.params.id}?saved=1`);
 });
-app.get('/admin/products', (req,res) => res.render('admin/products', { products: products('1=1'), meta: { title: 'Products | WatAir CMS' } }));
+
+app.get('/admin/products', (req,res) => {
+  res.render('admin/products', { products: products('1=1'), meta: { title: 'Products | WatAir CMS' } });
+});
+
+app.get('/admin/products/new', (req,res) => {
+  res.render('admin/product-edit', {
+    isNew: true,
+    product: {
+      id: null, slug: '', name: '', subtitle: '', category: 'home-office',
+      capacity_lpd: 0, summary: '', specs: {}, image_url: '',
+      featured: 0, published: 0, sort_order: 999
+    },
+    meta: { title: 'Add Product | WatAir CMS' }
+  });
+});
+
+app.post('/admin/products/new', requireCsrf, (req,res) => {
+  const name = String(req.body.name || '').trim();
+  if (!name) return res.status(400).send('Product name is required');
+  const slug = uniqueProductSlug(name);
+  const specs = specsFromBody(req.body);
+  const result = db.prepare(`INSERT INTO products
+    (slug,name,subtitle,category,capacity_lpd,summary,specs_json,image_url,featured,published,sort_order,updated_at)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`)
+    .run(
+      slug,
+      name.slice(0,180),
+      String(req.body.subtitle || '').slice(0,180),
+      req.body.category === 'commercial-industrial' ? 'commercial-industrial' : 'home-office',
+      Number(req.body.capacity_lpd || 0),
+      String(req.body.summary || '').slice(0,2500),
+      JSON.stringify(specs),
+      String(req.body.image_url || '').slice(0,1200),
+      req.body.featured ? 1 : 0,
+      req.body.published ? 1 : 0,
+      Number(req.body.sort_order || 999)
+    );
+  res.redirect(`/admin/products/${result.lastInsertRowid}?created=1`);
+});
+
 app.get('/admin/products/:id', (req,res) => {
   const product = parseProduct(db.prepare('SELECT * FROM products WHERE id=?').get(req.params.id));
   if (!product) return res.status(404).send('Product not found');
-  res.render('admin/product-edit', { product, meta: { title: `Edit ${product.name} | WatAir CMS` } });
+  res.render('admin/product-edit', {
+    isNew: false,
+    product,
+    meta: { title: `Edit ${product.name} | WatAir CMS` }
+  });
 });
+
 app.post('/admin/products/:id', requireCsrf, (req,res) => {
-  let specs = {};
-  try { specs = JSON.parse(req.body.specs_json || '{}'); } catch { return res.status(400).send('Specifications must be valid JSON'); }
-  db.prepare(`UPDATE products SET name=?,subtitle=?,category=?,capacity_lpd=?,summary=?,specs_json=?,image_url=?,featured=?,published=?,sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .run(req.body.name, req.body.subtitle, req.body.category, Number(req.body.capacity_lpd || 0), req.body.summary, JSON.stringify(specs), req.body.image_url || '', req.body.featured ? 1 : 0, req.body.published ? 1 : 0, Number(req.body.sort_order || 0), req.params.id);
+  const specs = specsFromBody(req.body);
+  db.prepare(`UPDATE products
+    SET name=?,subtitle=?,category=?,capacity_lpd=?,summary=?,specs_json=?,image_url=?,featured=?,published=?,sort_order=?,updated_at=CURRENT_TIMESTAMP
+    WHERE id=?`)
+    .run(
+      String(req.body.name || '').slice(0,180),
+      String(req.body.subtitle || '').slice(0,180),
+      req.body.category === 'commercial-industrial' ? 'commercial-industrial' : 'home-office',
+      Number(req.body.capacity_lpd || 0),
+      String(req.body.summary || '').slice(0,2500),
+      JSON.stringify(specs),
+      String(req.body.image_url || '').slice(0,1200),
+      req.body.featured ? 1 : 0,
+      req.body.published ? 1 : 0,
+      Number(req.body.sort_order || 0),
+      req.params.id
+    );
   res.redirect(`/admin/products/${req.params.id}?saved=1`);
 });
-app.get('/admin/settings', (req,res) => res.render('admin/settings', { values: settingsObject(), meta: { title: 'Settings | WatAir CMS' } }));
+
+app.get('/admin/settings', (req,res) => {
+  res.render('admin/settings', { values: settingsObject(), meta: { title: 'Site Settings | WatAir CMS' } });
+});
 app.post('/admin/settings', requireCsrf, (req,res) => {
-  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','footer_text','company_location'];
+  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','footer_text','company_location'];
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
   const tx = db.transaction(() => allowed.forEach(k => upsert.run(k, String(req.body[k] || '').slice(0,2000))));
   tx();
   res.redirect('/admin/settings?saved=1');
 });
-app.get('/admin/enquiries', (req,res) => res.render('admin/enquiries', { enquiries: db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC').all(), meta: { title: 'Enquiries | WatAir CMS' } }));
+
+app.get('/admin/enquiries', (req,res) => {
+  res.render('admin/enquiries', {
+    enquiries: db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC').all(),
+    meta: { title: 'Enquiries | WatAir CMS' }
+  });
+});
 app.post('/admin/enquiries/:id/read', requireCsrf, (req,res) => {
   db.prepare("UPDATE enquiries SET status='read' WHERE id=?").run(req.params.id);
   res.redirect('/admin/enquiries');
-});
-
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: uploadDir,
-    filename: (req,file,cb) => cb(null, `${Date.now()}-${Math.random().toString(36).slice(2,8)}${path.extname(file.originalname).toLowerCase()}`)
-  }),
-  limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: (req,file,cb) => cb(null, ['image/jpeg','image/png','image/webp','image/svg+xml'].includes(file.mimetype))
-});
-app.post('/admin/upload', requireCsrf, upload.single('image'), (req,res) => {
-  if (!req.file) return res.status(400).send('No valid image supplied');
-  res.json({ url: '/uploads/' + req.file.filename });
 });
 
 app.use((req,res) => res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', description: 'The requested page could not be found.', noindex: true } }));
