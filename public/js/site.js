@@ -85,8 +85,8 @@ if (!reduceMotion && 'IntersectionObserver' in window) {
   document.documentElement.classList.add('motion-ready');
 
   const revealTargets = [
-    ...document.querySelectorAll('main > section:not(.hero):not(.product-hero):not(.page-hero)'),
-    ...document.querySelectorAll('.product-card, .process-grid > div, .application-grid article, .metric-band > div, .faq-group, .resource-card, .page-side-card')
+    ...document.querySelectorAll('main > section:not(.hero):not(.product-hero):not(.page-hero):not(.product-catalogue)'),
+    ...document.querySelectorAll('.process-grid > div, .application-grid article, .metric-band > div, .faq-group, .resource-card, .page-side-card')
   ];
 
   const uniqueTargets = [...new Set(revealTargets)];
