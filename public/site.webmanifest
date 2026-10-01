@@ -1,0 +1,18 @@
+{
+  "name": "WatAir UK",
+  "short_name": "WatAir",
+  "description": "Atmospheric Water Generation systems for homes, workplaces and industrial applications.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#062632",
+  "theme_color": "#062632",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
