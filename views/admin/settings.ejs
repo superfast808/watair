@@ -1,1 +1,75 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Configuration</p><h1>Website settings</h1></div></header><form class="admin-form" method="post"><input type="hidden" name="_csrf" value="<%= csrf %>"><section class="admin-card form-grid"><label>Site name<input name="site_name" value="<%= values.site_name %>"></label><label>Company location<input name="company_location" value="<%= values.company_location %>"></label><label>Email<input type="email" name="email" value="<%= values.email %>"></label><label>Phone<input name="phone" value="<%= values.phone %>"></label><label class="full">Homepage hero heading<input name="hero_title" value="<%= values.hero_title %>"></label><label class="full">Homepage hero text<textarea name="hero_text" rows="4"><%= values.hero_text %></textarea></label><label class="full">Homepage hero image URL<input name="hero_image" value="<%= values.hero_image %>"></label><label class="full">Footer text<input name="footer_text" value="<%= values.footer_text %>"></label></section><button class="admin-button">Save settings</button></form><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+
+<form class="admin-form admin-editor" method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <header class="admin-page-head">
+    <div>
+      <p>Configuration</p>
+      <h1>Site settings</h1>
+      <span class="page-help">The global contact details, homepage hero and website identity.</span>
+    </div>
+    <button class="admin-button" type="submit">Save settings</button>
+  </header>
+
+  <div class="editor-layout">
+    <div class="editor-main">
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">1</span>
+          <div><h2>Business details</h2><p>Used throughout the header, footer, contact page and search schema.</p></div>
+        </div>
+        <div class="form-grid">
+          <label>Website name<input name="site_name" value="<%= values.site_name %>"></label>
+          <label>Company location<input name="company_location" value="<%= values.company_location %>"></label>
+          <label>Email address<input type="email" name="email" value="<%= values.email %>"></label>
+          <label>Telephone<input name="phone" value="<%= values.phone %>"></label>
+          <label class="full">Footer description<input name="footer_text" value="<%= values.footer_text %>"></label>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">2</span>
+          <div><h2>Homepage hero</h2><p>The large opening message on the homepage.</p></div>
+        </div>
+        <div class="form-grid">
+          <label class="full field-large">Main heading<input name="hero_title" value="<%= values.hero_title %>"></label>
+          <label class="full">Intro text<textarea name="hero_text" rows="4"><%= values.hero_text %></textarea></label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="editor-side">
+      <section class="admin-card editor-section">
+        <div class="section-heading compact"><div><h2>Homepage hero image</h2><p>Upload a new image or choose an existing WatAir asset.</p></div></div>
+        <div class="media-field <%= values.hero_image ? 'has-image' : '' %>" data-media-field>
+          <div class="media-preview">
+            <img src="<%= values.hero_image || '' %>" alt="" data-media-preview <%= values.hero_image ? '' : 'hidden' %>>
+            <div class="media-empty" data-media-empty <%= values.hero_image ? 'hidden' : '' %>><strong>No image selected</strong><span>Choose from the library</span></div>
+          </div>
+          <input type="hidden" name="hero_image" value="<%= values.hero_image || '' %>" data-media-url>
+          <div class="media-field-actions">
+            <label class="secondary-button upload-label">Upload
+              <input type="file" accept="image/jpeg,image/png,image/webp" data-media-direct-upload hidden>
+            </label>
+            <button class="secondary-button" type="button" data-media-choose>Choose library</button>
+          </div>
+        </div>
+        <label class="field-stack">Image treatment
+          <select name="hero_image_style">
+            <option value="" <%= !values.hero_image_style ? 'selected' : '' %>>Product / graphic</option>
+            <option value="photo" <%= values.hero_image_style==='photo' ? 'selected' : '' %>>Full photograph</option>
+          </select>
+        </label>
+      </section>
+
+      <div class="sticky-save">
+        <button class="admin-button wide-button" type="submit">Save settings</button>
+        <span>These details are used across the whole website.</span>
+      </div>
+    </aside>
+  </div>
+</form>
+
+<%- include('../partials/admin-foot') %>
