@@ -1,16 +1,37 @@
 <%- include('partials/head') %><%- include('partials/header') %>
 <main>
-<section class="page-hero product-list-hero"><p class="eyebrow">Atmospheric Water Generators</p><h1><%= category === 'home-office' ? 'Home & Office' : category === 'commercial-industrial' ? 'Commercial & Industrial' : 'Water generation at every scale' %></h1><p>From compact units to industrial systems producing up to 10,000 litres per day.</p></section>
-<section class="section-pad">
-  <div class="filter-row"><a class="<%= category==='all'?'selected':'' %>" href="/products">All</a><a class="<%= category==='home-office'?'selected':'' %>" href="/products/home-office">Home & Office</a><a class="<%= category==='commercial-industrial'?'selected':'' %>" href="/products/commercial-industrial">Commercial & Industrial</a></div>
-  <div class="product-grid">
+<section class="page-hero product-list-hero">
+  <p class="eyebrow">Atmospheric Water Generators</p>
+  <h1><%= category === 'home-office' ? 'Home & Office' : category === 'commercial-industrial' ? 'Commercial & Industrial' : 'Water generation at every scale' %></h1>
+  <p><%= category === 'home-office' ? 'Compact systems for homes, offices and smaller workplaces.' : category === 'commercial-industrial' ? 'Higher-output systems for facilities, remote sites and industrial demand.' : 'From compact hot-and-cold dispensers to industrial systems rated at up to 10,000 litres per day.' %></p>
+</section>
+<section class="section-tight product-catalogue">
+  <div class="filter-row">
+    <a class="<%= category==='all'?'selected':'' %>" href="/products">All systems</a>
+    <a class="<%= category==='home-office'?'selected':'' %>" href="/products/home-office">Home & Office</a>
+    <a class="<%= category==='commercial-industrial'?'selected':'' %>" href="/products/commercial-industrial">Commercial & Industrial</a>
+  </div>
+  <div class="product-grid catalogue-grid">
     <% products.forEach(product => { %>
-    <a class="product-card" href="/products/<%= product.slug %>">
-      <div class="product-art"><span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span><div class="drop-shape"></div></div>
-      <div class="product-card-copy"><span><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span><h2><%= product.name %></h2><% if(product.subtitle){ %><p class="subtitle"><%= product.subtitle %></p><% } %><p><%= product.summary %></p><strong>View specifications ↗</strong></div>
+    <a class="product-card image-card" href="/products/<%= product.slug %>">
+      <div class="product-art">
+        <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy"><% } %>
+        <span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
+      </div>
+      <div class="product-card-copy">
+        <span><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span>
+        <h2><%= product.name %></h2>
+        <% if(product.subtitle){ %><p class="subtitle"><%= product.subtitle %></p><% } %>
+        <p><%= product.summary %></p>
+        <div class="card-foot"><strong>View specifications</strong><b>↗</b></div>
+      </div>
     </a>
     <% }) %>
   </div>
+</section>
+<section class="cta-panel cta-dark">
+  <div><p class="eyebrow">Need help choosing?</p><h2>Start with litres per day and site conditions.</h2><p>Tell us the approximate demand, location and intended use and we can narrow the range quickly.</p></div>
+  <a class="button button-aqua" href="/contact">Discuss your requirement</a>
 </section>
 </main>
 <%- include('partials/footer') %>
