@@ -69,7 +69,7 @@ function getPage(slug) {
   return db.prepare('SELECT * FROM pages WHERE slug=? AND published=1').get(slug);
 }
 function renderPage(res, page, extra = {}) {
-  if (!page) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK' } });
+  if (!page) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
   return res.render('page', {
     page,
     meta: { title: page.seo_title || `${page.title} | WatAir UK`, description: page.seo_description || page.intro },
@@ -172,7 +172,7 @@ app.get('/products/:slug/datasheet.pdf', (req, res) => {
 
 app.get('/products/:slug', (req, res) => {
   const product = parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(req.params.slug));
-  if (!product) return res.status(404).render('404', { meta: { title: 'Product not found | WatAir UK' } });
+  if (!product) return res.status(404).render('404', { meta: { title: 'Product not found | WatAir UK', noindex: true } });
 
   const family = products('published=1 AND category=?', [product.category]);
   const currentIndex = family.findIndex(p => p.id === product.id);
@@ -252,14 +252,61 @@ app.get('/how-it-works/faqs', (req,res) => res.redirect(301, '/faqs'));
 app.get('/about-us', (req,res) => res.redirect(301, '/about'));
 app.get('/become-a-reseller', (req,res) => res.redirect(301, '/resellers'));
 
+app.get('/favicon.ico', (req,res) => res.redirect(302, '/favicon.svg'));
+
 app.get('/robots.txt', (req,res) => {
-  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: ${baseUrl}/sitemap.xml\n`);
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nSitemap: ${baseUrl}/sitemap.xml\n`);
 });
+
+function xmlEscape(value) {
+  return String(value).replace(/[<>&'"]/g, ch => ({
+    '<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'
+  })[ch]);
+}
+
+function sitemapDate(value) {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0,10) : null;
+}
+
 app.get('/sitemap.xml', (req,res) => {
-  const urls = ['/', '/products', '/products/home-office', '/products/commercial-industrial', '/how-it-works', '/faqs', '/about', '/environment/plastic-bottles', '/environment/mains-water', '/resellers', '/leasing', '/contact'];
-  products().forEach(p => urls.push('/products/' + p.slug));
-  const body = urls.map(u => `<url><loc>${baseUrl}${u}</loc></url>`).join('');
-  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${body}</urlset>`);
+  const pageRows = db.prepare('SELECT slug,updated_at FROM pages WHERE published=1').all();
+  const pageUpdated = Object.fromEntries(pageRows.map(row => [row.slug, sitemapDate(row.updated_at)]));
+  const productRows = products();
+  const latestDate = [
+    ...pageRows.map(row => row.updated_at),
+    ...productRows.map(row => row.updated_at)
+  ].filter(Boolean).sort().at(-1);
+  const siteLastmod = sitemapDate(latestDate);
+
+  const entries = [
+    { path: '/', lastmod: siteLastmod },
+    { path: '/products', lastmod: siteLastmod },
+    { path: '/products/home-office', lastmod: siteLastmod },
+    { path: '/products/commercial-industrial', lastmod: siteLastmod },
+    { path: '/how-it-works', lastmod: pageUpdated['how-it-works'] },
+    { path: '/faqs', lastmod: siteLastmod },
+    { path: '/about', lastmod: pageUpdated.about },
+    { path: '/environment/plastic-bottles', lastmod: pageUpdated['plastic-bottles'] },
+    { path: '/environment/mains-water', lastmod: pageUpdated['mains-water'] },
+    { path: '/resellers', lastmod: pageUpdated.resellers },
+    { path: '/leasing', lastmod: pageUpdated.leasing },
+    { path: '/contact', lastmod: siteLastmod },
+    ...productRows.map(product => ({
+      path: '/products/' + product.slug,
+      lastmod: sitemapDate(product.updated_at)
+    }))
+  ];
+
+  const body = entries.map(entry => {
+    const loc = xmlEscape(baseUrl + entry.path);
+    const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>` : '';
+    return `  <url><loc>${loc}</loc>${lastmod}</url>`;
+  }).join('\n');
+
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`
+  );
 });
 
 // Admin
@@ -398,7 +445,7 @@ app.post('/admin/upload', requireCsrf, upload.single('image'), (req,res) => {
   res.json({ url: '/uploads/' + req.file.filename });
 });
 
-app.use((req,res) => res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK' } }));
+app.use((req,res) => res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', description: 'The requested page could not be found.', noindex: true } }));
 app.use((err,req,res,next) => {
   console.error(err);
   res.status(500).send(isProd ? 'Something went wrong.' : `<pre>${String(err.stack || err)}</pre>`);
