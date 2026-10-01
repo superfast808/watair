@@ -4,5 +4,7 @@ data/*.db
 data/*.db-*
 public/uploads/*
 !public/uploads/.gitkeep
+!public/uploads/imported/
+!public/uploads/imported/**
 npm-debug.log*
 .DS_Store
