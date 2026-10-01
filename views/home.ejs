@@ -1,0 +1,64 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Atmospheric Water Generation</p>
+      <h1><%= settings.hero_title %></h1>
+      <p class="hero-text"><%= settings.hero_text %></p>
+      <div class="hero-actions">
+        <a class="button" href="/products">Explore systems</a>
+        <a class="text-link" href="/how-it-works">See how it works <span>↗</span></a>
+      </div>
+      <div class="hero-points"><span>No mains water feed</span><span>15–10,000 L/day range</span><span>Home to industrial scale</span></div>
+    </div>
+    <div class="hero-visual" style="--hero:url('<%= settings.hero_image %>')">
+      <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+      <div class="water-chip"><strong>Water from air</strong><span>Generated at the point of use</span></div>
+    </div>
+  </section>
+
+  <section class="statement section-pad">
+    <p class="eyebrow">A different source</p>
+    <h2>Fresh water does not always need to arrive by pipe, tanker or bottle.</h2>
+    <p>WatAir systems extract moisture already present in the atmosphere and turn it into a local water supply. From a compact dispenser to industrial-scale production, the same principle scales with the requirement.</p>
+  </section>
+
+  <section class="dark-section section-pad">
+    <div class="split-heading"><div><p class="eyebrow">The WatAir approach</p><h2>Air in. Fresh water out.</h2></div><a class="button button-light" href="/how-it-works">Explore the technology</a></div>
+    <div class="process-grid home-process">
+      <div><span>01</span><h3>Draw in air</h3><p>Ambient air enters the system through filtration.</p></div>
+      <div><span>02</span><h3>Condense moisture</h3><p>Cooling creates the conditions for water to form.</p></div>
+      <div><span>03</span><h3>Treat the water</h3><p>Filtration and sterilisation prepare it for use.</p></div>
+      <div><span>04</span><h3>Use it locally</h3><p>Water is stored and dispensed where it was generated.</p></div>
+    </div>
+  </section>
+
+  <section class="section-pad products-feature">
+    <div class="split-heading"><div><p class="eyebrow">Solutions at every scale</p><h2>Choose the output that fits.</h2></div><a class="text-link" href="/products">View all <%= allProducts.length %> systems →</a></div>
+    <div class="product-grid featured-grid">
+      <% featured.forEach(product => { %>
+        <a class="product-card" href="/products/<%= product.slug %>">
+          <div class="product-art"><span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span><div class="drop-shape"></div></div>
+          <div class="product-card-copy"><span><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></span><h3><%= product.name %></h3><p><%= product.summary %></p><strong>Explore system ↗</strong></div>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="applications section-pad">
+    <div class="split-heading"><div><p class="eyebrow">Real-world applications</p><h2>Built around the environment, not the other way round.</h2></div></div>
+    <div class="application-grid">
+      <article><span>01</span><h3>Homes & workplaces</h3><p>Compact water generation close to the people using it.</p></article>
+      <article><span>02</span><h3>Hospitality & facilities</h3><p>Reduce bottled-water handling and create water on site.</p></article>
+      <article><span>03</span><h3>Remote operations</h3><p>Add an independent source where conventional supply is difficult.</p></article>
+      <article><span>04</span><h3>Industrial scale</h3><p>Systems reaching up to 10,000 litres per day for larger demands.</p></article>
+    </div>
+  </section>
+
+  <section class="cta-panel">
+    <div><p class="eyebrow">Find the right system</p><h2>Tell us how much water you need.</h2><p>We’ll help match daily demand, site conditions, storage and power to the most appropriate WatAir system.</p></div>
+    <a class="button" href="/contact">Start a conversation</a>
+  </section>
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,14 @@
+<header class="site-header" data-header>
+  <a class="brand" href="/" aria-label="WatAir UK home">
+    <span class="brand-drop" aria-hidden="true"></span>
+    <span>Wat<span>Air</span></span>
+  </a>
+  <button class="menu-toggle" data-menu-toggle aria-expanded="false" aria-controls="site-nav">Menu</button>
+  <nav id="site-nav" class="site-nav" data-nav>
+    <a href="/how-it-works" class="<%= path === '/how-it-works' ? 'active' : '' %>">Technology</a>
+    <a href="/products" class="<%= path.startsWith('/products') ? 'active' : '' %>">Products</a>
+    <a href="/about" class="<%= path === '/about' ? 'active' : '' %>">About</a>
+    <a href="/faqs" class="<%= path === '/faqs' ? 'active' : '' %>">FAQs</a>
+    <a href="/contact" class="button button-small">Talk to us</a>
+  </nav>
+</header>

@@ -1,0 +1,4 @@
+<%- include('partials/head') %><%- include('partials/header') %>
+<main><section class="page-hero"><p class="eyebrow">Knowledge base</p><h1>Atmospheric Water Generator FAQs</h1><p>Practical answers about how water-from-air systems work, what they need and how to size one.</p></section>
+<section class="section-pad faq-list"><% faqs.forEach((faq,i)=>{ %><details <%= i===0?'open':'' %>><summary><span><%= String(i+1).padStart(2,'0') %></span><%= faq[0] %></summary><p><%= faq[1] %></p></details><% }) %></section></main>
+<%- include('partials/footer') %>

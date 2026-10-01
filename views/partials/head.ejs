@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= meta?.title || settings.site_name %></title>
+  <meta name="description" content="<%= meta?.description || settings.hero_text %>">
+  <meta name="theme-color" content="#072f3c">
+  <link rel="canonical" href="<%= baseUrl + path %>">
+  <meta property="og:title" content="<%= meta?.title || settings.site_name %>">
+  <meta property="og:description" content="<%= meta?.description || settings.hero_text %>">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="<%= baseUrl + path %>">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
