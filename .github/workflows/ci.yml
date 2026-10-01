@@ -53,3 +53,22 @@ jobs:
           grep -q '<lastmod>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q '<svg' /tmp/favicon.svg
+
+          TOKEN=$(node -e "const jwt=require('jsonwebtoken'); process.stdout.write(jwt.sign({sub:1,email:'ci@example.com',role:'admin'}, process.env.SESSION_SECRET,{expiresIn:'1h'}))")
+          AUTH="Cookie: watair_admin=$TOKEN"
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin > /tmp/admin-dashboard.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/new > /tmp/admin-product-new.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/1 > /tmp/admin-product-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/pages/1 > /tmp/admin-page-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
+
+          grep -q 'Welcome back' /tmp/admin-dashboard.html
+          grep -q 'Add product' /tmp/admin-product-new.html
+          grep -q 'Technical specifications' /tmp/admin-product-edit.html
+          grep -q 'Page content' /tmp/admin-page-edit.html
+          grep -q 'Upload an image' /tmp/admin-media.html
+          grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q '"assets"' /tmp/admin-assets.json
