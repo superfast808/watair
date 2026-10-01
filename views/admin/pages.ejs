@@ -1,1 +1,32 @@
-<%- include('../partials/admin-head') %><header class="admin-page-head"><div><p>Content</p><h1>Pages</h1></div></header><section class="admin-card"><table><thead><tr><th>Page</th><th>URL</th><th>Status</th><th></th></tr></thead><tbody><% pages.forEach(p=>{ %><tr><td><strong><%= p.title %></strong></td><td>/<%= p.slug %></td><td><span class="pill"><%= p.published?'Published':'Draft' %></span></td><td><a class="edit-link" href="/admin/pages/<%= p.id %>">Edit →</a></td></tr><% }) %></tbody></table></section><%- include('../partials/admin-foot') %>
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Content</p>
+    <h1>Website pages</h1>
+    <span class="page-help">Edit the main information pages without touching HTML or templates.</span>
+  </div>
+</header>
+
+<section class="admin-card admin-list-card">
+  <div class="list-toolbar">
+    <div><strong><%= pages.length %> editable pages</strong><span>Headings, content, hero images and SEO</span></div>
+    <input class="list-search" type="search" placeholder="Search pages…" data-table-search>
+  </div>
+
+  <div class="page-admin-list" data-search-list>
+    <% pages.forEach(p => { %>
+      <a class="page-admin-row" href="/admin/pages/<%= p.id %>" data-search-item="<%= (p.title + ' ' + p.slug).toLowerCase() %>">
+        <div class="page-admin-icon"><span><%= p.title.slice(0,1).toUpperCase() %></span></div>
+        <div class="page-admin-name">
+          <strong><%= p.title %></strong>
+          <small>/<%= p.slug %></small>
+        </div>
+        <span class="pill <%= p.published ? '' : 'pill-draft' %>"><%= p.published ? 'Published' : 'Draft' %></span>
+        <span class="edit-button">Edit</span>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('../partials/admin-foot') %>
