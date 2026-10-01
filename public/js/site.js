@@ -2,9 +2,27 @@ const toggle = document.querySelector('[data-menu-toggle]');
 const nav = document.querySelector('[data-nav]');
 
 if (toggle && nav) {
-  toggle.addEventListener('click', () => {
-    const open = nav.classList.toggle('open');
+  const setMenuState = open => {
+    nav.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    document.documentElement.classList.toggle('nav-open', open);
+    document.body.classList.toggle('nav-open', open);
+    if (!open) closeGroups();
+  };
+
+  toggle.addEventListener('click', () => {
+    setMenuState(!nav.classList.contains('open'));
+  });
+
+  nav.addEventListener('click', event => {
+    if (window.innerWidth > 900) return;
+    const link = event.target.closest('a');
+    if (link) setMenuState(false);
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900 && nav.classList.contains('open')) setMenuState(false);
   });
 }
 
@@ -47,6 +65,9 @@ document.addEventListener('keydown', event => {
     closeGroups();
     nav?.classList.remove('open');
     toggle?.setAttribute('aria-expanded', 'false');
+    toggle?.setAttribute('aria-label', 'Open navigation');
+    document.documentElement.classList.remove('nav-open');
+    document.body.classList.remove('nav-open');
   }
 });
 
