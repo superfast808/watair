@@ -1657,3 +1657,106 @@ html.nav-open,body.nav-open{overflow:hidden}
   filter:none;
 }
 .hero-visual.hero-visual-photo .hero-caption{z-index:3}
+
+
+/* Product category landing pages */
+.product-catalogue{
+  scroll-margin-top:110px;
+}
+.catalogue-heading{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:32px;
+  margin-bottom:26px;
+}
+.catalogue-heading h2{
+  margin:0 0 9px;
+  font-size:clamp(36px,4.4vw,58px);
+  line-height:.98;
+  letter-spacing:-.05em;
+}
+.catalogue-heading>div>p:last-child{
+  margin:0;
+  max-width:720px;
+  color:var(--muted);
+  font-size:15px;
+}
+.catalogue-count{
+  min-width:112px;
+  min-height:88px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--mist);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  flex:0 0 auto;
+}
+.catalogue-count strong{
+  font-size:34px;
+  line-height:1;
+  letter-spacing:-.05em;
+}
+.catalogue-count span{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:800;
+}
+.product-catalogue .catalogue-grid{
+  opacity:1!important;
+  transform:none!important;
+}
+.product-catalogue .product-card{
+  opacity:1!important;
+  transform:none;
+}
+.product-catalogue .product-card:hover{
+  transform:translateY(-3px);
+}
+.catalogue-empty{
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--mist);
+  padding:36px;
+}
+.catalogue-empty h3{
+  margin:0 0 8px;
+  font-size:24px;
+  letter-spacing:-.03em;
+}
+.catalogue-empty p{
+  color:var(--muted);
+  max-width:700px;
+}
+.catalogue-empty>div{
+  margin-top:20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+@media(max-width:700px){
+  .catalogue-heading{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:18px;
+  }
+  .catalogue-count{
+    min-width:0;
+    width:100%;
+    min-height:66px;
+    flex-direction:row;
+    gap:8px;
+  }
+  .catalogue-empty{
+    padding:24px 20px;
+  }
+  .catalogue-empty>div{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
