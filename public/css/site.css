@@ -205,3 +205,6 @@
   .nav-group:hover>.nav-dropdown{display:none}
   .nav-group.dropdown-open>.nav-dropdown{display:grid}
 }
+
+/* Desktop nav chevrons */
+@media(min-width:901px){.nav-trigger>span{display:inline-flex;align-items:center;justify-content:center;line-height:1;transform:translateY(-1px);font-size:13px}.nav-group.dropdown-open>.nav-trigger>span{transform:translateY(-1px) rotate(180deg)}}
