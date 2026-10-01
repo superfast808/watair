@@ -1,1 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= meta.title %></title><link rel="stylesheet" href="/css/admin.css"></head><body><aside class="admin-sidebar"><div class="admin-brand">Wat<span>Air</span> CMS</div><nav><a href="/admin">Dashboard</a><a href="/admin/pages">Pages</a><a href="/admin/products">Products</a><a href="/admin/media">Media Import</a><a href="/admin/enquiries">Enquiries</a><a href="/admin/settings">Settings</a><a href="/" target="_blank">View website ↗</a></nav><form method="post" action="/admin/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="logout">Sign out</button></form></aside><main class="admin-main">
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="csrf-token" content="<%= typeof csrf !== 'undefined' ? csrf : '' %>">
+  <title><%= meta.title %></title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-shell">
+  <aside class="admin-sidebar" data-admin-sidebar>
+    <div class="admin-sidebar-top">
+      <a class="admin-brand" href="/admin">
+        <img src="/images/logo-header.svg" alt="WatAir">
+        <span>Website CMS</span>
+      </a>
+      <button class="admin-menu-close" type="button" data-admin-menu-close aria-label="Close admin navigation">×</button>
+    </div>
+
+    <nav class="admin-nav" aria-label="CMS navigation">
+      <span class="admin-nav-label">Manage website</span>
+      <a class="<%= path === '/admin' ? 'active' : '' %>" href="/admin"><span class="nav-dot"></span><span>Overview</span></a>
+      <a class="<%= path.startsWith('/admin/pages') ? 'active' : '' %>" href="/admin/pages"><span class="nav-dot"></span><span>Website pages</span></a>
+      <a class="<%= path.startsWith('/admin/products') ? 'active' : '' %>" href="/admin/products"><span class="nav-dot"></span><span>Products</span></a>
+      <a class="<%= path.startsWith('/admin/media') ? 'active' : '' %>" href="/admin/media"><span class="nav-dot"></span><span>Media library</span></a>
+
+      <span class="admin-nav-label">Customer & settings</span>
+      <a class="<%= path.startsWith('/admin/enquiries') ? 'active' : '' %>" href="/admin/enquiries"><span class="nav-dot"></span><span>Enquiries</span></a>
+      <a class="<%= path.startsWith('/admin/settings') ? 'active' : '' %>" href="/admin/settings"><span class="nav-dot"></span><span>Site settings</span></a>
+    </nav>
+
+    <div class="admin-sidebar-bottom">
+      <a class="view-site-link" href="/" target="_blank" rel="noopener">View website <span>↗</span></a>
+      <form method="post" action="/admin/logout">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="logout" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="admin-workspace">
+    <header class="admin-topbar">
+      <button class="admin-menu-toggle" type="button" data-admin-menu-toggle aria-label="Open admin navigation">
+        <span></span><span></span>
+      </button>
+      <div class="admin-topbar-title">
+        <strong>WatAir CMS</strong>
+        <span>Manage content without touching code</span>
+      </div>
+      <a class="admin-topbar-site" href="/" target="_blank" rel="noopener">Open website ↗</a>
+    </header>
+    <main class="admin-main">
