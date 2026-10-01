@@ -1,5 +1,12 @@
 <%- include('partials/head') %><%- include('partials/header') %>
 <main>
+<%- include('partials/breadcrumbs', { items: [
+  { label: 'Home', href: '/' },
+  { label: 'Atmospheric Water Generators', href: '/products' },
+  { label: product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial', href: product.category === 'home-office' ? '/products/home-office' : '/products/commercial-industrial' },
+  { label: product.name }
+] }) %>
+
 <section class="product-hero product-hero-premium">
   <div class="product-hero-copy">
     <p class="eyebrow"><%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></p>
@@ -7,12 +14,25 @@
     <% if(product.subtitle){ %><p class="product-subtitle"><%= product.subtitle %></p><% } %>
     <p><%= product.summary %></p>
     <div class="product-output"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><span>litres / day rated output</span></div>
-    <div class="hero-actions"><a class="button button-aqua" href="/contact?product=<%= product.slug %>">Enquire about this system</a><a class="text-link text-link-light" href="#specifications">Specifications ↓</a></div>
+    <div class="hero-actions">
+      <a class="button button-aqua" href="/contact?product=<%= product.slug %>">Enquire about this system</a>
+      <a class="resource-link resource-link-light" href="/products/<%= product.slug %>/datasheet.pdf"><span>PDF</span> Download datasheet</a>
+    </div>
   </div>
   <div class="product-machine">
     <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>"><% } else { %><div class="machine-placeholder"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><span>litres / day</span></div><% } %>
     <div class="machine-label"><span>Atmospheric Water Generator</span><strong><%= product.name %></strong></div>
   </div>
+</section>
+
+<section class="product-toolbar">
+  <a class="toolbar-back" href="<%= product.category === 'home-office' ? '/products/home-office' : '/products/commercial-industrial' %>">← Back to <%= product.category === 'home-office' ? 'Home & Office' : 'Commercial & Industrial' %></a>
+  <label>Jump to another model
+    <select data-product-jump>
+      <% family.forEach(p => { %><option value="/products/<%= p.slug %>" <%= p.id===product.id?'selected':'' %>><%= p.name %><%= p.subtitle ? ' – ' + p.subtitle : '' %> · <%= p.capacity_lpd.toLocaleString('en-GB') %> L/day</option><% }) %>
+    </select>
+  </label>
+  <a class="resource-link" href="/products/<%= product.slug %>/datasheet.pdf"><span>PDF</span> Technical datasheet</a>
 </section>
 
 <section class="metric-band">
@@ -26,14 +46,27 @@
     <p class="eyebrow">Technical detail</p>
     <h2>Specifications</h2>
     <p>Rated production depends on ambient temperature and relative humidity. Confirm actual site conditions with WatAir before specifying a system.</p>
-    <a class="text-link" href="/contact?product=<%= product.slug %>">Discuss this model →</a>
+    <div class="resource-stack">
+      <a class="resource-card" href="/products/<%= product.slug %>/datasheet.pdf"><span class="resource-icon">PDF</span><span><strong>Download technical datasheet</strong><small>Current published specification</small></span><b>↓</b></a>
+      <a class="resource-card" href="/contact?product=<%= product.slug %>"><span class="resource-icon">?</span><span><strong>Ask about this model</strong><small>Sizing, installation and availability</small></span><b>→</b></a>
+    </div>
   </div>
   <dl class="spec-list"><% Object.entries(product.specs).forEach(([k,v])=>{ %><div><dt><%= k %></dt><dd><%= v %></dd></div><% }) %></dl>
 </section>
 
+<section class="family-nav">
+  <div>
+    <% if(previousProduct){ %><a href="/products/<%= previousProduct.slug %>"><small>← Previous model</small><strong><%= previousProduct.name %></strong><span><%= previousProduct.capacity_lpd.toLocaleString('en-GB') %> L/day</span></a><% } %>
+  </div>
+  <a class="family-all" href="<%= product.category === 'home-office' ? '/products/home-office' : '/products/commercial-industrial' %>">View the full range</a>
+  <div>
+    <% if(nextProduct){ %><a class="next-model" href="/products/<%= nextProduct.slug %>"><small>Next model →</small><strong><%= nextProduct.name %></strong><span><%= nextProduct.capacity_lpd.toLocaleString('en-GB') %> L/day</span></a><% } %>
+  </div>
+</section>
+
 <% if(related.length){ %>
 <section class="section-tight related">
-  <div class="split-heading"><div><p class="eyebrow">Also consider</p><h2>Related systems</h2></div></div>
+  <div class="split-heading"><div><p class="eyebrow">Also consider</p><h2>Nearby capacities</h2></div></div>
   <div class="product-grid">
     <% related.forEach(p=>{ %>
     <a class="product-card image-card compact-card" href="/products/<%= p.slug %>">
