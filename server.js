@@ -70,9 +70,21 @@ function getPage(slug) {
 }
 function renderPage(res, page, extra = {}) {
   if (!page) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
+  const pageImages = {
+    'how-it-works': '/uploads/imported/legacy/images/how-it-works/hydrologic-cycle.svg',
+    'about': '/uploads/imported/legacy/media/1023/about-us-banner.jpg',
+    'plastic-bottles': '/uploads/imported/legacy/media/1026/our-environment-banner.jpg',
+    'mains-water': '/uploads/imported/legacy/media/1024/mains-water-banner.jpg',
+    'resellers': '/uploads/imported/legacy/media/1027/contact-banner.jpg',
+    'leasing': '/uploads/imported/legacy/media/1040/25l-1x.png'
+  };
   return res.render('page', {
     page,
-    meta: { title: page.seo_title || `${page.title} | WatAir UK`, description: page.seo_description || page.intro },
+    meta: {
+      title: page.seo_title || `${page.title} | WatAir UK`,
+      description: page.seo_description || page.intro,
+      image: pageImages[page.slug] || '/uploads/imported/legacy/images/home/products.jpg'
+    },
     ...extra
   });
 }
@@ -87,22 +99,23 @@ app.get('/', (req, res) => {
     allProducts,
     meta: {
       title: 'WatAir UK | Atmospheric Water Generators',
-      description: 'Atmospheric Water Generation systems for homes, offices and industrial applications across the UK.'
+      description: 'Atmospheric Water Generation systems for homes, offices and industrial applications across the UK.',
+      image: '/uploads/imported/legacy/images/home/products.jpg'
     }
   });
 });
 
 app.get('/products', (req, res) => res.render('products', {
   products: products(), category: 'all',
-  meta: { title: 'Atmospheric Water Generators | WatAir UK', description: 'Explore WatAir atmospheric water generators from compact home and office systems to 10,000 litre-per-day industrial units.' }
+  meta: { title: 'Atmospheric Water Generators | WatAir UK', description: 'Explore WatAir atmospheric water generators from compact home and office systems to 10,000 litre-per-day industrial units.', image: '/uploads/imported/legacy/images/home/products.jpg' }
 }));
 app.get('/products/home-office', (req, res) => res.render('products', {
   products: products('published=1 AND category=?', ['home-office']), category: 'home-office',
-  meta: { title: 'Home & Office Atmospheric Water Generators | WatAir UK', description: 'Compact water-from-air systems for homes and workplaces.' }
+  meta: { title: 'Home & Office Atmospheric Water Generators | WatAir UK', description: 'Compact water-from-air systems for homes and workplaces.', image: '/uploads/imported/legacy/media/1003/pw-hr-30l.png' }
 }));
 app.get('/products/commercial-industrial', (req, res) => res.render('products', {
   products: products('published=1 AND category=?', ['commercial-industrial']), category: 'commercial-industrial',
-  meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.' }
+  meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.', image: '/uploads/imported/legacy/media/1010/pw-hr-5000l.png' }
 }));
 app.get('/products/:slug/datasheet.pdf', (req, res) => {
   const product = parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(req.params.slug));
@@ -185,7 +198,7 @@ app.get('/products/:slug', (req, res) => {
 
   res.render('product', {
     product, related, family, previousProduct, nextProduct,
-    meta: { title: `${product.name}${product.subtitle ? ' – ' + product.subtitle : ''} | WatAir UK`, description: product.summary }
+    meta: { title: `${product.name}${product.subtitle ? ' – ' + product.subtitle : ''} | WatAir UK`, description: product.summary, image: product.image_url }
   });
 });
 
@@ -197,7 +210,7 @@ app.get('/resellers', (req, res) => renderPage(res, getPage('resellers')));
 app.get('/leasing', (req, res) => renderPage(res, getPage('leasing')));
 app.get('/faqs', (req, res) => res.render('faqs', {
   faqs,
-  meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.' }
+  meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.', image: '/uploads/imported/legacy/images/home/products.jpg' }
 }));
 
 app.get('/contact', (req, res) => {
@@ -206,7 +219,7 @@ app.get('/contact', (req, res) => {
     : null;
   res.render('contact', {
     sent: req.query.sent === '1', error: null, selectedProduct,
-    meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
+    meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
 app.post('/contact', contactLimiter, async (req, res) => {
