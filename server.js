@@ -83,7 +83,7 @@ function renderPage(res, page, extra = {}) {
     meta: {
       title: page.seo_title || `${page.title} | WatAir UK`,
       description: page.seo_description || page.intro,
-      image: pageImages[page.slug] || '/uploads/imported/legacy/images/home/products.jpg'
+      image: page.hero_image || pageImages[page.slug] || '/uploads/imported/legacy/images/home/products.jpg'
     },
     ...extra
   });
