@@ -1626,3 +1626,17 @@ html.nav-open,body.nav-open{overflow:hidden}
 .utility-linkedin:hover .linkedin-mark{
   background:#1685d8;
 }
+
+
+/* Give the LinkedIn mark a little more breathing room from its divider */
+.utility-linkedin{
+  width:46px;
+  padding-left:8px;
+  box-sizing:border-box;
+}
+@media(max-width:900px){
+  .utility-linkedin{
+    width:38px;
+    padding-left:6px;
+  }
+}
