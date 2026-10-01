@@ -199,15 +199,20 @@ app.get('/faqs', (req, res) => res.render('faqs', {
   meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.' }
 }));
 
-app.get('/contact', (req, res) => res.render('contact', {
-  sent: req.query.sent === '1', error: null,
-  meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
-}));
+app.get('/contact', (req, res) => {
+  const selectedProduct = req.query.product
+    ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(String(req.query.product)))
+    : null;
+  res.render('contact', {
+    sent: req.query.sent === '1', error: null, selectedProduct,
+    meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
+  });
+});
 app.post('/contact', contactLimiter, async (req, res) => {
   const { name, company = '', email, phone = '', interest = '', message, website = '' } = req.body;
   if (website) return res.redirect('/contact?sent=1');
   if (!name || !email || !message || String(message).length > 5000) {
-    return res.status(400).render('contact', { sent: false, error: 'Please complete your name, email and message.', meta: { title: 'Contact WatAir UK' } });
+    return res.status(400).render('contact', { sent: false, error: 'Please complete your name, email and message.', selectedProduct: null, meta: { title: 'Contact WatAir UK' } });
   }
   db.prepare(`INSERT INTO enquiries(name,company,email,phone,interest,message,ip) VALUES(?,?,?,?,?,?,?)`)
     .run(String(name).slice(0,150), String(company).slice(0,150), String(email).slice(0,254), String(phone).slice(0,80), String(interest).slice(0,120), String(message).slice(0,5000), req.ip || '');
