@@ -1,30 +1,74 @@
 <%- include('../partials/admin-head') %>
+
 <header class="admin-page-head">
-  <div><p>Overview</p><h1>Dashboard</h1></div>
+  <div>
+    <p>Overview</p>
+    <h1>Welcome back</h1>
+    <span class="page-help">The common website jobs are one click away.</span>
+  </div>
+  <a class="admin-button button-link" href="/" target="_blank">View website ↗</a>
 </header>
 
+<section class="quick-actions">
+  <a class="quick-action" href="/admin/products/new"><span>＋</span><strong>Add product</strong><small>Create a new product as a draft</small></a>
+  <a class="quick-action" href="/admin/media"><span>▧</span><strong>Upload image</strong><small>Add photos to the media library</small></a>
+  <a class="quick-action" href="/admin/pages"><span>✎</span><strong>Edit a page</strong><small>Change text, heroes and SEO</small></a>
+  <a class="quick-action" href="/admin/enquiries"><span>↗</span><strong>View enquiries</strong><small><%= stats.enquiries %> currently unread</small></a>
+</section>
+
 <div class="stat-grid stat-grid-four">
-  <div><strong><%= stats.pages %></strong><span>Pages</span></div>
+  <div><strong><%= stats.pages %></strong><span>Website pages</span></div>
   <div><strong><%= stats.products %></strong><span>Products</span></div>
   <div><strong><%= stats.enquiries %></strong><span>New enquiries</span></div>
-  <div><strong><%= stats.media %></strong><span>Imported media</span></div>
+  <div><strong><%= stats.media %></strong><span>Media items</span></div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="admin-card">
+    <div class="card-head">
+      <div><p class="admin-kicker">Latest leads</p><h2>Recent enquiries</h2></div>
+      <a class="text-button button-link" href="/admin/enquiries">View all →</a>
+    </div>
+    <% if(enquiries.length){ %>
+      <div class="dashboard-enquiries">
+        <% enquiries.forEach(e => { %>
+          <a href="/admin/enquiries" class="dashboard-enquiry">
+            <span class="status-dot <%= e.status === 'new' ? 'new' : '' %>"></span>
+            <div><strong><%= e.name %></strong><small><%= e.company || e.email %></small></div>
+            <span><%= e.interest || 'General' %></span>
+          </a>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="empty-state"><strong>No enquiries yet</strong><span>New website enquiries will appear here.</span></div>
+    <% } %>
+  </section>
+
+  <section class="admin-card">
+    <div class="card-head">
+      <div><p class="admin-kicker">Catalogue</p><h2>Products</h2></div>
+      <a class="text-button button-link" href="/admin/products">Manage →</a>
+    </div>
+    <div class="dashboard-products">
+      <% recentProducts.slice(0,5).forEach(p => { %>
+        <a href="/admin/products/<%= p.id %>">
+          <span class="dashboard-product-thumb"><% if(p.image_url){ %><img src="<%= p.image_url %>" alt=""><% } %></span>
+          <span><strong><%= p.name %></strong><small><%= p.capacity_lpd.toLocaleString('en-GB') %> L/day</small></span>
+          <span class="pill <%= p.published ? '' : 'pill-draft' %>"><%= p.published ? 'Live' : 'Draft' %></span>
+        </a>
+      <% }) %>
+    </div>
+  </section>
 </div>
 
 <section class="admin-card dashboard-media-card">
   <div>
-    <p class="admin-kicker">Legacy media</p>
-    <h2><%= stats.media ? 'Imported media is ready to review.' : 'Bring the existing WatAir media library into the rebuild.' %></h2>
-    <p><%= stats.media ? 'The importer has a repository-ready media library and manifest. Refresh it at any time as the legacy site changes.' : 'Crawl the owner-authorised existing site, collect its images and documents into a local imported directory, then commit that directory so the assets can be mapped into new heroes, product pages and content sections.' %></p>
-    <% if(mediaSummary.generatedAt){ %><small>Last import: <%= new Date(mediaSummary.generatedAt).toLocaleString('en-GB') %> · <%= (mediaSummary.bytes/1024/1024).toFixed(1) %> MB</small><% } %>
+    <p class="admin-kicker">Media library</p>
+    <h2><%= stats.media ? stats.media + ' media items are available to use.' : 'Add imagery to the website.' %></h2>
+    <p>Upload new photography or choose from the WatAir assets imported from the existing site.</p>
+    <% if(mediaSummary.generatedAt){ %><small>Legacy library last refreshed: <%= new Date(mediaSummary.generatedAt).toLocaleString('en-GB') %></small><% } %>
   </div>
-  <a class="admin-button button-link" href="/admin/media"><%= importState.running ? 'View import progress' : (stats.media ? 'Manage imported media' : 'Import existing media') %> →</a>
+  <a class="secondary-button button-link" href="/admin/media">Open media library →</a>
 </section>
 
-<section class="admin-card">
-  <div class="card-head"><h2>Latest enquiries</h2><a href="/admin/enquiries">View all</a></div>
-  <table>
-    <thead><tr><th>Date</th><th>Name</th><th>Interest</th><th>Status</th></tr></thead>
-    <tbody><% enquiries.forEach(e=>{ %><tr><td><%= e.created_at %></td><td><strong><%= e.name %></strong><br><small><%= e.email %></small></td><td><%= e.interest || 'General' %></td><td><span class="pill"><%= e.status %></span></td></tr><% }) %></tbody>
-  </table>
-</section>
 <%- include('../partials/admin-foot') %>
