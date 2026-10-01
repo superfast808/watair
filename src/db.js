@@ -64,6 +64,30 @@ CREATE TABLE IF NOT EXISTS enquiries (
 );
 `);
 
+const legacyProductImages = {
+  'pw-hr-15l': 'https://www.watairuk.co.uk/media/1002/pw-hr-15l.png',
+  'pw-hr-25l-low-power-consumption': 'https://www.watairuk.co.uk/media/1040/25l-1x.png',
+  'pw-hr-30l': 'https://www.watairuk.co.uk/media/1003/pw-hr-30l.png',
+  'pw-hr-60l': 'https://www.watairuk.co.uk/media/1004/pw-hr-60l.png',
+  'pw-hr-80l-low-power-consumption': 'https://www.watairuk.co.uk/media/1050/80l-product-small-2.png',
+  'pw-hr-100l': 'https://www.watairuk.co.uk/media/1005/pw-hr-100l.png',
+  'pw-hr-100l-low-power-consumption': 'https://www.watairuk.co.uk/media/1053/100-l-product.png',
+  'pw-hr-250l': 'https://www.watairuk.co.uk/media/1006/pw-hr-250l.png',
+  'pw-hr-250l-low-power-consumption': 'https://www.watairuk.co.uk/media/1054/250l-product.png',
+  'pw-hr-500l': 'https://www.watairuk.co.uk/media/1007/pw-hr-500l.png',
+  'pw-hr-500l-low-power-consumption': 'https://www.watairuk.co.uk/media/1072/500l-product.png',
+  'pw-hr-1000l': 'https://www.watairuk.co.uk/media/1008/pw-hr-1000l.png',
+  'pw-hr-1000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1056/500l-product.png',
+  'pw-hr-2000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1058/2000l-product.png',
+  'pw-hr-3000l': 'https://www.watairuk.co.uk/media/1009/pw-hr-3000l.png',
+  'pw-hr-4000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1064/4000l-product.png',
+  'pw-hr-5000l': 'https://www.watairuk.co.uk/media/1010/pw-hr-5000l.png',
+  'pw-hr-5500l-low-power-consumption': 'https://www.watairuk.co.uk/media/1066/5500-product.png',
+  'pw-hr-8000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1068/8000l-product.png',
+  'pw-hr-10000l': 'https://www.watairuk.co.uk/media/1001/pw-hr-10000l.png',
+  'pw-hr-10000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1070/10000l-pro.png'
+};
+
 function seed() {
   const productCount = db.prepare('SELECT COUNT(*) c FROM products').get().c;
   if (!productCount) {
@@ -84,6 +108,16 @@ function seed() {
     tx();
   }
 
+  const imageUpdate = db.prepare(`
+    UPDATE products
+    SET image_url=?
+    WHERE slug=? AND (image_url IS NULL OR TRIM(image_url)='')
+  `);
+  const imageTx = db.transaction(() => {
+    Object.entries(legacyProductImages).forEach(([slug, image]) => imageUpdate.run(image, slug));
+  });
+  imageTx();
+
   const pageCount = db.prepare('SELECT COUNT(*) c FROM pages').get().c;
   if (!pageCount) {
     const insert = db.prepare(`INSERT INTO pages
@@ -101,7 +135,7 @@ function seed() {
     site_name: 'WatAir UK',
     email: 'info@watairuk.co.uk',
     phone: '0141 442 0201',
-    hero_title: 'Fresh water. Made from air.',
+    hero_title: 'Water from air. Wherever you need it.',
     hero_text: 'Atmospheric Water Generation for homes, workplaces and industrial-scale water resilience.',
     hero_image: 'https://www.watairuk.co.uk/images/home/products.jpg',
     footer_text: 'Atmospheric Water Generation solutions for the UK.',
@@ -109,6 +143,9 @@ function seed() {
   };
   const set = db.prepare('INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)');
   Object.entries(defaults).forEach(([k,v]) => set.run(k,v));
+
+  db.prepare(`UPDATE settings SET value='Water from air. Wherever you need it.'
+    WHERE key='hero_title' AND value='Fresh water. Made from air.'`).run();
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
