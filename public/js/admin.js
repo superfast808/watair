@@ -19,6 +19,63 @@
     setTimeout(() => toast.remove(), 3300);
   }
 
+
+  // Admin user password helpers.
+  document.querySelectorAll('[data-password-toggle]').forEach(button => {
+    button.addEventListener('click', () => {
+      const input = button.closest('.password-field')?.querySelector('input');
+      if (!input) return;
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      button.textContent = showing ? 'Show' : 'Hide';
+    });
+  });
+
+  function securePassword(length = 20) {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%*-_=+';
+    const all = letters + numbers + symbols;
+    const values = new Uint32Array(length);
+    crypto.getRandomValues(values);
+    const chars = Array.from(values, value => all[value % all.length]);
+    chars[0] = letters[values[0] % letters.length];
+    chars[1] = numbers[values[1] % numbers.length];
+    return chars.join('');
+  }
+
+  document.querySelectorAll('[data-generate-password]').forEach(button => {
+    button.addEventListener('click', () => {
+      const form = button.closest('[data-password-pair]');
+      if (!form) return;
+      const password = securePassword();
+      const primary = form.querySelector('[data-password-primary]');
+      const confirm = form.querySelector('[data-password-confirm]');
+      if (primary) primary.value = password;
+      if (confirm) confirm.value = password;
+      const box = form.querySelector('[data-generated-password]');
+      const value = form.querySelector('[data-generated-password-value]');
+      if (value) value.textContent = password;
+      if (box) box.hidden = false;
+    });
+  });
+
+  document.querySelectorAll('[data-copy-generated]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const box = button.closest('[data-generated-password]');
+      const value = box?.querySelector('[data-generated-password-value]')?.textContent || '';
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        const old = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => button.textContent = old, 1200);
+      } catch {
+        alert(value);
+      }
+    });
+  });
+
   // Mobile admin navigation.
   const sidebar = document.querySelector('[data-admin-sidebar]');
   const openNav = document.querySelector('[data-admin-menu-toggle]');
