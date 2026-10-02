@@ -1550,9 +1550,6 @@ html.nav-open,body.nav-open{overflow:hidden}
     padding-left:12px;
     padding-right:12px;
   }
-  .utility-reseller{
-    display:none;
-  }
 }
 
 @media(max-width:900px){
@@ -1910,4 +1907,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 }
 .page-hero-privacy+.prose-shell .prose h2:first-child{
   margin-top:0;
+}
+
+
+/* Owner-approved homepage hero refresh */
+.home-photo-hero .hero-actions{margin:28px 0 0}
+.home-photo-hero .hero-inline-stats{margin-top:28px}
+@media(max-width:900px){
+  .home-photo-hero .hero-actions{align-items:flex-start}
+  .home-photo-hero .hero-inline-stats{margin-top:24px}
 }
