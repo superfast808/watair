@@ -14,6 +14,7 @@
   const heroStyle = page.hero_style || (photoHeroSlugs.has(page.slug) ? 'photo' : 'graphic');
   const usePhotoHero = heroStyle === 'photo';
   const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
+  const isLegal = ['privacy','terms','refunds','cookies'].includes(page.slug);
   const crumbs = [
     { label: 'Home', href: '/' },
     ...(isEnvironment ? [{ label: 'Environment', href: '/environment/plastic-bottles' }] : []),
@@ -35,13 +36,15 @@
 
 <section class="section-tight prose-shell">
   <article class="prose"><%- page.body_html %></article>
-  <% if(page.slug === 'privacy'){ %>
+  <% if(isLegal){ %>
     <aside class="page-side-card">
-      <p class="eyebrow">Privacy contact</p>
-      <h3>Questions about information submitted through this website?</h3>
-      <a href="mailto:<%= settings.email %>"><%= settings.email %> <span>→</span></a>
+      <p class="eyebrow">Legal & ordering</p>
+      <h3>Policies for enquiries and online purchases.</h3>
+      <a href="/terms">Terms of sale <span>→</span></a>
+      <a href="/refunds">Refunds & returns <span>→</span></a>
+      <a href="/privacy">Privacy notice <span>→</span></a>
+      <a href="/cookies">Cookie notice <span>→</span></a>
       <a href="/contact">Contact WatAir <span>→</span></a>
-      <a href="/">Return to homepage <span>→</span></a>
     </aside>
   <% } else { %>
     <aside class="page-side-card">
@@ -55,9 +58,9 @@
   <% } %>
 </section>
 
-<% if(page.slug === 'privacy'){ %>
+<% if(isLegal){ %>
 <section class="cta-panel cta-dark">
-  <div><p class="eyebrow">Privacy questions</p><h2>Need to contact us about your information?</h2><p>Use the contact details shown on this site and tell us what you need help with.</p></div>
+  <div><p class="eyebrow">Questions?</p><h2>Need to discuss an order or policy?</h2><p>Contact WatAir with the order reference where relevant and we can help with the next step.</p></div>
   <a class="button button-aqua" href="/contact">Contact WatAir</a>
 </section>
 <% } else { %>
