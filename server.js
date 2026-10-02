@@ -44,7 +44,19 @@ app.use(compression());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 app.use(express.json({ limit: '256kb' }));
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: isProd ? '7d' : 0 }));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: isProd ? '7d' : 0,
+  immutable: false
+}));
+
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  if (req.path.startsWith('/admin')) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    res.setHeader('Cache-Control', 'no-store');
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   res.locals.settings = settingsObject();
@@ -104,7 +116,15 @@ function renderPage(res, page, extra = {}) {
   });
 }
 
-app.get('/health', (req, res) => res.json({ ok: true, service: 'watair-next' }));
+app.get('/health', (req, res) => {
+  try {
+    db.prepare('SELECT 1 AS ok').get();
+    res.json({ ok: true, service: 'watair-next' });
+  } catch (err) {
+    console.error('Health check failed:', err.message);
+    res.status(503).json({ ok: false, service: 'watair-next' });
+  }
+});
 
 app.get('/', (req, res) => {
   const featured = products('published=1 AND featured=1');
@@ -223,6 +243,7 @@ app.get('/environment/plastic-bottles', (req, res) => renderPage(res, getPage('p
 app.get('/environment/mains-water', (req, res) => renderPage(res, getPage('mains-water')));
 app.get('/resellers', (req, res) => renderPage(res, getPage('resellers')));
 app.get('/leasing', (req, res) => renderPage(res, getPage('leasing')));
+app.get('/privacy', (req, res) => renderPage(res, getPage('privacy')));
 app.get('/faqs', (req, res) => res.render('faqs', {
   faqs,
   meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.', image: '/uploads/imported/legacy/images/home/products.jpg' }
@@ -233,18 +254,59 @@ app.get('/contact', (req, res) => {
     ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(String(req.query.product)))
     : null;
   res.render('contact', {
-    sent: req.query.sent === '1', error: null, selectedProduct,
+    sent: req.query.sent === '1',
+    error: null,
+    selectedProduct,
+    formValues: {},
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
+
+function cleanFormValue(value, maxLength) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+function validEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 app.post('/contact', contactLimiter, async (req, res) => {
-  const { name, company = '', email, phone = '', interest = '', message, website = '' } = req.body;
-  if (website) return res.redirect('/contact?sent=1');
-  if (!name || !email || !message || String(message).length > 5000) {
-    return res.status(400).render('contact', { sent: false, error: 'Please complete your name, email and message.', selectedProduct: null, meta: { title: 'Contact WatAir UK' } });
+  const name = cleanFormValue(req.body.name, 150);
+  const company = cleanFormValue(req.body.company, 150);
+  const email = cleanFormValue(req.body.email, 254).toLowerCase();
+  const phone = cleanFormValue(req.body.phone, 80);
+  const message = cleanFormValue(req.body.message, 5000);
+  const website = cleanFormValue(req.body.website, 500);
+  const productSlug = cleanFormValue(req.body.product, 160);
+  const selectedProduct = productSlug
+    ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(productSlug))
+    : null;
+
+  const allowedInterests = new Set([
+    'Home & Office',
+    'Commercial & Industrial',
+    'Leasing',
+    'Reseller opportunity',
+    'General enquiry'
+  ]);
+  const requestedInterest = cleanFormValue(req.body.interest, 120);
+  const interest = allowedInterests.has(requestedInterest) ? requestedInterest : '';
+
+  if (website) return res.redirect(303, '/contact?sent=1');
+
+  const formValues = { name, company, email, phone, interest, message };
+  if (!name || !validEmail(email) || !message) {
+    return res.status(400).render('contact', {
+      sent: false,
+      error: !validEmail(email) ? 'Please enter a valid email address.' : 'Please complete your name, email and message.',
+      selectedProduct,
+      formValues,
+      meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
+    });
   }
+
   db.prepare(`INSERT INTO enquiries(name,company,email,phone,interest,message,ip) VALUES(?,?,?,?,?,?,?)`)
-    .run(String(name).slice(0,150), String(company).slice(0,150), String(email).slice(0,254), String(phone).slice(0,80), String(interest).slice(0,120), String(message).slice(0,5000), req.ip || '');
+    .run(name, company, email, phone, interest, message, String(req.ip || '').slice(0, 120));
 
   if (process.env.SMTP_HOST && process.env.CONTACT_TO) {
     try {
@@ -255,17 +317,18 @@ app.post('/contact', contactLimiter, async (req, res) => {
         auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
       });
       await transport.sendMail({
-        from: process.env.SMTP_FROM || 'WatAir Website <website@localhost>',
+        from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
         to: process.env.CONTACT_TO,
         replyTo: email,
         subject: `WatAir website enquiry: ${interest || 'General'}`,
-        text: `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\nInterest: ${interest}\n\n${message}`
+        text: `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\nInterest: ${interest || 'General'}\n\n${message}`
       });
     } catch (err) {
       console.error('SMTP notification failed:', err.message);
     }
   }
-  res.redirect('/contact?sent=1');
+
+  res.redirect(303, '/contact?sent=1');
 });
 
 // Legacy URL continuity / SEO redirects
@@ -279,8 +342,15 @@ app.get('/helping-the-environment/plastic-bottles', (req,res) => res.redirect(30
 app.get('/how-it-works/faqs', (req,res) => res.redirect(301, '/faqs'));
 app.get('/about-us', (req,res) => res.redirect(301, '/about'));
 app.get('/become-a-reseller', (req,res) => res.redirect(301, '/resellers'));
+app.get(['/reseller', '/reseller/'], (req,res) => res.redirect(301, '/resellers'));
+app.get(['/privacy-policy', '/privacy-policy/'], (req,res) => res.redirect(301, '/privacy'));
 
 app.get('/favicon.ico', (req,res) => res.redirect(302, '/favicon.svg'));
+
+app.get('/.well-known/security.txt', (req,res) => {
+  const email = settingsObject().email || 'info@watairuk.co.uk';
+  res.type('text/plain').send(`Contact: mailto:${email}\nCanonical: ${baseUrl}/.well-known/security.txt\nExpires: 2027-12-31T23:59:59Z\nPreferred-Languages: en\n`);
+});
 
 app.get('/robots.txt', (req,res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nSitemap: ${baseUrl}/sitemap.xml\n`);
@@ -319,6 +389,7 @@ app.get('/sitemap.xml', (req,res) => {
     { path: '/environment/mains-water', lastmod: pageUpdated['mains-water'] },
     { path: '/resellers', lastmod: pageUpdated.resellers },
     { path: '/leasing', lastmod: pageUpdated.leasing },
+    { path: '/privacy', lastmod: pageUpdated.privacy },
     { path: '/contact', lastmod: siteLastmod },
     ...productRows.map(product => ({
       path: '/products/' + product.slug,
@@ -754,10 +825,27 @@ app.post('/admin/enquiries/:id/read', requireCsrf, (req,res) => {
   res.redirect('/admin/enquiries');
 });
 
+app.post('/admin/enquiries/:id/delete', requireCsrf, (req,res) => {
+  db.prepare('DELETE FROM enquiries WHERE id=?').run(req.params.id);
+  res.redirect('/admin/enquiries?deleted=1');
+});
+
 app.use((req,res) => res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', description: 'The requested page could not be found.', noindex: true } }));
 app.use((err,req,res,next) => {
   console.error(err);
   res.status(500).send(isProd ? 'Something went wrong.' : `<pre>${String(err.stack || err)}</pre>`);
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`WatAir listening on ${PORT}`));
+const server = app.listen(PORT, '0.0.0.0', () => console.log(`WatAir listening on ${PORT}`));
+
+function shutdown(signal) {
+  console.log(`${signal} received; shutting down WatAir cleanly.`);
+  server.close(() => {
+    try { db.close(); } catch {}
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
