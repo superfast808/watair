@@ -94,7 +94,7 @@
         <div class="admin-user-identity">
           <strong><%= user.display_name || 'Admin user' %></strong>
           <span><%= user.email %></span>
-          <small>Created <%= new Date(user.created_at).toLocaleDateString('en-GB') %><%= user.id === currentAdminId ? ' · You are signed in with this account' : '' %></small>
+          <small>Created <%= formatUkDate(user.created_at) %><%= user.id === currentAdminId ? ' · You are signed in with this account' : '' %></small>
         </div>
 
         <div class="admin-user-status">
