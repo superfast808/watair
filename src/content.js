@@ -152,12 +152,6 @@ const pages = [
     body: `<h2>Partner with WatAir</h2><p>If your business works in sustainability, facilities, water services, resilience, construction or related sectors, talk to us about reseller opportunities.</p><p>We can discuss product range, territory, technical support and the commercial model.</p>`
   },
   {
-    slug: 'leasing', title: 'Leasing', eyebrow: 'Flexible procurement',
-    hero: 'Explore a lower-upfront-cost route to water from air',
-    intro: 'Selected WatAir systems may be suitable for leasing or finance arrangements depending on the installation and customer requirements.',
-    body: `<h2>Talk to us about the requirement</h2><p>Rather than forcing every project into the same purchasing model, we can discuss the application, expected output and preferred commercial approach.</p>`
-  },
-  {
     slug: 'privacy', title: 'Privacy notice', eyebrow: 'Privacy & data',
     hero: 'How WatAir handles information submitted through this website',
     intro: 'This notice explains what information the WatAir website collects, why it is used and how to contact us about your personal information.',
