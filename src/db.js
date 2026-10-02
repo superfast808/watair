@@ -137,18 +137,16 @@ function seed() {
     WHERE image_url LIKE 'https://www.watairuk.co.uk/%'
   `).run();
 
-  const pageCount = db.prepare('SELECT COUNT(*) c FROM pages').get().c;
-  if (!pageCount) {
-    const insert = db.prepare(`INSERT INTO pages
-      (slug,title,eyebrow,hero,intro,body_html,seo_title,seo_description)
-      VALUES (@slug,@title,@eyebrow,@hero,@intro,@body,@seo_title,@seo_description)`);
-    const tx = db.transaction(() => pages.forEach(p => insert.run({
-      ...p,
-      seo_title: `${p.title} | WatAir UK`,
-      seo_description: p.intro.slice(0, 160)
-    })));
-    tx();
-  }
+  // Seed any newly introduced core page without overwriting CMS edits to existing pages.
+  const insertPage = db.prepare(`INSERT OR IGNORE INTO pages
+    (slug,title,eyebrow,hero,intro,body_html,seo_title,seo_description)
+    VALUES (@slug,@title,@eyebrow,@hero,@intro,@body,@seo_title,@seo_description)`);
+  const pageTx = db.transaction(() => pages.forEach(p => insertPage.run({
+    ...p,
+    seo_title: `${p.title} | WatAir UK`,
+    seo_description: p.intro.slice(0, 160)
+  })));
+  pageTx();
 
   const defaults = {
     site_name: 'WatAir UK',
