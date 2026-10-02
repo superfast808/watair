@@ -397,8 +397,8 @@ function xmlEscape(value) {
 }
 
 function sitemapDate(value) {
-  const date = value ? new Date(value) : null;
-  return date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0,10) : null;
+  const date = parseStoredDate(value);
+  return date ? date.toISOString().slice(0,10) : null;
 }
 
 app.get('/sitemap.xml', (req,res) => {
