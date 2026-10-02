@@ -113,6 +113,12 @@ jobs:
           grep -q 'How WatAir handles information' /tmp/privacy.html
           grep -q 'privacy notice' /tmp/contact.html
           grep -q 'How many people?' /tmp/contact.html
+          grep -q '<strong>Direct</strong> project support' /tmp/contact.html
+          ! grep -q '<strong>UK</strong> project support' /tmp/contact.html
+          grep -q 'we can discuss the next step.' /tmp/about.html
+          ! grep -q 'we can discuss the right next step.' /tmp/about.html
+          grep -q 'Atmospheric Water Generation solutions</small>' /tmp/about.html
+          grep -q 'WatAir promotes Atmospheric Water Generation technology' /tmp/about.html
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
