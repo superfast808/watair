@@ -973,13 +973,31 @@ app.post('/admin/users/:id/delete', requireCsrf, (req,res) => {
   res.redirect('/admin/users?deleted=1');
 });
 
+function cleanExternalUrl(value) {
+  const text = String(value || '').trim().slice(0, 500);
+  if (!text) return '';
+  try {
+    const url = new URL(text);
+    if (!['http:','https:'].includes(url.protocol)) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
 app.get('/admin/settings', (req,res) => {
   res.render('admin/settings', { values: settingsObject(), meta: { title: 'Site Settings | WatAir CMS' } });
 });
 app.post('/admin/settings', requireCsrf, (req,res) => {
-  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','footer_text','company_location'];
+  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','footer_text','company_location','facebook_url','instagram_url','linkedin_url'];
+  const socialKeys = new Set(['facebook_url','instagram_url','linkedin_url']);
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
-  const tx = db.transaction(() => allowed.forEach(k => upsert.run(k, String(req.body[k] || '').slice(0,2000))));
+  const tx = db.transaction(() => allowed.forEach(k => {
+    const value = socialKeys.has(k)
+      ? cleanExternalUrl(req.body[k])
+      : String(req.body[k] || '').slice(0,2000);
+    upsert.run(k, value);
+  }));
   tx();
   res.redirect('/admin/settings?saved=1');
 });
