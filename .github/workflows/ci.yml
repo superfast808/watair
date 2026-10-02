@@ -67,7 +67,7 @@ jobs:
           curl -fsS http://127.0.0.1:8099/terms > /tmp/terms.html
           curl -fsS http://127.0.0.1:8099/refunds > /tmp/refunds.html
           curl -fsS http://127.0.0.1:8099/cookies > /tmp/cookies.html
-          curl -fsS http://127.0.0.1:8099/buy/pw-hr-20l > /tmp/checkout.html
+          curl -fsS -D /tmp/checkout-headers.txt http://127.0.0.1:8099/buy/pw-hr-20l > /tmp/checkout.html
           curl -fsS -X POST http://127.0.0.1:8099/checkout/quote/pw-hr-20l \
             -H 'Content-Type: application/json' \
             --data '{"postcode":"KA1 1AA","country_code":"GB","quantity":1}' > /tmp/quote.json
@@ -118,7 +118,7 @@ jobs:
             --data-urlencode 'accept_terms=1'
           ORDER_PATH=$(awk 'BEGIN{IGNORECASE=1} /^location:/ {print $2}' /tmp/checkout-order-headers.txt | tr -d '\r' | tail -1)
           test -n "$ORDER_PATH"
-          curl -fsS "http://127.0.0.1:8099$ORDER_PATH" > /tmp/order.html
+          curl -fsS -D /tmp/order-headers.txt "http://127.0.0.1:8099$ORDER_PATH" > /tmp/order.html
 
           grep -q 'application/ld+json' /tmp/home.html
           grep -q 'Skip to main content' /tmp/home.html
@@ -161,6 +161,10 @@ jobs:
           grep -q '"total_minor":132400' /tmp/quote.json
           grep -q 'Order received.' /tmp/order.html
           grep -q 'manual payment arrangement' /tmp/order.html
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/checkout-headers.txt
+          grep -qi '^cache-control: no-store' /tmp/checkout-headers.txt
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/order-headers.txt
+          grep -qi '^cache-control: no-store' /tmp/order-headers.txt
           grep -q 'data-cookie-consent' /tmp/home.html
           grep -q 'privacy notice' /tmp/contact.html
           grep -q 'How many people?' /tmp/contact.html
