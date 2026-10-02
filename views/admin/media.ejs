@@ -102,7 +102,7 @@
 <section class="admin-card media-library-section">
   <div class="card-head">
     <div><p class="admin-kicker">Imported library</p><h2>Existing WatAir imagery</h2></div>
-    <span><%= summary.generatedAt ? new Date(summary.generatedAt).toLocaleString('en-GB') : '' %></span>
+    <span><%= summary.generatedAt ? formatUkDateTime(summary.generatedAt) : '' %></span>
   </div>
   <div class="media-grid media-grid-admin">
     <% summary.assets.filter(a => (a.content_type || '').startsWith('image/')).slice(0, 120).forEach(asset => { %>
