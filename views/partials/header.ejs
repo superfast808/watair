@@ -51,67 +51,81 @@
   </button>
 
   <nav id="site-nav" class="site-nav" data-nav aria-label="Primary navigation">
-    <div class="nav-group <%= path.startsWith('/products') ? 'active' : '' %>" data-nav-group>
-      <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
-        <span class="nav-label">Atmospheric Water Generators</span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </button>
-      <div class="nav-dropdown nav-dropdown-products">
-        <div class="nav-dropdown-intro">
-          <p class="eyebrow">Product range</p>
-          <h3>Water generation from 20 to 10,000 litres per day.</h3>
-          <p>Choose a range, then drill into individual models, technical specifications and downloadable datasheets.</p>
-          <a class="nav-feature-link" href="/products">View all systems →</a>
+    <% navigationItems.forEach(item => { %>
+      <% if(item.builtin_key === 'products'){ %>
+        <div class="nav-group <%= path.startsWith('/products') ? 'active' : '' %>" data-nav-group data-nav-key="products">
+          <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
+            <span class="nav-label"><%= item.label %></span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="nav-dropdown nav-dropdown-products">
+            <div class="nav-dropdown-intro">
+              <p class="eyebrow">Product range</p>
+              <h3>Water generation from 20 to 10,000 litres per day.</h3>
+              <p>Choose a range, then drill into individual models, technical specifications and downloadable datasheets.</p>
+              <a class="nav-feature-link" href="/products">View all systems →</a>
+            </div>
+            <div class="nav-menu-column">
+              <span class="nav-menu-label">Home & Office</span>
+              <a href="/products/home-office"><strong>View Home & Office range</strong><small>20–60 litres/day</small></a>
+              <a href="/products/pw-hr-20l">PW HR-20L <small>20 L/day · Desktop / Countertop</small></a>
+              <a href="/products/pw-hr-25l-low-power-consumption">PW HR-25L <small>25 L/day</small></a>
+              <a href="/products/pw-hr-30l">PW HR-30L <small>30 L/day</small></a>
+              <a href="/products/pw-hr-60l">PW HR-60L <small>60 L/day</small></a>
+            </div>
+            <div class="nav-menu-column">
+              <span class="nav-menu-label">Commercial & Industrial</span>
+              <a href="/products/commercial-industrial"><strong>View Commercial & Industrial</strong><small>80–10,000 litres/day</small></a>
+              <a href="/products/pw-hr-80l-low-power-consumption">Compact commercial <small>80 L/day</small></a>
+              <a href="/products/pw-hr-250l-low-power-consumption">Mid-range <small>250 L/day</small></a>
+              <a href="/products/pw-hr-1000l-low-power-consumption">High output <small>1,000 L/day</small></a>
+              <a href="/products/pw-hr-10000l-low-power-consumption">Industrial scale <small>10,000 L/day</small></a>
+            </div>
+          </div>
         </div>
-        <div class="nav-menu-column">
-          <span class="nav-menu-label">Home & Office</span>
-          <a href="/products/home-office"><strong>View Home & Office range</strong><small>20–60 litres/day</small></a>
-          <a href="/products/pw-hr-20l">PW HR-20L <small>20 L/day · Desktop / Countertop</small></a>
-          <a href="/products/pw-hr-25l-low-power-consumption">PW HR-25L <small>25 L/day</small></a>
-          <a href="/products/pw-hr-30l">PW HR-30L <small>30 L/day</small></a>
-          <a href="/products/pw-hr-60l">PW HR-60L <small>60 L/day</small></a>
+
+      <% } else if(item.builtin_key === 'how-it-works'){ %>
+        <div class="nav-group <%= path === '/how-it-works' || path === '/faqs' ? 'active' : '' %>" data-nav-group data-nav-key="how-it-works">
+          <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
+            <span class="nav-label"><%= item.label %></span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="nav-dropdown nav-dropdown-small">
+            <a href="/how-it-works"><strong>How Atmospheric Water Generation works</strong><small>Air intake, condensation, treatment and storage</small></a>
+            <a href="/faqs"><strong>Frequently asked questions</strong><small>Installation, output, power, water treatment and maintenance</small></a>
+            <a href="/faqs#performance-and-sizing"><strong>Choosing the right output</strong><small>Understand humidity, demand and system sizing</small></a>
+          </div>
         </div>
-        <div class="nav-menu-column">
-          <span class="nav-menu-label">Commercial & Industrial</span>
-          <a href="/products/commercial-industrial"><strong>View Commercial & Industrial</strong><small>80–10,000 litres/day</small></a>
-          <a href="/products/pw-hr-80l-low-power-consumption">Compact commercial <small>80 L/day</small></a>
-          <a href="/products/pw-hr-250l-low-power-consumption">Mid-range <small>250 L/day</small></a>
-          <a href="/products/pw-hr-1000l-low-power-consumption">High output <small>1,000 L/day</small></a>
-          <a href="/products/pw-hr-10000l-low-power-consumption">Industrial scale <small>10,000 L/day</small></a>
+
+      <% } else if(item.builtin_key === 'environment'){ %>
+        <div class="nav-group <%= path.startsWith('/environment') ? 'active' : '' %>" data-nav-group data-nav-key="environment">
+          <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
+            <span class="nav-label"><%= item.label %></span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="nav-dropdown nav-dropdown-small">
+            <a href="/environment/plastic-bottles"><strong>Plastic bottles</strong><small>Reduce storage, delivery and single-use packaging</small></a>
+            <a href="/environment/mains-water"><strong>Mains water</strong><small>Explore on-site generation as a complementary source</small></a>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="nav-group <%= path === '/how-it-works' || path === '/faqs' ? 'active' : '' %>" data-nav-group>
-      <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
-        <span class="nav-label">How it works</span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </button>
-      <div class="nav-dropdown nav-dropdown-small">
-        <a href="/how-it-works"><strong>How Atmospheric Water Generation works</strong><small>Air intake, condensation, treatment and storage</small></a>
-        <a href="/faqs"><strong>Frequently asked questions</strong><small>Installation, output, power, water treatment and maintenance</small></a>
-        <a href="/faqs#performance-and-sizing"><strong>Choosing the right output</strong><small>Understand humidity, demand and system sizing</small></a>
-      </div>
-    </div>
+      <% } else if(item.builtin_key === 'about'){ %>
+        <div class="nav-group <%= path === '/about' || path === '/resellers' ? 'active' : '' %>" data-nav-group data-nav-key="about">
+          <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
+            <span class="nav-label"><%= item.label %></span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="nav-dropdown nav-dropdown-small">
+            <a href="/about"><strong>About WatAir</strong><small>Atmospheric Water Generation solutions</small></a>
+            <a href="/resellers"><strong>Become a reseller</strong><small>Partner opportunities and commercial enquiries</small></a>
+          </div>
+        </div>
 
-    <div class="nav-group <%= path.startsWith('/environment') ? 'active' : '' %>" data-nav-group>
-      <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
-        <span class="nav-label">Environment</span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </button>
-      <div class="nav-dropdown nav-dropdown-small">
-        <a href="/environment/plastic-bottles"><strong>Plastic bottles</strong><small>Reduce storage, delivery and single-use packaging</small></a>
-        <a href="/environment/mains-water"><strong>Mains water</strong><small>Explore on-site generation as a complementary source</small></a>
-      </div>
-    </div>
-
-    <div class="nav-group <%= path === '/about' || path === '/resellers' ? 'active' : '' %>" data-nav-group>
-      <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
-        <span class="nav-label">About</span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </button>
-      <div class="nav-dropdown nav-dropdown-small">
-        <a href="/about"><strong>About WatAir</strong><small>Atmospheric Water Generation solutions</small></a>
-        <a href="/resellers"><strong>Become a reseller</strong><small>Partner opportunities and commercial enquiries</small></a>
-      </div>
-    </div>
-
-    <a href="/contact" class="button button-small button-aqua" <%= path === '/contact' ? 'aria-current="page"' : '' %>>Talk to WatAir</a>
+      <% } else { %>
+        <a
+          href="<%= item.url %>"
+          class="<%= item.style === 'cta' ? 'button button-small button-aqua' : 'nav-custom-link' %>"
+          data-nav-key="<%= item.builtin_key || ('custom-' + item.id) %>"
+          <%= item.new_window ? 'target="_blank" rel="noopener noreferrer"' : '' %>
+          <%= !item.new_window && item.url === path ? 'aria-current="page"' : '' %>
+        ><%= item.label %></a>
+      <% } %>
+    <% }) %>
   </nav>
 </header>
