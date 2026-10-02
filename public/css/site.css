@@ -2095,3 +2095,69 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   }
 }
 
+/* Configurable social profiles */
+.utility-social{
+  flex:0 0 auto;
+}
+.utility-social svg{
+  width:18px;
+  height:18px;
+}
+.utility-facebook{
+  color:#fff;
+}
+.utility-facebook svg{
+  width:17px;
+  height:17px;
+}
+.utility-instagram{
+  color:#fff;
+}
+.utility-instagram svg{
+  width:18px;
+  height:18px;
+}
+.utility-contact .utility-social + .utility-social{
+  margin-left:0;
+}
+.footer-socials{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px 14px;
+}
+.footer-socials .footer-social{
+  margin-top:0;
+}
+.social-mark{
+  width:18px;
+  height:18px;
+  display:inline-grid;
+  place-items:center;
+  flex:0 0 18px;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+  font-weight:900;
+  line-height:1;
+}
+.social-facebook{
+  border-radius:50%;
+  background:#1877f2;
+  font-size:14px;
+}
+.social-instagram{
+  border-radius:5px;
+  border:1.5px solid currentColor;
+  font-size:13px;
+}
+@media(max-width:900px){
+  .utility-contact .utility-social{
+    width:32px;
+    padding-left:0;
+  }
+  .utility-contact .utility-linkedin{
+    width:32px;
+  }
+}
+
