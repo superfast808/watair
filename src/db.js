@@ -71,11 +71,58 @@ CREATE TABLE IF NOT EXISTS enquiries (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status TEXT NOT NULL DEFAULT 'new'
 );
+CREATE TABLE IF NOT EXISTS delivery_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  delivery_class TEXT NOT NULL DEFAULT 'standard',
+  country_code TEXT NOT NULL DEFAULT 'GB',
+  postcode_prefixes TEXT DEFAULT '',
+  price_minor INTEGER NOT NULL DEFAULT 0,
+  priority INTEGER NOT NULL DEFAULT 100,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  public_id TEXT NOT NULL UNIQUE,
+  product_id INTEGER,
+  product_slug TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  currency TEXT NOT NULL DEFAULT 'GBP',
+  unit_price_minor INTEGER NOT NULL,
+  delivery_minor INTEGER NOT NULL DEFAULT 0,
+  total_minor INTEGER NOT NULL,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_phone TEXT DEFAULT '',
+  address1 TEXT NOT NULL,
+  address2 TEXT DEFAULT '',
+  city TEXT NOT NULL,
+  region TEXT DEFAULT '',
+  postcode TEXT NOT NULL,
+  country_code TEXT NOT NULL DEFAULT 'GB',
+  gateway TEXT NOT NULL,
+  gateway_ref TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',
+  notes TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_delivery_rules_active ON delivery_rules(active, priority);
 `);
 
 ensureColumn('pages', 'hero_image', "TEXT DEFAULT ''");
 ensureColumn('pages', 'hero_style', "TEXT DEFAULT ''");
 ensureColumn('admins', 'display_name', "TEXT DEFAULT ''");
+ensureColumn('products', 'sellable', "INTEGER NOT NULL DEFAULT 0");
+ensureColumn('products', 'price_minor', "INTEGER NOT NULL DEFAULT 0");
+ensureColumn('products', 'delivery_class', "TEXT DEFAULT 'standard'");
+ensureColumn('products', 'max_order_qty', "INTEGER NOT NULL DEFAULT 1");
 
 const defaultProductImages = {
   'pw-hr-20l': '/images/pw-hr-20l.webp',
@@ -162,7 +209,13 @@ function seed() {
     company_location: 'Glasgow, United Kingdom',
     facebook_url: '',
     instagram_url: '',
-    linkedin_url: 'https://uk.linkedin.com/company/watair-uk'
+    linkedin_url: 'https://uk.linkedin.com/company/watair-uk',
+    commerce_enabled: '0',
+    commerce_currency: 'GBP',
+    commerce_stripe_enabled: '0',
+    commerce_paypal_enabled: '0',
+    commerce_manual_enabled: '0',
+    commerce_price_note: 'Delivery is calculated from the delivery address before payment.'
   };
   const set = db.prepare('INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)');
   Object.entries(defaults).forEach(([k,v]) => set.run(k,v));
