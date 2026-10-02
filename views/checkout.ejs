@@ -79,7 +79,11 @@
       </label>
       <p class="form-privacy">Order details are handled as described in our <a href="/privacy">Privacy notice</a>. WatAir does not store full payment-card details.</p>
 
-      <button class="button button-aqua checkout-submit" type="submit">Continue to payment</button>
+      <% if(gateways.length){ %>
+        <button class="button button-aqua checkout-submit" type="submit">Continue to payment</button>
+      <% } else { %>
+        <a class="button button-aqua checkout-submit" href="/contact?product=<%= product.slug %>">Contact WatAir to order</a>
+      <% } %>
     </form>
   </div>
 
