@@ -7,7 +7,7 @@
   <meta name="csrf-token" content="<%= typeof csrf !== 'undefined' ? csrf : '' %>">
   <title><%= meta.title %></title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/admin.css?v=<%= assetVersion %>">
 </head>
 <body class="admin-shell">
   <aside class="admin-sidebar" data-admin-sidebar>
