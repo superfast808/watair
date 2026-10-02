@@ -71,7 +71,11 @@ function deliveryQuote(db, product, countryCode, postcode) {
 
 function enabledGateways(settings) {
   const gateways = [];
-  if (String(settings.commerce_stripe_enabled) === '1' && process.env.STRIPE_SECRET_KEY) {
+  if (
+    String(settings.commerce_stripe_enabled) === '1' &&
+    process.env.STRIPE_SECRET_KEY &&
+    process.env.STRIPE_WEBHOOK_SECRET
+  ) {
     gateways.push({ id: 'stripe', label: 'Card payment', detail: 'Secure checkout powered by Stripe' });
   }
   if (
