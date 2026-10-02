@@ -250,6 +250,10 @@ async function createPayPalOrder({ order, baseUrl, brandName = 'WatAir' }) {
   return paypalRequest('/v2/checkout/orders', { method: 'POST', body });
 }
 
+async function retrievePayPalOrder(paypalOrderId) {
+  return paypalRequest('/v2/checkout/orders/' + encodeURIComponent(paypalOrderId));
+}
+
 async function capturePayPalOrder(paypalOrderId) {
   return paypalRequest('/v2/checkout/orders/' + encodeURIComponent(paypalOrderId) + '/capture', {
     method: 'POST',
@@ -269,5 +273,6 @@ module.exports = {
   retrieveStripeSession,
   verifyStripeWebhook,
   createPayPalOrder,
+  retrievePayPalOrder,
   capturePayPalOrder
 };
