@@ -1887,3 +1887,27 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .not-found{margin-left:8px;margin-right:8px}
   .not-found h1{font-size:48px}
 }
+
+
+/* Release polish: forms and legal content */
+.form-privacy{
+  margin:2px 0 4px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+.form-privacy a{
+  color:#087f98;
+  font-weight:800;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.page-hero-privacy .page-hero-art{
+  background:linear-gradient(145deg,#eef8f9,#d9eef1);
+}
+.page-hero-privacy .page-hero-art img{
+  opacity:.72;
+}
+.page-hero-privacy+.prose-shell .prose h2:first-child{
+  margin-top:0;
+}
