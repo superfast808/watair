@@ -863,7 +863,14 @@ app.post('/admin/enquiries/:id/delete', requireCsrf, (req,res) => {
 app.use((req,res) => res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', description: 'The requested page could not be found.', noindex: true } }));
 app.use((err,req,res,next) => {
   console.error(err);
-  res.status(500).send(isProd ? 'Something went wrong.' : `<pre>${String(err.stack || err)}</pre>`);
+  if (!isProd) return res.status(500).send(`<pre>${String(err.stack || err)}</pre>`);
+  res.status(500).render('500', {
+    meta: {
+      title: 'Something went wrong | WatAir UK',
+      description: 'The requested page could not be loaded.',
+      noindex: true
+    }
+  });
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => console.log(`WatAir listening on ${PORT}`));
