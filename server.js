@@ -38,7 +38,8 @@ app.use(helmet({
       frameAncestors: ["'none'"]
     }
   },
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  strictTransportSecurity: isProd ? { maxAge: 15552000, includeSubDomains: false, preload: false } : false
 }));
 app.use(compression());
 app.use(cookieParser());
