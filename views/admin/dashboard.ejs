@@ -61,6 +61,26 @@
   </section>
 </div>
 
+
+<section class="admin-card release-check-card">
+  <div class="card-head">
+    <div>
+      <p class="admin-kicker">Production readiness</p>
+      <h2>Launch checks</h2>
+      <p>Quick checks for the settings most likely to cause trouble during cutover.</p>
+    </div>
+    <span class="pill <%= releaseChecks.every(check => check.ok) ? '' : 'pill-warning' %>"><%= releaseChecks.filter(check => check.ok).length %>/<%= releaseChecks.length %> ready</span>
+  </div>
+  <div class="release-check-list">
+    <% releaseChecks.forEach(check => { %>
+      <div class="release-check <%= check.ok ? 'ok' : 'warning' %>">
+        <span class="release-check-icon" aria-hidden="true"><%= check.ok ? '✓' : '!' %></span>
+        <div><strong><%= check.label %></strong><small><%= check.detail %></small></div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
 <section class="admin-card dashboard-media-card">
   <div>
     <p class="admin-kicker">Media library</p>
