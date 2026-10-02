@@ -833,6 +833,7 @@ app.get('/admin/products/:id', (req,res) => {
   res.render('admin/product-edit', {
     isNew: false,
     product,
+    reqQuery: req.query,
     meta: { title: `Edit ${product.name} | WatAir CMS` }
   });
 });
