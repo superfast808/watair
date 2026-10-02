@@ -330,7 +330,7 @@ function renderPage(res, page, extra = {}) {
   if (!page) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
   const pageImages = {
     'how-it-works': '/uploads/imported/legacy/images/how-it-works/hydrologic-cycle.svg',
-    'water-quality-maintenance': '/images/pw-hr-20l.webp',
+    'water-quality-maintenance': '/uploads/imported/legacy/media/1027/contact-banner.jpg',
     'about': '/uploads/imported/legacy/media/1023/about-us-banner.jpg',
     'plastic-bottles': '/uploads/imported/legacy/media/1026/our-environment-banner.jpg',
     'mains-water': '/uploads/imported/legacy/media/1024/mains-water-banner.jpg',
