@@ -59,6 +59,24 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS navigation_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  builtin_key TEXT DEFAULT '',
+  label TEXT NOT NULL,
+  url TEXT DEFAULT '',
+  item_type TEXT NOT NULL DEFAULT 'custom',
+  style TEXT NOT NULL DEFAULT 'link',
+  sort_order INTEGER NOT NULL DEFAULT 100,
+  active INTEGER NOT NULL DEFAULT 1,
+  new_window INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_navigation_builtin_key
+  ON navigation_items(builtin_key)
+  WHERE builtin_key <> '';
+CREATE INDEX IF NOT EXISTS idx_navigation_sort
+  ON navigation_items(active,sort_order,id);
 CREATE TABLE IF NOT EXISTS enquiries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -395,6 +413,23 @@ function seed() {
       db.prepare('UPDATE pages SET body_html=body_html || ?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(commercePrivacy, privacy.id);
     }
     db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(ecommercePrivacyKey, new Date().toISOString());
+  }
+
+  const navigationCount = db.prepare('SELECT COUNT(*) c FROM navigation_items').get().c;
+  if (!navigationCount) {
+    const insertNavigation = db.prepare(`
+      INSERT INTO navigation_items(builtin_key,label,url,item_type,style,sort_order,active,new_window)
+      VALUES(?,?,?,?,?,?,1,0)
+    `);
+    const navigationDefaults = [
+      ['products', 'Atmospheric Water Generators', '', 'builtin', 'link', 10],
+      ['how-it-works', 'How it works', '', 'builtin', 'link', 20],
+      ['environment', 'Environment', '', 'builtin', 'link', 30],
+      ['about', 'About', '', 'builtin', 'link', 40],
+      ['contact', 'Talk to WatAir', '/contact', 'builtin', 'cta', 50]
+    ];
+    const tx = db.transaction(() => navigationDefaults.forEach(item => insertNavigation.run(...item)));
+    tx();
   }
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
