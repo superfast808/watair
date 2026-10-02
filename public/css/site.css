@@ -2619,3 +2619,89 @@ body.cookie-preferences-open{overflow:hidden}
   .cookie-preferences-panel{padding:20px}
 }
 
+/* Water quality and maintenance */
+.water-quality-panel{
+  max-width:var(--max);
+  margin:22px auto 10px;
+  padding:30px 34px;
+  border-radius:20px;
+  background:linear-gradient(135deg,#062632 0%,#0b3b49 100%);
+  color:#fff;
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr) auto;
+  gap:24px;
+  align-items:center;
+  box-shadow:0 18px 46px rgba(7,42,54,.08);
+}
+.water-quality-badge{
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#20b9d5;
+  color:#062632;
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:-.03em;
+}
+.water-quality-copy .eyebrow{
+  color:#6edbe8;
+  margin-bottom:7px;
+}
+.water-quality-copy h2{
+  margin:0 0 9px;
+  max-width:760px;
+  font-size:clamp(25px,3vw,36px);
+  line-height:1.02;
+  letter-spacing:-.04em;
+}
+.water-quality-copy p{
+  margin:0;
+  max-width:900px;
+  color:#b9d0d5;
+  font-size:13px;
+  line-height:1.65;
+}
+.water-quality-panel>.button{
+  white-space:nowrap;
+  align-self:center;
+}
+.maintenance-side-card{
+  border-color:#bfe4e9;
+  background:linear-gradient(180deg,#f5fcfd,#eef8fa);
+}
+.page-hero-water-quality-maintenance .page-hero-art img{
+  max-width:72%;
+  max-height:76%;
+  object-fit:contain;
+}
+@media(max-width:900px){
+  .water-quality-panel{
+    margin:18px 18px 0;
+    grid-template-columns:54px 1fr;
+  }
+  .water-quality-panel>.button{
+    grid-column:1/-1;
+    justify-self:start;
+  }
+}
+@media(max-width:600px){
+  .water-quality-panel{
+    margin:12px 10px 0;
+    padding:24px 20px;
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+  .water-quality-badge{
+    width:50px;
+    height:50px;
+  }
+  .water-quality-panel>.button{
+    grid-column:auto;
+    width:100%;
+    white-space:normal;
+    text-align:center;
+  }
+}
+
