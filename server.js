@@ -22,7 +22,25 @@ const PORT = Number(process.env.PORT || 8080);
 const isProd = process.env.NODE_ENV === 'production';
 const baseUrl = (process.env.BASE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
 
+if (isProd) {
+  const sessionSecret = String(process.env.SESSION_SECRET || '');
+  if (sessionSecret.length < 32 || sessionSecret === 'replace-with-at-least-32-random-characters') {
+    throw new Error('SESSION_SECRET must be a unique value of at least 32 characters in production.');
+  }
+
+  let productionBaseUrl;
+  try {
+    productionBaseUrl = new URL(baseUrl);
+  } catch {
+    throw new Error('BASE_URL must be a valid absolute URL in production.');
+  }
+  if (productionBaseUrl.protocol !== 'https:') {
+    throw new Error('BASE_URL must use https:// in production.');
+  }
+}
+
 if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+else if (isProd) console.warn('TRUST_PROXY is not set; configure it when running behind Plesk/nginx so rate limiting sees the real client IP.');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -151,6 +169,7 @@ function renderPage(res, page, extra = {}) {
 }
 
 app.get('/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     db.prepare('SELECT 1 AS ok').get();
     res.json({ ok: true, service: 'watair-next', version: appVersion });
@@ -640,8 +659,22 @@ app.get('/admin', (req,res) => {
   let canonicalHost = '';
   try { canonicalHost = new URL(baseUrl).hostname.toLowerCase(); } catch {}
   const canonicalReady = baseUrl.startsWith('https://') && ['watair.co.uk','www.watair.co.uk'].includes(canonicalHost);
+  const sessionSecretReady =
+    String(process.env.SESSION_SECRET || '').length >= 32 &&
+    process.env.SESSION_SECRET !== 'replace-with-at-least-32-random-characters';
+  const trustProxyReady = Boolean(process.env.TRUST_PROXY);
 
   const releaseChecks = [
+    {
+      label: 'Session signing secret',
+      ok: sessionSecretReady,
+      detail: sessionSecretReady ? 'A production session secret is configured' : 'Set a unique SESSION_SECRET of at least 32 characters'
+    },
+    {
+      label: 'Reverse-proxy client IP handling',
+      ok: trustProxyReady,
+      detail: trustProxyReady ? `TRUST_PROXY is set to ${process.env.TRUST_PROXY}` : 'Set TRUST_PROXY=1 behind the Plesk/nginx reverse proxy'
+    },
     {
       label: 'Final canonical URL',
       ok: canonicalReady,
