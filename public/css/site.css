@@ -2052,3 +2052,46 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     font-size:12px;
   }
 }
+
+/* Product-card artwork stage
+   Keep every machine fully visible and give unlike source crops a consistent
+   visual weight without altering the owner-approved product images. */
+.product-art{
+  height:290px;
+  padding:26px 28px 24px;
+}
+.product-art img{
+  width:auto;
+  height:auto;
+  max-width:74%;
+  max-height:76%;
+  object-fit:contain;
+  object-position:center;
+  transform:scale(1);
+  transform-origin:center;
+}
+.product-card:hover .product-art img{
+  transform:scale(1.015);
+}
+
+/* Optical normalisation for the three featured source crops. */
+.product-art[data-product-art="pw-hr-20l"] img{
+  max-width:66%;
+  max-height:72%;
+}
+.product-art[data-product-art="pw-hr-80l-low-power-consumption"] img{
+  max-width:96%;
+  max-height:94%;
+}
+.product-art[data-product-art="pw-hr-10000l-low-power-consumption"] img{
+  max-width:70%;
+  max-height:68%;
+}
+
+@media(max-width:600px){
+  .product-art{
+    height:250px;
+    padding:22px 24px 20px;
+  }
+}
+
