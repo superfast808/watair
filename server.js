@@ -166,6 +166,69 @@ function productsForCategory(category) {
 
   return rows;
 }
+function commerceEnabled(settings = settingsObject()) {
+  return String(settings.commerce_enabled || '0') === '1';
+}
+
+function sellableProduct(slug) {
+  return parseProduct(db.prepare(
+    'SELECT * FROM products WHERE slug=? AND published=1 AND sellable=1 AND price_minor>0'
+  ).get(String(slug || '')));
+}
+
+function orderByPublicId(publicId) {
+  return db.prepare('SELECT * FROM orders WHERE public_id=?').get(String(publicId || ''));
+}
+
+function setOrderStatus(publicId, status, gatewayRef = '') {
+  const allowed = new Set(['pending','awaiting_payment','paid','processing','fulfilled','cancelled','refunded','failed']);
+  if (!allowed.has(status)) return;
+  db.prepare(`
+    UPDATE orders
+    SET status=?,
+        gateway_ref=CASE WHEN ?<>'' THEN ? ELSE gateway_ref END,
+        updated_at=CURRENT_TIMESTAMP
+    WHERE public_id=?
+      AND status NOT IN ('fulfilled','refunded')
+  `).run(status, gatewayRef, gatewayRef, publicId);
+}
+
+function gatewayConfiguration() {
+  return {
+    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+    stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+    paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
+    paypalEnvironment: String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase() === 'live' ? 'live' : 'sandbox'
+  };
+}
+
+async function stripeWebhookHandler(req, res) {
+  const event = verifyStripeWebhook(
+    req.body,
+    req.get('stripe-signature'),
+    process.env.STRIPE_WEBHOOK_SECRET
+  );
+  if (!event) return res.status(400).send('Invalid Stripe signature');
+
+  const session = event?.data?.object;
+  const publicId = String(session?.metadata?.order_id || session?.client_reference_id || '');
+  const order = publicId ? orderByPublicId(publicId) : null;
+
+  if (order) {
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+      const amountMatches = Number(session.amount_total) === Number(order.total_minor);
+      const currencyMatches = String(session.currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
+      if (amountMatches && currencyMatches && session.payment_status === 'paid') {
+        setOrderStatus(order.public_id, 'paid', String(session.id || ''));
+      }
+    } else if (event.type === 'checkout.session.expired' || event.type === 'checkout.session.async_payment_failed') {
+      setOrderStatus(order.public_id, event.type.endsWith('failed') ? 'failed' : 'cancelled', String(session?.id || ''));
+    }
+  }
+
+  res.json({ received: true });
+}
+
 function getPage(slug) {
   return db.prepare('SELECT * FROM pages WHERE slug=? AND published=1').get(slug);
 }
