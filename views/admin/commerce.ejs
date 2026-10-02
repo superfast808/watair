@@ -47,6 +47,10 @@
       <strong>Before going live</strong>
       <span>Set product prices as final customer-facing prices. This version does not calculate VAT/tax separately. Review the boilerplate Terms, Refunds, Privacy and Cookie notices against WatAir’s actual commercial arrangements.</span>
     </div>
+    <label class="switch-row legal-review-switch">
+      <span><strong>Legal pages reviewed for live sales</strong><small>Required before Buy now can appear, even when e-commerce is enabled</small></span>
+      <input type="checkbox" name="commerce_legal_reviewed" <%= settings.commerce_legal_reviewed==='1'?'checked':'' %>>
+    </label>
     <button class="admin-button" type="submit">Save commerce settings</button>
   </form>
 
