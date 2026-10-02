@@ -30,6 +30,18 @@ jobs:
           set -euo pipefail
           APP_VERSION=$(node -p "require('./package.json').version")
 
+          # Exercise the opt-in commerce path without enabling commerce in normal defaults.
+          node <<'NODE'
+          const { db } = require('./src/db');
+          const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+          upsert.run('commerce_enabled','1');
+          upsert.run('commerce_currency','GBP');
+          upsert.run('commerce_manual_enabled','1');
+          db.prepare("UPDATE products SET sellable=1,price_minor=129900,delivery_class='standard',max_order_qty=2 WHERE slug='pw-hr-20l'").run();
+          db.prepare("INSERT INTO delivery_rules(name,delivery_class,country_code,postcode_prefixes,price_minor,priority,active) VALUES('CI UK delivery','standard','GB','',2500,100,1)").run();
+          db.close();
+          NODE
+
           node server.js > /tmp/watair.log 2>&1 &
           APP_PID=$!
           trap 'kill $APP_PID 2>/dev/null || true' EXIT
@@ -52,6 +64,13 @@ jobs:
           curl -fsS http://127.0.0.1:8099/contact > /tmp/contact.html
           curl -fsS http://127.0.0.1:8099/about > /tmp/about.html
           curl -fsS http://127.0.0.1:8099/privacy > /tmp/privacy.html
+          curl -fsS http://127.0.0.1:8099/terms > /tmp/terms.html
+          curl -fsS http://127.0.0.1:8099/refunds > /tmp/refunds.html
+          curl -fsS http://127.0.0.1:8099/cookies > /tmp/cookies.html
+          curl -fsS http://127.0.0.1:8099/buy/pw-hr-20l > /tmp/checkout.html
+          curl -fsS -X POST http://127.0.0.1:8099/checkout/quote/pw-hr-20l \
+            -H 'Content-Type: application/json' \
+            --data '{"postcode":"KA1 1AA","country_code":"GB","quantity":1}' > /tmp/quote.json
           curl -fsS http://127.0.0.1:8099/sitemap.xml > /tmp/sitemap.xml
           curl -fsS http://127.0.0.1:8099/robots.txt > /tmp/robots.txt
           curl -fsS http://127.0.0.1:8099/.well-known/security.txt > /tmp/security.txt
@@ -82,10 +101,32 @@ jobs:
           curl -sS -D /tmp/admin-headers.txt -o /dev/null http://127.0.0.1:8099/admin/login
           curl -sS -D /tmp/home-headers.txt -o /dev/null http://127.0.0.1:8099/
 
+          ANON_CSRF=$(node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHmac('sha256',process.env.SESSION_SECRET).update('anonymous').digest('hex'))")
+          curl -sS -D /tmp/checkout-order-headers.txt -o /dev/null \
+            -X POST http://127.0.0.1:8099/checkout/pw-hr-20l \
+            --data-urlencode "_csrf=$ANON_CSRF" \
+            --data-urlencode 'customer_name=CI Buyer' \
+            --data-urlencode 'customer_email=buyer@example.com' \
+            --data-urlencode 'customer_phone=01234 567890' \
+            --data-urlencode 'address1=1 Test Street' \
+            --data-urlencode 'city=Kilmarnock' \
+            --data-urlencode 'region=Ayrshire' \
+            --data-urlencode 'postcode=KA1 1AA' \
+            --data-urlencode 'country_code=GB' \
+            --data-urlencode 'quantity=1' \
+            --data-urlencode 'gateway=manual' \
+            --data-urlencode 'accept_terms=1'
+          ORDER_PATH=$(awk 'BEGIN{IGNORECASE=1} /^location:/ {print $2}' /tmp/checkout-order-headers.txt | tr -d '\r' | tail -1)
+          test -n "$ORDER_PATH"
+          curl -fsS "http://127.0.0.1:8099$ORDER_PATH" > /tmp/order.html
+
           grep -q 'application/ld+json' /tmp/home.html
           grep -q 'Skip to main content' /tmp/home.html
           grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
+          grep -q '"@type":"Offer"' /tmp/product.html
+          grep -q 'Buy now' /tmp/product.html
+          grep -q '£1,299.00' /tmp/product.html
           grep -q '20 Litres/day at 30°C &amp; 80% RH' /tmp/product.html
           grep -q '53.1 × 30.7 × 58 cm' /tmp/product.html
           grep -q 'PW HR-20L' /tmp/products-home.html
@@ -111,6 +152,16 @@ jobs:
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
           grep -q 'How WatAir handles information' /tmp/privacy.html
+          grep -q 'Orders and payments' /tmp/privacy.html
+          grep -q 'Terms for purchases made through the WatAir website' /tmp/terms.html
+          grep -q 'Refunds, cancellations and returns' /tmp/refunds.html
+          grep -q 'Your cookie and privacy choices' /tmp/cookies.html
+          grep -q 'Secure checkout' /tmp/checkout.html
+          grep -q '"delivery_minor":2500' /tmp/quote.json
+          grep -q '"total_minor":132400' /tmp/quote.json
+          grep -q 'Order received.' /tmp/order.html
+          grep -q 'awaiting payment arrangement' /tmp/order.html
+          grep -q 'data-cookie-consent' /tmp/home.html
           grep -q 'privacy notice' /tmp/contact.html
           grep -q 'How many people?' /tmp/contact.html
           grep -q '<strong>Direct</strong> project support' /tmp/contact.html
@@ -120,7 +171,11 @@ jobs:
           grep -q 'Atmospheric Water Generation solutions</small>' /tmp/about.html
           grep -q 'WatAir promotes Atmospheric Water Generation technology' /tmp/about.html
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
+          grep -q '<loc>https://watair.co.uk/terms</loc>' /tmp/sitemap.xml
+          grep -q '<loc>https://watair.co.uk/refunds</loc>' /tmp/sitemap.xml
+          grep -q '<loc>https://watair.co.uk/cookies</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
+          grep -q 'Disallow: /order/' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
           grep -q "rel=\"icon\" href=\"/favicon.svg?v=${APP_VERSION}\"" /tmp/home.html
           grep -q '<svg' /tmp/favicon.svg
@@ -155,6 +210,8 @@ jobs:
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/enquiries > /tmp/admin-enquiries.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/commerce > /tmp/admin-commerce.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/orders > /tmp/admin-orders.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
 
           grep -q 'Welcome back' /tmp/admin-dashboard.html
@@ -162,6 +219,9 @@ jobs:
           grep -q 'Add product' /tmp/admin-product-new.html
           grep -q 'Technical specifications' /tmp/admin-product-edit.html
           grep -q 'Delete product permanently' /tmp/admin-product-edit.html
+          grep -q 'Sell online' /tmp/admin-product-edit.html
+          grep -q 'Customer price' /tmp/admin-product-edit.html
+          grep -q 'Delivery class' /tmp/admin-product-edit.html
           grep -q 'Page content' /tmp/admin-page-edit.html
           grep -q 'Upload an image' /tmp/admin-media.html
           grep -q 'Homepage hero image' /tmp/admin-settings.html
@@ -173,6 +233,10 @@ jobs:
           grep -q 'Generate secure password' /tmp/admin-users.html
           grep -q 'CI Contact' /tmp/admin-enquiries.html
           grep -q 'Delete enquiry' /tmp/admin-enquiries.html
+          grep -q 'Payment gateways' /tmp/admin-commerce.html
+          grep -q 'Delivery rules' /tmp/admin-commerce.html
+          grep -q 'CI Buyer' /tmp/admin-orders.html
+          grep -q '£1,324.00' /tmp/admin-orders.html
           grep -q '"assets"' /tmp/admin-assets.json
 
       - name: Reject unsafe first-boot admin credentials
