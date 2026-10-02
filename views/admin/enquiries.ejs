@@ -8,6 +8,8 @@
   </div>
 </header>
 
+<% if(reqQuery?.deleted){ %><div class="notice-success"><strong>Enquiry deleted.</strong></div><% } %>
+
 <% if(enquiries.length){ %>
   <div class="enquiry-list">
     <% enquiries.forEach(e=>{ %>
@@ -33,6 +35,10 @@
               <button class="secondary-button">Mark as read</button>
             </form>
           <% } %>
+          <form method="post" action="/admin/enquiries/<%= e.id %>/delete" onsubmit="return confirm('Permanently delete this enquiry?')">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <button class="text-button danger-text" type="submit">Delete enquiry</button>
+          </form>
         </div>
       </article>
     <% }) %>
