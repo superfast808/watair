@@ -89,7 +89,15 @@
         name: product.name + ' technical datasheet',
         encodingFormat: 'application/pdf',
         url: canonicalUrl + '/datasheet.pdf'
-      }
+      },
+      offers: settings.commerce_enabled === '1' && product.sellable && Number(product.price_minor) > 0 ? {
+        '@type': 'Offer',
+        url: baseUrl + '/buy/' + product.slug,
+        priceCurrency: settings.commerce_currency || 'GBP',
+        price: (Number(product.price_minor) / 100).toFixed(2),
+        availability: 'https://schema.org/InStock',
+        seller: { '@id': orgId }
+      } : undefined
     });
   } else if (typeof products !== 'undefined' && Array.isArray(products)) {
     const categoryName = typeof category !== 'undefined' && category === 'home-office'
