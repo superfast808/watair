@@ -57,11 +57,11 @@
   <% if(isCommercial && products.length > 6){ %>
   <div class="capacity-filter" aria-label="Filter commercial products by output">
     <span>Filter by output</span>
-    <button type="button" class="selected" data-capacity-filter="all">All</button>
-    <button type="button" data-capacity-filter="80-250">80–250 L/day</button>
-    <button type="button" data-capacity-filter="500-2000">500–2,000 L/day</button>
-    <button type="button" data-capacity-filter="3000-plus">3,000+ L/day</button>
-    <small data-capacity-count><%= products.length %> models</small>
+    <button type="button" class="selected" data-capacity-filter="all" aria-pressed="true">All</button>
+    <button type="button" data-capacity-filter="80-250" aria-pressed="false">80–250 L/day</button>
+    <button type="button" data-capacity-filter="500-2000" aria-pressed="false">500–2,000 L/day</button>
+    <button type="button" data-capacity-filter="3000-plus" aria-pressed="false">3,000+ L/day</button>
+    <small data-capacity-count aria-live="polite"><%= products.length %> models</small>
   </div>
   <% } %>
 
