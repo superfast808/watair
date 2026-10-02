@@ -8,9 +8,13 @@
     <div>
       <a class="brand brand-footer brand-logo" href="/" aria-label="WatAir UK home"><img src="/images/logo-header.svg?v=<%= assetVersion %>" alt="WatAir – Water from Air" decoding="async"></a>
       <p><%= settings.footer_text %></p>
-      <a class="footer-social" href="https://uk.linkedin.com/company/watair-uk" target="_blank" rel="noopener">
-        <span class="linkedin-mark" aria-hidden="true">in</span><span>Follow WatAir on LinkedIn</span>
-      </a>
+      <% if(settings.facebook_url || settings.instagram_url || settings.linkedin_url){ %>
+      <div class="footer-socials" aria-label="WatAir social media">
+        <% if(settings.facebook_url){ %><a class="footer-social" href="<%= settings.facebook_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on Facebook"><span class="social-mark social-facebook" aria-hidden="true">f</span><span>Facebook</span></a><% } %>
+        <% if(settings.instagram_url){ %><a class="footer-social" href="<%= settings.instagram_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on Instagram"><span class="social-mark social-instagram" aria-hidden="true">◎</span><span>Instagram</span></a><% } %>
+        <% if(settings.linkedin_url){ %><a class="footer-social" href="<%= settings.linkedin_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on LinkedIn"><span class="linkedin-mark" aria-hidden="true">in</span><span>LinkedIn</span></a><% } %>
+      </div>
+      <% } %>
     </div>
     <div>
       <h3>Products</h3>
