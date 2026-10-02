@@ -246,7 +246,7 @@ function seed() {
         db.prepare('UPDATE products SET published=0,featured=0,updated_at=CURRENT_TIMESTAMP WHERE slug=?').run(slug);
       }
 
-      db.prepare("UPDATE pages SET published=0,updated_at=CURRENT_TIMESTAMP WHERE slug='leasing'").run();
+      db.prepare("DELETE FROM pages WHERE slug='leasing'").run();
 
       db.prepare(`
         UPDATE settings SET value='/uploads/imported/legacy/media/1027/contact-banner.jpg'
