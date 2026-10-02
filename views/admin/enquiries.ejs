@@ -23,7 +23,7 @@
               <% if(e.phone){ %><a href="tel:<%= e.phone.replace(/\s/g,'') %>"><%= e.phone %></a><% } %>
             </div>
           </div>
-          <small><%= new Date(e.created_at).toLocaleString('en-GB') %></small>
+          <small><%= formatUkDateTime(e.created_at) %></small>
         </div>
         <div class="message"><%= e.message %></div>
         <div class="enquiry-actions">
