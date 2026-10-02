@@ -190,3 +190,146 @@ if (capacityButtons.length) {
     });
   });
 }
+
+/* Cookie consent */
+(() => {
+  const storageKey = 'watair_cookie_consent_v1';
+  const banner = document.querySelector('[data-cookie-consent]');
+  const preferences = document.querySelector('[data-cookie-preferences]');
+  if (!banner || !preferences) return;
+
+  const analytics = preferences.querySelector('[data-cookie-analytics]');
+  const marketing = preferences.querySelector('[data-cookie-marketing]');
+  const readChoice = () => {
+    try {
+      const value = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      return value && typeof value === 'object' ? value : null;
+    } catch {
+      return null;
+    }
+  };
+  const applyChoice = choice => {
+    window.dispatchEvent(new CustomEvent('watair:consent', { detail: choice }));
+  };
+  const saveChoice = choice => {
+    const value = {
+      essential: true,
+      analytics: Boolean(choice.analytics),
+      marketing: Boolean(choice.marketing),
+      updated_at: new Date().toISOString()
+    };
+    try { localStorage.setItem(storageKey, JSON.stringify(value)); } catch {}
+    banner.hidden = true;
+    preferences.hidden = true;
+    document.body.classList.remove('cookie-preferences-open');
+    applyChoice(value);
+  };
+  const openPreferences = () => {
+    const current = readChoice() || { analytics: false, marketing: false };
+    if (analytics) analytics.checked = Boolean(current.analytics);
+    if (marketing) marketing.checked = Boolean(current.marketing);
+    preferences.hidden = false;
+    document.body.classList.add('cookie-preferences-open');
+    preferences.querySelector('.cookie-close')?.focus();
+  };
+  const closePreferences = () => {
+    preferences.hidden = true;
+    document.body.classList.remove('cookie-preferences-open');
+  };
+
+  const existing = readChoice();
+  if (existing) applyChoice(existing);
+  else banner.hidden = false;
+
+  document.querySelectorAll('[data-cookie-settings],[data-cookie-manage]').forEach(button => {
+    button.addEventListener('click', openPreferences);
+  });
+  document.querySelectorAll('[data-cookie-close]').forEach(button => {
+    button.addEventListener('click', closePreferences);
+  });
+  document.querySelectorAll('[data-cookie-reject]').forEach(button => {
+    button.addEventListener('click', () => saveChoice({ analytics: false, marketing: false }));
+  });
+  document.querySelector('[data-cookie-accept]')?.addEventListener('click', () => {
+    saveChoice({ analytics: true, marketing: true });
+  });
+  document.querySelector('[data-cookie-save]')?.addEventListener('click', () => {
+    saveChoice({ analytics: analytics?.checked, marketing: marketing?.checked });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !preferences.hidden) closePreferences();
+  });
+})();
+
+/* Checkout delivery quote */
+(() => {
+  const form = document.querySelector('[data-checkout-form]');
+  const summary = document.querySelector('[data-checkout-summary]');
+  if (!form || !summary) return;
+
+  const postcode = form.querySelector('[data-checkout-postcode]');
+  const country = form.querySelector('[data-checkout-country]');
+  const quantity = form.querySelector('[data-checkout-quantity]');
+  const deliveryStatus = form.querySelector('[data-delivery-status]');
+  const deliveryPrice = summary.querySelector('[data-delivery-price]');
+  const total = summary.querySelector('[data-checkout-total]');
+  const submit = form.querySelector('.checkout-submit');
+  const slug = form.dataset.productSlug;
+  let timer = null;
+  let controller = null;
+
+  const setUnavailable = message => {
+    if (deliveryStatus) deliveryStatus.textContent = message;
+    if (deliveryPrice) deliveryPrice.textContent = 'Not available';
+    if (submit) submit.disabled = true;
+  };
+
+  const quote = async () => {
+    const postal = postcode?.value.trim() || '';
+    const countryCode = country?.value || '';
+    if (!postal || !countryCode) {
+      setUnavailable('Enter a postcode to calculate delivery.');
+      return;
+    }
+
+    controller?.abort();
+    controller = new AbortController();
+    if (deliveryStatus) deliveryStatus.textContent = 'Calculating delivery…';
+    if (submit) submit.disabled = true;
+
+    try {
+      const response = await fetch('/checkout/quote/' + encodeURIComponent(slug), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postcode: postal,
+          country_code: countryCode,
+          quantity: Number(quantity?.value || 1)
+        }),
+        signal: controller.signal
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Delivery could not be calculated.');
+      if (deliveryPrice) deliveryPrice.textContent = payload.delivery_formatted;
+      if (total) total.textContent = payload.total_formatted;
+      if (deliveryStatus) deliveryStatus.textContent = payload.delivery_label + ' · ' + payload.delivery_formatted;
+      if (submit) submit.disabled = false;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      setUnavailable(err.message || 'Delivery could not be calculated.');
+    }
+  };
+
+  const scheduleQuote = () => {
+    clearTimeout(timer);
+    timer = setTimeout(quote, 320);
+  };
+  postcode?.addEventListener('input', scheduleQuote);
+  country?.addEventListener('change', quote);
+  quantity?.addEventListener('change', quote);
+
+  if (postcode?.value.trim()) quote();
+  else if (submit) submit.disabled = true;
+})();
+
