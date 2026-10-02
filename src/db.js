@@ -123,6 +123,7 @@ ensureColumn('products', 'sellable', "INTEGER NOT NULL DEFAULT 0");
 ensureColumn('products', 'price_minor', "INTEGER NOT NULL DEFAULT 0");
 ensureColumn('products', 'delivery_class', "TEXT DEFAULT 'standard'");
 ensureColumn('products', 'max_order_qty', "INTEGER NOT NULL DEFAULT 1");
+ensureColumn('orders', 'notified_at', "TEXT DEFAULT ''");
 
 const defaultProductImages = {
   'pw-hr-20l': '/images/pw-hr-20l.webp',
