@@ -622,11 +622,15 @@ app.get('/admin', (req,res) => {
   const recentProducts = products('1=1').slice(0, 6);
   const missingImages = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (image_url IS NULL OR TRIM(image_url)='')").get().c;
   const missingSpecs = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (specs_json IS NULL OR TRIM(specs_json)='' OR specs_json='{}')").get().c;
+  let canonicalHost = '';
+  try { canonicalHost = new URL(baseUrl).hostname.toLowerCase(); } catch {}
+  const canonicalReady = baseUrl.startsWith('https://') && ['watair.co.uk','www.watair.co.uk'].includes(canonicalHost);
+
   const releaseChecks = [
     {
-      label: 'Canonical HTTPS URL',
-      ok: baseUrl.startsWith('https://'),
-      detail: baseUrl
+      label: 'Final canonical URL',
+      ok: canonicalReady,
+      detail: canonicalReady ? baseUrl : `Currently ${baseUrl} — set BASE_URL to the final WatAir domain before launch`
     },
     {
       label: 'Enquiry email notifications',
