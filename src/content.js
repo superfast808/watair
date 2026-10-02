@@ -1,8 +1,22 @@
 const products = [
   {
-    slug: 'pw-hr-15l', name: 'PW HR-15L', category: 'home-office', capacity_lpd: 16,
-    summary: 'Compact hot and cold atmospheric water generator for homes and smaller workplaces.',
-    specs: { 'Output': 'Hot & cold', 'Storage capacity': '8 Litres', 'Water generated': '16 Litres/day generated at 30°C & 80% RH', 'Working temperature': '15–40°C', 'Working humidity': '35–95%', 'Dimensions': '45 × 44 × 56 cm', 'Net weight': '36 kg', 'Refrigerant': 'R134a', 'Total wattage': '900 W' }
+    slug: 'pw-hr-20l', name: 'PW HR-20L', subtitle: 'Desktop / Countertop', category: 'home-office', capacity_lpd: 20,
+    summary: 'Compact desktop and countertop atmospheric water generator with hot and cold drinking water for homes and workplaces.',
+    specs: {
+      'Output': 'Hot & cold',
+      'Storage capacity': '8 Litres',
+      'Water generated': '20 Litres/day at 30°C & 80% RH',
+      'Water temperature': 'Cold 6°C / Hot 82°C',
+      'Working temperature': '15–45°C',
+      'Working humidity': '30–99% RH',
+      'Dimensions': '53.1 × 30.7 × 58 cm',
+      'Net weight': '29 kg',
+      'Refrigerant': 'R134a',
+      'Input power': '370 W production + 500 W heating',
+      'Power supply': 'AC 110V 60Hz / AC 220V 50Hz',
+      'Filtration & sterilisation': 'Air filter + softening + sediment + ultrafiltration membrane + post-carbon + LED-UV',
+      'Display': 'LCD touch screen'
+    }
   },
   {
     slug: 'pw-hr-25l-low-power-consumption', name: 'PW HR-25L', subtitle: 'Low Power Consumption', category: 'home-office', capacity_lpd: 25,
