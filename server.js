@@ -680,8 +680,12 @@ app.get('/payments/paypal/return', async (req,res) => {
 });
 
 app.get('/order/:publicId', (req,res) => {
-  const order = orderByPublicId(req.params.publicId);
+  let order = orderByPublicId(req.params.publicId);
   if (!order) return res.status(404).render('404', { meta: { title: 'Order not found | WatAir', noindex: true } });
+  if (req.query.payment === 'cancelled' && order.status === 'pending') {
+    setOrderStatus(order.public_id, 'cancelled');
+    order = orderByPublicId(order.public_id);
+  }
   res.setHeader('Cache-Control', 'no-store');
   res.render('order', {
     order,
@@ -811,7 +815,7 @@ app.get('/.well-known/security.txt', (req,res) => {
 });
 
 app.get('/robots.txt', (req,res) => {
-  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nSitemap: ${baseUrl}/sitemap.xml\n`);
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /buy/\nDisallow: /checkout/\nDisallow: /order/\nDisallow: /payments/\nSitemap: ${baseUrl}/sitemap.xml\n`);
 });
 
 function xmlEscape(value) {
