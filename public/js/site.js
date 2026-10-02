@@ -6,6 +6,8 @@ if (toggle && nav) {
     nav.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', String(open));
     toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    const label = toggle.querySelector('.menu-toggle-label');
+    if (label) label.textContent = open ? 'Close' : 'Menu';
     document.documentElement.classList.toggle('nav-open', open);
     document.body.classList.toggle('nav-open', open);
     if (!open) closeGroups();
@@ -62,12 +64,16 @@ document.addEventListener('click', event => {
 
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
+    const menuWasOpen = Boolean(nav?.classList.contains('open'));
     closeGroups();
     nav?.classList.remove('open');
     toggle?.setAttribute('aria-expanded', 'false');
     toggle?.setAttribute('aria-label', 'Open navigation');
+    const label = toggle?.querySelector('.menu-toggle-label');
+    if (label) label.textContent = 'Menu';
     document.documentElement.classList.remove('nav-open');
     document.body.classList.remove('nav-open');
+    if (menuWasOpen) toggle?.focus();
   }
 });
 
@@ -169,7 +175,11 @@ if (capacityButtons.length) {
       const range = button.dataset.capacityFilter;
       let visible = 0;
 
-      capacityButtons.forEach(item => item.classList.toggle('selected', item === button));
+      capacityButtons.forEach(item => {
+        const selected = item === button;
+        item.classList.toggle('selected', selected);
+        item.setAttribute('aria-pressed', String(selected));
+      });
       cards.forEach(card => {
         const show = matchesRange(Number(card.dataset.capacity || 0), range);
         card.hidden = !show;
