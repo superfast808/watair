@@ -81,6 +81,7 @@ CMS features include:
 - multiple administrator accounts and password resets
 - homepage/global settings
 - primary navigation management: rename, hide, reorder and add custom links/CTAs
+- water-quality, hygiene and maintenance guidance linked from products, checkout and legal terms
 - SEO titles and descriptions
 - production-readiness checks on the dashboard
 - per-product sellable/price/delivery-class controls
