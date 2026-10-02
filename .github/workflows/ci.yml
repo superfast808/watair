@@ -28,6 +28,7 @@ jobs:
           ADMIN_PASSWORD: CI-test-password-123456789
         run: |
           set -euo pipefail
+          APP_VERSION=$(node -p "require('./package.json').version")
 
           node server.js > /tmp/watair.log 2>&1 &
           APP_PID=$!
@@ -111,7 +112,7 @@ jobs:
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
-          grep -q 'rel="icon" href="/favicon.svg?v=1.1.3"' /tmp/home.html
+          grep -q "rel=\"icon\" href=\"/favicon.svg?v=${APP_VERSION}\"" /tmp/home.html
           grep -q '<svg' /tmp/favicon.svg
           grep -q '^404$' /tmp/notfound-status.txt
           grep -q 'Page not found' /tmp/notfound.html
@@ -159,6 +160,24 @@ jobs:
           grep -q 'CI Contact' /tmp/admin-enquiries.html
           grep -q 'Delete enquiry' /tmp/admin-enquiries.html
           grep -q '"assets"' /tmp/admin-assets.json
+
+      - name: Reject unsafe first-boot admin credentials
+        env:
+          NODE_ENV: production
+          PORT: 8100
+          BASE_URL: https://watair.co.uk
+          SESSION_SECRET: ci-only-session-secret-12345678901234567890
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: replace-with-a-long-unique-password
+        run: |
+          set -euo pipefail
+          rm -rf data
+          set +e
+          node server.js > /tmp/unsafe-bootstrap.log 2>&1
+          STATUS=$?
+          set -e
+          test "$STATUS" -ne 0
+          grep -q 'Refusing to create the first production admin with example credentials' /tmp/unsafe-bootstrap.log
 
       - name: Validate production Docker configuration
         run: |
