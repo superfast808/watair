@@ -86,7 +86,7 @@
     <p class="admin-kicker">Media library</p>
     <h2><%= stats.media ? stats.media + ' media items are available to use.' : 'Add imagery to the website.' %></h2>
     <p>Upload new photography or choose from the WatAir assets imported from the existing site.</p>
-    <% if(mediaSummary.generatedAt){ %><small>Legacy library last refreshed: <%= new Date(mediaSummary.generatedAt).toLocaleString('en-GB') %></small><% } %>
+    <% if(mediaSummary.generatedAt){ %><small>Legacy library last refreshed: <%= formatUkDateTime(mediaSummary.generatedAt) %></small><% } %>
   </div>
   <a class="secondary-button button-link" href="/admin/media">Open media library →</a>
 </section>
