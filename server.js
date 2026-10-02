@@ -1468,7 +1468,7 @@ app.get('/admin/settings', (req,res) => {
   res.render('admin/settings', { values: settingsObject(), meta: { title: 'Site Settings | WatAir CMS' } });
 });
 app.post('/admin/settings', requireCsrf, (req,res) => {
-  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','footer_text','company_location','facebook_url','instagram_url','linkedin_url'];
+  const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','catalogue_hero_eyebrow','catalogue_hero_title','catalogue_hero_text','catalogue_hero_image','catalogue_hero_image_style','footer_text','company_location','facebook_url','instagram_url','linkedin_url'];
   const socialKeys = new Set(['facebook_url','instagram_url','linkedin_url']);
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
   const tx = db.transaction(() => allowed.forEach(k => {
