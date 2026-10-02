@@ -1145,6 +1145,11 @@ app.get('/admin', (req,res) => {
       detail: getPage('privacy') ? 'Published and linked in the footer' : 'Privacy page is not published'
     },
     {
+      label: 'Water quality guidance',
+      ok: Boolean(getPage('water-quality-maintenance')),
+      detail: getPage('water-quality-maintenance') ? 'Operator maintenance and hygiene guidance is published' : 'Publish the water quality and maintenance guidance before launch'
+    },
+    {
       label: 'Published product images',
       ok: missingImages === 0,
       detail: missingImages ? `${missingImages} published product(s) need an image` : 'All published products have imagery'
