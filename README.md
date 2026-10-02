@@ -1,6 +1,6 @@
 # WatAir Next
 
-A clean-room rebuild of the WatAir UK website: modern public site, structured product catalogue, SEO continuity, contact lead capture and a lightweight owner-friendly CMS.
+A clean-room rebuild of the WatAir UK website: modern public site, structured 20–10,000 litre/day product catalogue, SEO continuity, contact lead capture and a lightweight owner-friendly CMS.
 
 ## Stack
 
@@ -26,7 +26,6 @@ A clean-room rebuild of the WatAir UK website: modern public site, structured pr
 - `/environment/mains-water`
 - `/about`
 - `/resellers`
-- `/leasing`
 - `/privacy`
 - `/contact`
 - `/sitemap.xml`
