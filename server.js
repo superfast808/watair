@@ -629,6 +629,9 @@ app.get('/environment/mains-water', (req, res) => renderPage(res, getPage('mains
 app.get('/resellers', (req, res) => renderPage(res, getPage('resellers')));
 app.get(['/leasing','/leasing/'], (req, res) => res.redirect(301, '/contact'));
 app.get('/privacy', (req, res) => renderPage(res, getPage('privacy')));
+app.get('/terms', (req, res) => renderPage(res, getPage('terms')));
+app.get('/refunds', (req, res) => renderPage(res, getPage('refunds')));
+app.get('/cookies', (req, res) => renderPage(res, getPage('cookies')));
 app.get('/faqs', (req, res) => res.render('faqs', {
   faqs,
   meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.', image: '/uploads/imported/legacy/images/home/products.jpg' }
@@ -773,6 +776,9 @@ app.get('/sitemap.xml', (req,res) => {
     { path: '/environment/mains-water', lastmod: pageUpdated['mains-water'] },
     { path: '/resellers', lastmod: pageUpdated.resellers },
     { path: '/privacy', lastmod: pageUpdated.privacy },
+    { path: '/terms', lastmod: pageUpdated.terms },
+    { path: '/refunds', lastmod: pageUpdated.refunds },
+    { path: '/cookies', lastmod: pageUpdated.cookies },
     { path: '/contact', lastmod: siteLastmod },
     ...productRows.map(product => ({
       path: '/products/' + product.slug,
