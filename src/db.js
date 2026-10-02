@@ -78,7 +78,7 @@ ensureColumn('pages', 'hero_style', "TEXT DEFAULT ''");
 ensureColumn('admins', 'display_name', "TEXT DEFAULT ''");
 
 const defaultProductImages = {
-  'pw-hr-15l': '/uploads/imported/legacy/media/1002/pw-hr-15l.png',
+  'pw-hr-20l': '/images/pw-hr-20l.webp',
   'pw-hr-25l-low-power-consumption': '/uploads/imported/legacy/media/1040/25l-1x.png',
   'pw-hr-30l': '/uploads/imported/legacy/media/1003/pw-hr-30l.png',
   'pw-hr-60l': '/uploads/imported/legacy/media/1004/pw-hr-60l.png',
@@ -115,7 +115,7 @@ function seed() {
       capacity_lpd: p.capacity_lpd,
       summary: p.summary,
       specs_json: JSON.stringify(p.specs || {}),
-      featured: [0,2,16].includes(i) ? 1 : 0,
+      featured: ['pw-hr-20l','pw-hr-80l-low-power-consumption','pw-hr-10000l-low-power-consumption'].includes(p.slug) ? 1 : 0,
       sort_order: i
     })));
     tx();
@@ -155,8 +155,9 @@ function seed() {
     email: 'info@watairuk.co.uk',
     phone: '0141 442 0201',
     hero_title: 'Water from air. Wherever you need it.',
-    hero_text: 'Atmospheric Water Generation for homes, workplaces and industrial-scale water resilience.',
-    hero_image: '/uploads/imported/legacy/images/home/products.jpg',
+    hero_text: 'Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.',
+    hero_image: '/uploads/imported/legacy/media/1027/contact-banner.jpg',
+    hero_image_style: 'photo',
     footer_text: 'Atmospheric Water Generation solutions for the UK.',
     company_location: 'Glasgow, United Kingdom'
   };
@@ -171,6 +172,98 @@ function seed() {
     SET value = REPLACE(value, 'https://www.watairuk.co.uk/', '/uploads/imported/legacy/')
     WHERE key='hero_image' AND value LIKE 'https://www.watairuk.co.uk/%'
   `).run();
+
+  // Owner-approved October 2026 catalogue refresh. Run once so existing CMS
+  // databases receive the same range changes as fresh installations.
+  const catalogueRefreshKey = 'owner_catalogue_refresh_2026_10';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(catalogueRefreshKey)) {
+    const approved20Specs = {
+      'Output': 'Hot & cold',
+      'Storage capacity': '8 Litres',
+      'Water generated': '20 Litres/day at 30°C & 80% RH',
+      'Water temperature': 'Cold 6°C / Hot 82°C',
+      'Working temperature': '15–45°C',
+      'Working humidity': '30–99% RH',
+      'Dimensions': '53.1 × 30.7 × 58 cm',
+      'Net weight': '29 kg',
+      'Refrigerant': 'R134a',
+      'Input power': '370 W production + 500 W heating',
+      'Power supply': 'AC 110V 60Hz / AC 220V 50Hz',
+      'Filtration & sterilisation': 'Air filter + softening + sediment + ultrafiltration membrane + post-carbon + LED-UV',
+      'Display': 'LCD touch screen'
+    };
+    const retiredSlugs = [
+      'pw-hr-100l',
+      'pw-hr-250l',
+      'pw-hr-500l',
+      'pw-hr-1000l',
+      'pw-hr-3000l',
+      'pw-hr-5000l',
+      'pw-hr-10000l'
+    ];
+
+    const refresh = db.transaction(() => {
+      const old20 = db.prepare("SELECT id FROM products WHERE slug='pw-hr-15l'").get();
+      const current20 = db.prepare("SELECT id FROM products WHERE slug='pw-hr-20l'").get();
+
+      if (old20 && !current20) {
+        db.prepare(`
+          UPDATE products SET
+            slug='pw-hr-20l',
+            name='PW HR-20L',
+            subtitle='Desktop / Countertop',
+            category='home-office',
+            capacity_lpd=20,
+            summary='Compact desktop and countertop atmospheric water generator with hot and cold drinking water for homes and workplaces.',
+            specs_json=?,
+            image_url='/images/pw-hr-20l.webp',
+            published=1,
+            updated_at=CURRENT_TIMESTAMP
+          WHERE id=?
+        `).run(JSON.stringify(approved20Specs), old20.id);
+      } else if (current20) {
+        db.prepare(`
+          UPDATE products SET
+            name='PW HR-20L',
+            subtitle='Desktop / Countertop',
+            category='home-office',
+            capacity_lpd=20,
+            summary='Compact desktop and countertop atmospheric water generator with hot and cold drinking water for homes and workplaces.',
+            specs_json=?,
+            image_url='/images/pw-hr-20l.webp',
+            published=1,
+            updated_at=CURRENT_TIMESTAMP
+          WHERE id=?
+        `).run(JSON.stringify(approved20Specs), current20.id);
+        if (old20) db.prepare('UPDATE products SET published=0,featured=0 WHERE id=?').run(old20.id);
+      }
+
+      db.prepare('UPDATE products SET featured=0').run();
+      for (const slug of ['pw-hr-20l','pw-hr-80l-low-power-consumption','pw-hr-10000l-low-power-consumption']) {
+        db.prepare('UPDATE products SET featured=1 WHERE slug=? AND published=1').run(slug);
+      }
+      for (const slug of retiredSlugs) {
+        db.prepare('UPDATE products SET published=0,featured=0,updated_at=CURRENT_TIMESTAMP WHERE slug=?').run(slug);
+      }
+
+      db.prepare("UPDATE pages SET published=0,updated_at=CURRENT_TIMESTAMP WHERE slug='leasing'").run();
+
+      db.prepare(`
+        UPDATE settings SET value='/uploads/imported/legacy/media/1027/contact-banner.jpg'
+        WHERE key='hero_image' AND value IN (
+          '/uploads/imported/legacy/images/home/products.jpg',
+          '/uploads/imported/legacy/images/home/products.jpg/'
+        )
+      `).run();
+      db.prepare(`
+        UPDATE settings SET value='Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.'
+        WHERE key='hero_text' AND value='Atmospheric Water Generation for homes, workplaces and industrial-scale water resilience.'
+      `).run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_image_style','photo') ON CONFLICT(key) DO UPDATE SET value='photo'").run();
+      db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(catalogueRefreshKey, new Date().toISOString());
+    });
+    refresh();
+  }
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
