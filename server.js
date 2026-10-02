@@ -153,10 +153,10 @@ function renderPage(res, page, extra = {}) {
 app.get('/health', (req, res) => {
   try {
     db.prepare('SELECT 1 AS ok').get();
-    res.json({ ok: true, service: 'watair-next' });
+    res.json({ ok: true, service: 'watair-next', version: appVersion });
   } catch (err) {
     console.error('Health check failed:', err.message);
-    res.status(503).json({ ok: false, service: 'watair-next' });
+    res.status(503).json({ ok: false, service: 'watair-next', version: appVersion });
   }
 });
 
