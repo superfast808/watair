@@ -8,7 +8,7 @@
     <h1>Let’s talk about your water requirement.</h1>
     <p>You do not need a finished specification. Daily volume, location and intended use are enough to start the conversation.</p>
     <div class="hero-inline-stats">
-      <span><strong>16–10,000</strong> L/day range</span>
+      <span><strong>20–10,000</strong> L/day range</span>
       <span><strong>UK</strong> project support</span>
       <a href="tel:<%= settings.phone.replace(/\s/g,'') %>">Call <%= settings.phone %> →</a>
     </div>
@@ -56,7 +56,7 @@
         <label>What are you interested in?
           <select name="interest">
             <option value="">Choose one</option>
-            <% ['Home & Office','Commercial & Industrial','Leasing','Reseller opportunity','General enquiry'].forEach(option => { const selected = formValues?.interest ? formValues.interest === option : (option === 'Home & Office' && selectedProduct?.category==='home-office') || (option === 'Commercial & Industrial' && selectedProduct?.category==='commercial-industrial'); %>
+            <% ['Home & Office','Commercial & Industrial','Reseller opportunity','General enquiry'].forEach(option => { const selected = formValues?.interest ? formValues.interest === option : (option === 'Home & Office' && selectedProduct?.category==='home-office') || (option === 'Commercial & Industrial' && selectedProduct?.category==='commercial-industrial'); %>
               <option value="<%= option %>" <%= selected ? 'selected' : '' %>><%= option %></option>
             <% }) %>
           </select>
