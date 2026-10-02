@@ -14,8 +14,15 @@
     <% if(product.subtitle){ %><p class="product-subtitle"><%= product.subtitle %></p><% } %>
     <p><%= product.summary %></p>
     <div class="product-output"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><span>litres / day rated output</span></div>
+    <% if(canBuyOnline){ %>
+      <div class="product-commerce-offer">
+        <strong><%= formatMoney(product.price_minor, settings.commerce_currency) %></strong>
+        <span><%= settings.commerce_price_note || 'Delivery is calculated before payment.' %></span>
+      </div>
+    <% } %>
     <div class="hero-actions">
-      <a class="button button-aqua" href="/contact?product=<%= product.slug %>">Enquire about this system</a>
+      <% if(canBuyOnline){ %><a class="button button-aqua buy-now-button" href="/buy/<%= product.slug %>">Buy now</a><% } %>
+      <a class="<%= canBuyOnline ? 'button button-light' : 'button button-aqua' %>" href="/contact?product=<%= product.slug %>">Enquire about this system</a>
       <a class="resource-link resource-link-light" href="/products/<%= product.slug %>/datasheet.pdf"><span>PDF</span> Download datasheet</a>
     </div>
   </div>
@@ -48,6 +55,7 @@
     <p>Rated production depends on ambient temperature and relative humidity. Confirm actual site conditions with WatAir before specifying a system.</p>
     <div class="resource-stack">
       <a class="resource-card" href="/products/<%= product.slug %>/datasheet.pdf"><span class="resource-icon">PDF</span><span><strong>Download technical datasheet</strong><small>Current published specification</small></span><b>↓</b></a>
+      <% if(canBuyOnline){ %><a class="resource-card resource-card-buy" href="/buy/<%= product.slug %>"><span class="resource-icon">£</span><span><strong>Buy this model online</strong><small>Secure checkout with delivery calculated before payment</small></span><b>→</b></a><% } %>
       <a class="resource-card" href="/contact?product=<%= product.slug %>"><span class="resource-icon">?</span><span><strong>Ask about this model</strong><small>Sizing, installation and availability</small></span><b>→</b></a>
     </div>
   </div>
