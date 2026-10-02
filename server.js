@@ -193,6 +193,66 @@ function setOrderStatus(publicId, status, gatewayRef = '') {
   `).run(status, gatewayRef, gatewayRef, publicId);
 }
 
+async function notifyOrderIfNeeded(publicId) {
+  if (!process.env.SMTP_HOST || !process.env.CONTACT_TO) return;
+  const order = orderByPublicId(publicId);
+  if (!order || !['paid','awaiting_payment'].includes(order.status)) return;
+
+  const claim = db.prepare(`
+    UPDATE orders SET notified_at='sending'
+    WHERE public_id=? AND (notified_at IS NULL OR notified_at='')
+  `).run(order.public_id);
+  if (!claim.changes) return;
+
+  try {
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
+    });
+    const orderRef = order.public_id.slice(0,8).toUpperCase();
+    const paid = order.status === 'paid';
+    const subject = paid
+      ? `WatAir order ${orderRef}: payment received`
+      : `WatAir order ${orderRef}: manual payment requested`;
+    const summary = [
+      `Order: ${order.public_id}`,
+      `Status: ${order.status}`,
+      `Product: ${order.product_name} x ${order.quantity}`,
+      `Products: ${formatMoney(order.unit_price_minor * order.quantity, order.currency)}`,
+      `Delivery: ${formatMoney(order.delivery_minor, order.currency)}`,
+      `Total: ${formatMoney(order.total_minor, order.currency)}`,
+      `Gateway: ${order.gateway}`,
+      '',
+      `Customer: ${order.customer_name}`,
+      `Email: ${order.customer_email}`,
+      `Phone: ${order.customer_phone || '-'}`,
+      `Address: ${order.address1}${order.address2 ? ', ' + order.address2 : ''}, ${order.city}${order.region ? ', ' + order.region : ''}, ${order.postcode}, ${order.country_code}`
+    ].join('\n');
+
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
+      to: process.env.CONTACT_TO,
+      replyTo: order.customer_email,
+      subject,
+      text: summary
+    });
+
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
+      to: order.customer_email,
+      subject: paid ? `WatAir order ${orderRef} confirmed` : `WatAir order ${orderRef} received`,
+      text: `Hello ${order.customer_name},\n\n${paid ? 'We have received payment for your WatAir order.' : 'We have received your WatAir order. The team will contact you about the manual payment arrangement.'}\n\n${order.product_name} x ${order.quantity}\nDelivery: ${formatMoney(order.delivery_minor, order.currency)}\nTotal: ${formatMoney(order.total_minor, order.currency)}\n\nOrder status: ${baseUrl}/order/${order.public_id}\nRefunds and returns: ${baseUrl}/refunds\n\nWatAir`
+    });
+
+    db.prepare("UPDATE orders SET notified_at=CURRENT_TIMESTAMP WHERE public_id=? AND notified_at='sending'").run(order.public_id);
+  } catch (err) {
+    db.prepare("UPDATE orders SET notified_at='' WHERE public_id=? AND notified_at='sending'").run(order.public_id);
+    console.error('Order email notification failed:', err.message);
+  }
+}
+
 function gatewayConfiguration() {
   return {
     stripe: Boolean(process.env.STRIPE_SECRET_KEY),
@@ -220,6 +280,7 @@ async function stripeWebhookHandler(req, res) {
       const currencyMatches = String(session.currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
       if (amountMatches && currencyMatches && session.payment_status === 'paid') {
         setOrderStatus(order.public_id, 'paid', String(session.id || ''));
+        await notifyOrderIfNeeded(order.public_id);
       }
     } else if (event.type === 'checkout.session.expired' || event.type === 'checkout.session.async_payment_failed') {
       setOrderStatus(order.public_id, event.type.endsWith('failed') ? 'failed' : 'cancelled', String(session?.id || ''));
@@ -523,6 +584,7 @@ app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
 
   try {
     if (gateway === 'manual') {
+      await notifyOrderIfNeeded(publicId);
       return res.redirect(303, '/order/' + encodeURIComponent(publicId));
     }
 
@@ -575,6 +637,7 @@ app.get('/payments/stripe/return', async (req,res) => {
     const currencyMatches = String(session?.currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
     if (publicId === order.public_id && amountMatches && currencyMatches && session.payment_status === 'paid') {
       setOrderStatus(order.public_id, 'paid', String(session.id || ''));
+      await notifyOrderIfNeeded(order.public_id);
     }
   } catch (err) {
     console.error('Stripe return verification failed:', err.message);
@@ -598,6 +661,7 @@ app.get('/payments/paypal/return', async (req,res) => {
     const referenceMatches = String(unit?.custom_id || unit?.reference_id || '') === order.public_id;
     if (capture?.status === 'COMPLETED' && captured?.status === 'COMPLETED' && amountMatches && currencyMatches && referenceMatches) {
       setOrderStatus(order.public_id, 'paid', paypalOrderId);
+      await notifyOrderIfNeeded(order.public_id);
     } else {
       setOrderStatus(order.public_id, 'failed', paypalOrderId);
     }
