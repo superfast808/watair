@@ -581,8 +581,8 @@ app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
       unit_price_minor,delivery_minor,total_minor,
       customer_name,customer_email,customer_phone,
       address1,address2,city,region,postcode,country_code,
-      gateway,status,notes
-    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      gateway,status,notes,terms_accepted_at
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     publicId, product.id, product.slug, product.name, quantity, currency,
     unitPrice, delivery, total,
@@ -590,7 +590,8 @@ app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
     formValues.address1, formValues.address2, formValues.city, formValues.region,
     formValues.postcode, formValues.country_code,
     gateway, gateway === 'manual' ? 'awaiting_payment' : 'pending',
-    'Delivery rule: ' + rule.name
+    'Delivery rule: ' + rule.name,
+    new Date().toISOString()
   );
 
   const order = orderByPublicId(publicId);
