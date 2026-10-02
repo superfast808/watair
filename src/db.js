@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS orders (
   gateway_ref TEXT DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending',
   notes TEXT DEFAULT '',
+  terms_accepted_at TEXT DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL
@@ -124,6 +125,7 @@ ensureColumn('products', 'price_minor', "INTEGER NOT NULL DEFAULT 0");
 ensureColumn('products', 'delivery_class', "TEXT DEFAULT 'standard'");
 ensureColumn('products', 'max_order_qty', "INTEGER NOT NULL DEFAULT 1");
 ensureColumn('orders', 'notified_at', "TEXT DEFAULT ''");
+ensureColumn('orders', 'terms_accepted_at', "TEXT DEFAULT ''");
 
 const defaultProductImages = {
   'pw-hr-20l': '/images/pw-hr-20l.webp',
