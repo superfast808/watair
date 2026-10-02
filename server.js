@@ -1487,6 +1487,7 @@ function navigationRows() {
 app.get('/admin/navigation', (req,res) => {
   res.render('admin/navigation', {
     items: navigationRows(),
+    reqQuery: req.query,
     meta: { title: 'Navigation | WatAir CMS' }
   });
 });
