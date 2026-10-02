@@ -1625,16 +1625,27 @@ html.nav-open,body.nav-open{overflow:hidden}
 }
 
 
-/* Give the LinkedIn mark a little more breathing room from its divider */
-.utility-linkedin{
+/* Keep social marks optically centred inside equal utility-bar cells */
+.utility-contact .utility-social{
   width:46px;
-  padding-left:8px;
+  height:38px;
+  padding:0;
+  margin-left:0;
+  display:grid;
+  place-items:center;
   box-sizing:border-box;
 }
+.utility-contact .utility-social svg,
+.utility-contact .utility-social .linkedin-mark{
+  margin:0;
+  justify-self:center;
+  align-self:center;
+}
 @media(max-width:900px){
-  .utility-linkedin{
-    width:38px;
-    padding-left:6px;
+  .utility-contact .utility-social{
+    width:34px;
+    height:32px;
+    padding:0;
   }
 }
 
@@ -2153,11 +2164,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @media(max-width:900px){
   .utility-contact .utility-social{
-    width:32px;
-    padding-left:0;
-  }
-  .utility-contact .utility-linkedin{
-    width:32px;
+    width:34px;
+    height:32px;
+    padding:0;
   }
 }
 
