@@ -164,6 +164,8 @@ jobs:
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
           grep -q 'Good water quality depends on correct operation and maintenance' /tmp/maintenance.html
+          grep -q 'hero-has-photo' /tmp/maintenance.html
+          grep -q '/uploads/imported/legacy/media/1027/contact-banner.jpg' /tmp/maintenance.html
           grep -q 'The operator/user manual supplied for the specific WatAir model is the controlling instruction' /tmp/maintenance.html
           grep -q 'Legionella and microbiological risk' /tmp/maintenance.html
           grep -q 'hse.gov.uk/legionnaires/' /tmp/maintenance.html
