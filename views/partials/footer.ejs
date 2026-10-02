@@ -30,7 +30,10 @@
       <a href="/environment/plastic-bottles">Plastic bottles</a>
       <a href="/environment/mains-water">Mains water</a>
       <a href="/resellers">Become a reseller</a>
+      <a href="/terms">Terms of sale</a>
+      <a href="/refunds">Refunds & returns</a>
       <a href="/privacy">Privacy notice</a>
+      <a href="/cookies">Cookie notice</a>
     </div>
     <div>
       <h3>Contact</h3>
@@ -41,9 +44,41 @@
   </div>
   <div class="footer-bottom">
     <span>© <%= currentYear %> WatAir UK. All rights reserved.</span>
-    <div><a href="/privacy">Privacy</a><span>Atmospheric Water Generation · Water from Air</span><a href="#top">Back to top ↑</a></div>
+    <div><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/refunds">Refunds</a><button type="button" class="footer-cookie-button" data-cookie-settings>Cookie settings</button><a href="#top">Back to top ↑</a></div>
   </div>
 </footer>
+
+<div class="cookie-consent" data-cookie-consent hidden>
+  <div class="cookie-consent-copy">
+    <strong>Cookie choices</strong>
+    <p>We use essential browser storage for core website functions. Optional analytics and marketing categories remain off unless you choose to allow them.</p>
+    <a href="/cookies">Read the cookie notice</a>
+  </div>
+  <div class="cookie-consent-actions">
+    <button type="button" class="button button-light" data-cookie-reject>Reject non-essential</button>
+    <button type="button" class="button button-aqua" data-cookie-accept>Accept all</button>
+    <button type="button" class="cookie-manage-link" data-cookie-manage>Manage choices</button>
+  </div>
+</div>
+
+<div class="cookie-preferences" data-cookie-preferences hidden>
+  <div class="cookie-preferences-backdrop" data-cookie-close></div>
+  <section class="cookie-preferences-panel" role="dialog" aria-modal="true" aria-labelledby="cookie-preferences-title">
+    <header>
+      <div><p class="eyebrow">Privacy choices</p><h2 id="cookie-preferences-title">Cookie settings</h2></div>
+      <button type="button" class="cookie-close" data-cookie-close aria-label="Close cookie settings">×</button>
+    </header>
+    <p>Essential storage is always enabled because it is required for security and requested website functions.</p>
+    <label class="cookie-choice"><span><strong>Essential</strong><small>Security, administrator sign-in and checkout functionality.</small></span><input type="checkbox" checked disabled></label>
+    <label class="cookie-choice"><span><strong>Analytics</strong><small>Optional measurement tools if these are added to the site in future.</small></span><input type="checkbox" data-cookie-analytics></label>
+    <label class="cookie-choice"><span><strong>Marketing</strong><small>Optional advertising or remarketing tools if these are added in future.</small></span><input type="checkbox" data-cookie-marketing></label>
+    <div class="cookie-preferences-actions">
+      <button type="button" class="button" data-cookie-save>Save choices</button>
+      <button type="button" class="text-link" data-cookie-reject>Reject non-essential</button>
+    </div>
+  </section>
+</div>
+
 <script src="/js/site.js?v=<%= assetVersion %>" defer></script>
 </body>
 </html>
