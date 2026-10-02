@@ -90,6 +90,8 @@ jobs:
           grep -q '53.1 × 30.7 × 58 cm' /tmp/product.html
           grep -q 'PW HR-20L' /tmp/products-home.html
           grep -q '20–10,000' /tmp/home.html
+          grep -q 'Atmospheric Water Generation solutions for the UK and Overseas.' /tmp/home.html
+          ! grep -q 'Atmospheric Water Generation · United Kingdom' /tmp/home.html
           grep -q 'home-photo-hero' /tmp/home.html
           grep -q 'PW HR-60L' /tmp/products-home.html
           grep -q 'PW HR-80L' /tmp/products-commercial.html
@@ -105,10 +107,12 @@ jobs:
           grep -q 'Choose a model' /tmp/products-commercial.html
           grep -q 'data-capacity-filter="80-250"' /tmp/products-commercial.html
           grep -q 'data-faq-search' /tmp/faqs.html
+          grep -q '/uploads/imported/legacy/media/1070/10000l-pro.png' /tmp/faqs.html
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
           grep -q 'How WatAir handles information' /tmp/privacy.html
           grep -q 'privacy notice' /tmp/contact.html
+          grep -q 'How many people?' /tmp/contact.html
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
