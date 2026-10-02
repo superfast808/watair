@@ -1,0 +1,102 @@
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Sales</p>
+    <h1>Commerce</h1>
+    <span class="page-help">Control online sales, payment methods and delivery pricing without changing the public catalogue.</span>
+  </div>
+  <a class="secondary-button button-link" href="/admin/orders">View orders →</a>
+</header>
+
+<div class="commerce-admin-grid">
+  <form class="admin-card editor-section" method="post" action="/admin/commerce/settings">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="section-heading compact"><div><h2>Online sales</h2><p>The master switch and customer-facing currency.</p></div></div>
+    <label class="switch-row">
+      <span><strong>Enable e-commerce</strong><small>Sellable products can show Buy now when at least one configured gateway is enabled</small></span>
+      <input type="checkbox" name="commerce_enabled" <%= settings.commerce_enabled==='1'?'checked':'' %>>
+    </label>
+    <div class="form-grid">
+      <label>Currency
+        <select name="commerce_currency">
+          <% ['GBP','EUR','USD'].forEach(code => { %><option value="<%= code %>" <%= settings.commerce_currency===code?'selected':'' %>><%= code %></option><% }) %>
+        </select>
+      </label>
+      <label class="full">Price / delivery note
+        <input name="commerce_price_note" maxlength="300" value="<%= settings.commerce_price_note || '' %>">
+      </label>
+    </div>
+
+    <div class="section-heading compact commerce-subhead"><div><h2>Payment gateways</h2><p>Secrets remain in the server environment rather than the website database.</p></div></div>
+
+    <label class="switch-row gateway-admin-row">
+      <span><strong>Stripe Checkout</strong><small>Hosted card checkout · STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET</small></span>
+      <span class="gateway-admin-control"><em class="pill <%= gatewayConfig.stripe && gatewayConfig.stripeWebhook ? '' : 'pill-warning' %>"><%= gatewayConfig.stripe && gatewayConfig.stripeWebhook ? 'Configured' : 'Needs keys' %></em><input type="checkbox" name="commerce_stripe_enabled" <%= settings.commerce_stripe_enabled==='1'?'checked':'' %>></span>
+    </label>
+    <label class="switch-row gateway-admin-row">
+      <span><strong>PayPal Checkout</strong><small>PayPal Orders API · PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET</small></span>
+      <span class="gateway-admin-control"><em class="pill <%= gatewayConfig.paypal ? '' : 'pill-warning' %>"><%= gatewayConfig.paypal ? ('Configured · ' + gatewayConfig.paypalEnvironment) : 'Needs keys' %></em><input type="checkbox" name="commerce_paypal_enabled" <%= settings.commerce_paypal_enabled==='1'?'checked':'' %>></span>
+    </label>
+    <label class="switch-row">
+      <span><strong>Manual payment</strong><small>Records the order without taking online payment so WatAir can arrange invoice/bank payment</small></span>
+      <input type="checkbox" name="commerce_manual_enabled" <%= settings.commerce_manual_enabled==='1'?'checked':'' %>>
+    </label>
+
+    <div class="commerce-admin-warning">
+      <strong>Before going live</strong>
+      <span>Set product prices as final customer-facing prices. This version does not calculate VAT/tax separately. Review the boilerplate Terms, Refunds, Privacy and Cookie notices against WatAir’s actual commercial arrangements.</span>
+    </div>
+    <button class="admin-button" type="submit">Save commerce settings</button>
+  </form>
+
+  <section class="admin-card editor-section">
+    <div class="section-heading compact"><div><h2>Legal pages</h2><p>Seeded as editable CMS pages for review before online sales go live.</p></div></div>
+    <div class="commerce-legal-links">
+      <a href="/terms" target="_blank" rel="noopener"><strong>Terms of sale</strong><span>Preview ↗</span></a>
+      <a href="/refunds" target="_blank" rel="noopener"><strong>Refunds & returns</strong><span>Preview ↗</span></a>
+      <a href="/privacy" target="_blank" rel="noopener"><strong>Privacy notice</strong><span>Preview ↗</span></a>
+      <a href="/cookies" target="_blank" rel="noopener"><strong>Cookie notice</strong><span>Preview ↗</span></a>
+    </div>
+    <p class="admin-small-note">These are practical boilerplate drafts, not a substitute for checking the final wording against the business’s legal, tax, delivery, warranty and consumer-sales arrangements.</p>
+  </section>
+</div>
+
+<section class="admin-card editor-section commerce-delivery-section">
+  <div class="card-head">
+    <div><p class="admin-kicker">Fulfilment</p><h2>Delivery rules</h2><p>Rules match the product delivery class, country and optional postcode prefixes. The most specific matching rule wins.</p></div>
+  </div>
+
+  <form class="delivery-rule-form" method="post" action="/admin/commerce/delivery-rules">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label>Rule name<input name="name" required maxlength="120" placeholder="e.g. Scotland standard"></label>
+    <label>Delivery class<input name="delivery_class" required value="standard" list="delivery-rule-classes"><datalist id="delivery-rule-classes"><option value="standard"><option value="pallet"><option value="freight"><option value="*"></datalist></label>
+    <label>Country code<input name="country_code" required maxlength="2" value="GB" placeholder="GB"></label>
+    <label>Postcode prefixes<input name="postcode_prefixes" maxlength="500" placeholder="KA, G, PA (blank = whole country)"></label>
+    <label>Delivery price<input name="price" inputmode="decimal" required value="0.00"></label>
+    <label>Priority<input type="number" name="priority" value="100"></label>
+    <button class="admin-button" type="submit">Add rule</button>
+  </form>
+
+  <div class="delivery-rule-list">
+    <% if(!deliveryRules.length){ %>
+      <div class="empty-state"><strong>No delivery rules yet</strong><span>Add at least one rule for each sellable delivery class/destination before enabling checkout.</span></div>
+    <% } %>
+    <% deliveryRules.forEach(rule => { %>
+      <form class="delivery-rule-row" method="post" action="/admin/commerce/delivery-rules/<%= rule.id %>">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input name="name" value="<%= rule.name %>" required>
+        <input name="delivery_class" value="<%= rule.delivery_class %>" required>
+        <input name="country_code" value="<%= rule.country_code %>" maxlength="2" required>
+        <input name="postcode_prefixes" value="<%= rule.postcode_prefixes || '' %>" placeholder="All postcodes">
+        <input name="price" inputmode="decimal" value="<%= minorToInput(rule.price_minor) %>" required>
+        <input type="number" name="priority" value="<%= rule.priority %>">
+        <label class="rule-active"><input type="checkbox" name="active" <%= rule.active?'checked':'' %>><span>Active</span></label>
+        <button class="secondary-button" type="submit">Save</button>
+        <button class="danger-button" type="submit" formaction="/admin/commerce/delivery-rules/<%= rule.id %>/delete" formnovalidate onclick="return confirm('Delete this delivery rule?')">Delete</button>
+      </form>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('../partials/admin-foot') %>
