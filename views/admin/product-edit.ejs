@@ -53,6 +53,35 @@
       <section class="admin-card editor-section">
         <div class="section-heading">
           <span class="section-number">2</span>
+          <div><h2>E-commerce</h2><p>Opt this product into online sales and define how it is priced and delivered.</p></div>
+        </div>
+        <label class="switch-row">
+          <span><strong>Sell online</strong><small>Shows a Buy now button when global e-commerce is also enabled</small></span>
+          <input type="checkbox" name="sellable" <%= product.sellable?'checked':'' %>>
+        </label>
+        <div class="form-grid commerce-product-fields">
+          <label>Customer price
+            <div class="input-suffix"><input type="text" inputmode="decimal" name="price" value="<%= minorToInput(product.price_minor || 0) %>" placeholder="0.00"><span><%= settings.commerce_currency || 'GBP' %></span></div>
+            <small>Enter the final customer-facing product price. Tax is not calculated separately by this build.</small>
+          </label>
+          <label>Maximum quantity
+            <input type="number" min="1" max="25" name="max_order_qty" value="<%= product.max_order_qty || 1 %>">
+            <small>Maximum units allowed in one online order.</small>
+          </label>
+          <label class="full">Delivery class
+            <input name="delivery_class" value="<%= product.delivery_class || 'standard' %>" list="delivery-classes" placeholder="standard">
+            <datalist id="delivery-classes"><option value="standard"><option value="pallet"><option value="freight"></datalist>
+            <small>Delivery rules can charge different prices for standard, pallet, freight or any custom class you create.</small>
+          </label>
+        </div>
+        <% if(settings.commerce_enabled !== '1'){ %>
+          <div class="commerce-admin-note">Global e-commerce is currently off. You can prepare this product now; the Buy now button will remain hidden until Commerce is enabled.</div>
+        <% } %>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">3</span>
           <div><h2>Technical specifications</h2><p>No JSON required. Add each label and value as a simple row.</p></div>
         </div>
 
