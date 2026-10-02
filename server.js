@@ -11,6 +11,7 @@ const sanitizeHtml = require('sanitize-html');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
+const { version: appVersion } = require('./package.json');
 const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
@@ -94,6 +95,7 @@ app.use((req, res, next) => {
   res.locals.baseUrl = baseUrl;
   res.locals.admin = readAdmin(req);
   res.locals.currentYear = new Date().getFullYear();
+  res.locals.assetVersion = appVersion;
   res.locals.formatUkDateTime = formatUkDateTime;
   res.locals.formatUkDate = formatUkDate;
   next();
