@@ -412,25 +412,51 @@ app.get('/sitemap.xml', (req,res) => {
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
 
-function safeUploadName(originalName) {
-  const ext = path.extname(originalName || '').toLowerCase();
-  const base = path.basename(originalName || 'image', ext)
+const uploadExtensions = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp'
+};
+
+function safeUploadName(originalName, mimetype) {
+  const originalExt = path.extname(originalName || '');
+  const base = path.basename(originalName || 'image', originalExt)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60) || 'image';
+  const ext = uploadExtensions[mimetype] || '.bin';
   return `${Date.now()}-${base}${ext}`;
+}
+
+function hasValidImageSignature(filePath, mimetype) {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(12);
+    const bytes = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    if (mimetype === 'image/jpeg') {
+      return bytes >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    }
+    if (mimetype === 'image/png') {
+      return bytes >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+    }
+    if (mimetype === 'image/webp') {
+      return bytes >= 12 && buffer.subarray(0,4).toString('ascii') === 'RIFF' && buffer.subarray(8,12).toString('ascii') === 'WEBP';
+    }
+    return false;
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 const upload = multer({
   storage: multer.diskStorage({
     destination: uploadDir,
-    filename: (req,file,cb) => cb(null, safeUploadName(file.originalname))
+    filename: (req,file,cb) => cb(null, safeUploadName(file.originalname, file.mimetype))
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req,file,cb) => {
-    const allowed = ['image/jpeg','image/png','image/webp'];
-    if (!allowed.includes(file.mimetype)) return cb(new Error('Please upload a JPG, PNG or WebP image.'));
+    if (!uploadExtensions[file.mimetype]) return cb(new Error('Please upload a JPG, PNG or WebP image.'));
     cb(null, true);
   }
 });
@@ -644,8 +670,19 @@ app.post('/admin/media/relink', requireCsrf, (req,res) => {
   res.redirect('/admin/media?relinked=' + changed);
 });
 
-app.post('/admin/upload', requireCsrf, upload.single('image'), (req,res) => {
+app.post('/admin/upload', requireCsrf, (req,res,next) => {
+  upload.single('image')(req,res,err => {
+    if (err) return res.status(400).json({ error: err.message || 'Image upload failed.' });
+    next();
+  });
+}, (req,res) => {
   if (!req.file) return res.status(400).json({ error: 'No valid image supplied.' });
+
+  if (!hasValidImageSignature(req.file.path, req.file.mimetype)) {
+    try { fs.unlinkSync(req.file.path); } catch {}
+    return res.status(400).json({ error: 'The uploaded file does not appear to be a valid JPG, PNG or WebP image.' });
+  }
+
   res.json({
     url: '/uploads/' + req.file.filename,
     name: req.file.filename,
