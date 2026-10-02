@@ -449,11 +449,15 @@ app.get('/products/:slug', (req, res) => {
 
   const commerceSettings = settingsObject();
   const commerceGateways = enabledGateways(commerceSettings);
+  const deliveryRuleCount = db.prepare(
+    "SELECT COUNT(*) c FROM delivery_rules WHERE active=1 AND (delivery_class=? OR delivery_class='*')"
+  ).get(String(product.delivery_class || 'standard').toLowerCase()).c;
   const canBuyOnline =
     commerceEnabled(commerceSettings) &&
     Boolean(product.sellable) &&
     Number(product.price_minor) > 0 &&
-    commerceGateways.length > 0;
+    commerceGateways.length > 0 &&
+    deliveryRuleCount > 0;
 
   res.render('product', {
     product, related, family, previousProduct, nextProduct,
