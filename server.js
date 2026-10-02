@@ -182,15 +182,21 @@ function orderByPublicId(publicId) {
 
 function setOrderStatus(publicId, status, gatewayRef = '') {
   const allowed = new Set(['pending','awaiting_payment','paid','processing','fulfilled','cancelled','refunded','failed']);
-  if (!allowed.has(status)) return;
-  db.prepare(`
+  if (!allowed.has(status)) return 0;
+  const current = orderByPublicId(publicId);
+  if (!current || current.status === 'refunded') return 0;
+
+  const protectedPaidStates = new Set(['paid','processing','fulfilled']);
+  const negativeStates = new Set(['pending','awaiting_payment','cancelled','failed']);
+  if (protectedPaidStates.has(current.status) && negativeStates.has(status)) return 0;
+
+  return db.prepare(`
     UPDATE orders
     SET status=?,
         gateway_ref=CASE WHEN ?<>'' THEN ? ELSE gateway_ref END,
         updated_at=CURRENT_TIMESTAMP
     WHERE public_id=?
-      AND status NOT IN ('fulfilled','refunded')
-  `).run(status, gatewayRef, gatewayRef, publicId);
+  `).run(status, gatewayRef, gatewayRef, publicId).changes;
 }
 
 async function notifyOrderIfNeeded(publicId) {
@@ -663,6 +669,9 @@ app.get('/payments/paypal/return', async (req,res) => {
   const order = orderByPublicId(req.query.order);
   const paypalOrderId = cleanFormValue(req.query.token, 220);
   if (!order || order.gateway !== 'paypal' || !paypalOrderId) return res.redirect('/products');
+  if (['paid','processing','fulfilled','refunded'].includes(order.status)) {
+    return res.redirect(303, '/order/' + encodeURIComponent(order.public_id));
+  }
 
   try {
     if (order.gateway_ref && order.gateway_ref !== paypalOrderId) throw new Error('PayPal order reference does not match.');
