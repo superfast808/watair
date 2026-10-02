@@ -46,7 +46,7 @@ jobs:
           curl -fsS http://127.0.0.1:8099/products > /tmp/products.html
           curl -fsS http://127.0.0.1:8099/products/home-office > /tmp/products-home.html
           curl -fsS http://127.0.0.1:8099/products/commercial-industrial > /tmp/products-commercial.html
-          curl -fsS http://127.0.0.1:8099/products/pw-hr-15l > /tmp/product.html
+          curl -fsS http://127.0.0.1:8099/products/pw-hr-20l > /tmp/product.html
           curl -fsS http://127.0.0.1:8099/faqs > /tmp/faqs.html
           curl -fsS http://127.0.0.1:8099/contact > /tmp/contact.html
           curl -fsS http://127.0.0.1:8099/about > /tmp/about.html
@@ -74,6 +74,10 @@ jobs:
             --data-urlencode 'message=Automated release smoke test enquiry.'
 
           curl -sS -D /tmp/reseller-headers.txt -o /dev/null http://127.0.0.1:8099/reseller
+          curl -sS -D /tmp/old-15-headers.txt -o /dev/null http://127.0.0.1:8099/products/pw-hr-15l
+          curl -sS -D /tmp/leasing-headers.txt -o /dev/null http://127.0.0.1:8099/leasing
+          curl -fsS http://127.0.0.1:8099/images/logo-header.svg > /tmp/logo.svg
+          curl -fsS -I http://127.0.0.1:8099/images/pw-hr-20l.webp > /tmp/product-image-headers.txt
           curl -sS -D /tmp/admin-headers.txt -o /dev/null http://127.0.0.1:8099/admin/login
           curl -sS -D /tmp/home-headers.txt -o /dev/null http://127.0.0.1:8099/
 
@@ -81,10 +85,19 @@ jobs:
           grep -q 'Skip to main content' /tmp/home.html
           grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
-          grep -q 'PW HR-15L' /tmp/products-home.html
+          grep -q 'PW HR-20L' /tmp/products-home.html
+          grep -q '20–10,000' /tmp/home.html
+          grep -q 'home-photo-hero' /tmp/home.html
           grep -q 'PW HR-60L' /tmp/products-home.html
           grep -q 'PW HR-80L' /tmp/products-commercial.html
           grep -q 'PW HR-10000L' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-100l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-250l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-500l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-1000l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-3000l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-5000l"' /tmp/products-commercial.html
+          ! grep -q 'href="/products/pw-hr-10000l"' /tmp/products-commercial.html
           grep -q 'Choose a model' /tmp/products-home.html
           grep -q 'Choose a model' /tmp/products-commercial.html
           grep -q 'data-capacity-filter="80-250"' /tmp/products-commercial.html
@@ -107,6 +120,13 @@ jobs:
           grep -qi '^location: /contact?sent=1' /tmp/contact-valid-headers.txt
           grep -q '301' /tmp/reseller-headers.txt
           grep -qi '^location: /resellers' /tmp/reseller-headers.txt
+          grep -q '301' /tmp/old-15-headers.txt
+          grep -qi '^location: /products/pw-hr-20l' /tmp/old-15-headers.txt
+          grep -q '301' /tmp/leasing-headers.txt
+          grep -qi '^location: /contact' /tmp/leasing-headers.txt
+          grep -q '#00a9e1' /tmp/logo.svg
+          grep -qi '^content-type: image/webp' /tmp/product-image-headers.txt
+          ! grep -q 'Leasing Available' /tmp/home.html
           grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/admin-headers.txt
           grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=(), payment=()' /tmp/home-headers.txt
 
