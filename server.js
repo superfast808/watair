@@ -59,12 +59,41 @@ app.use((req, res, next) => {
   next();
 });
 
+function parseStoredDate(value) {
+  if (!value) return null;
+  const text = String(value);
+  const normalized = /Z$|[+-]\d\d:\d\d$/.test(text)
+    ? text
+    : text.replace(' ', 'T') + 'Z';
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatUkDateTime(value) {
+  const date = parseStoredDate(value);
+  return date ? date.toLocaleString('en-GB', {
+    timeZone: 'Europe/London',
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }) : '';
+}
+
+function formatUkDate(value) {
+  const date = parseStoredDate(value);
+  return date ? date.toLocaleDateString('en-GB', {
+    timeZone: 'Europe/London',
+    dateStyle: 'medium'
+  }) : '';
+}
+
 app.use((req, res, next) => {
   res.locals.settings = settingsObject();
   res.locals.path = req.path;
   res.locals.baseUrl = baseUrl;
   res.locals.admin = readAdmin(req);
   res.locals.currentYear = new Date().getFullYear();
+  res.locals.formatUkDateTime = formatUkDateTime;
+  res.locals.formatUkDate = formatUkDate;
   next();
 });
 
