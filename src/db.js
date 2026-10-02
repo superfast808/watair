@@ -248,17 +248,8 @@ function seed() {
 
       db.prepare("DELETE FROM pages WHERE slug='leasing'").run();
 
-      db.prepare(`
-        UPDATE settings SET value='/uploads/imported/legacy/media/1027/contact-banner.jpg'
-        WHERE key='hero_image' AND value IN (
-          '/uploads/imported/legacy/images/home/products.jpg',
-          '/uploads/imported/legacy/images/home/products.jpg/'
-        )
-      `).run();
-      db.prepare(`
-        UPDATE settings SET value='Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.'
-        WHERE key='hero_text' AND value='Atmospheric Water Generation for homes, workplaces and industrial-scale water resilience.'
-      `).run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_image','/uploads/imported/legacy/media/1027/contact-banner.jpg') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_text','Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
       db.prepare("INSERT INTO settings(key,value) VALUES('hero_image_style','photo') ON CONFLICT(key) DO UPDATE SET value='photo'").run();
       db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(catalogueRefreshKey, new Date().toISOString());
     });
