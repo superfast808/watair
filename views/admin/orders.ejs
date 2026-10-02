@@ -1,0 +1,57 @@
+<%- include('../partials/admin-head') %>
+
+<header class="admin-page-head">
+  <div>
+    <p>Sales</p>
+    <h1>Orders</h1>
+    <span class="page-help">Orders created by the online checkout and manual-payment option.</span>
+  </div>
+  <a class="secondary-button button-link" href="/admin/commerce">Commerce settings →</a>
+</header>
+
+<section class="admin-card admin-orders-card">
+  <div class="list-toolbar">
+    <div><strong><%= orders.length %> orders</strong><span>Newest first</span></div>
+  </div>
+
+  <% if(!orders.length){ %>
+    <div class="empty-state orders-empty"><strong>No online orders yet</strong><span>Orders will appear here once customers start checkout.</span></div>
+  <% } %>
+
+  <div class="admin-order-list">
+    <% orders.forEach(order => { %>
+      <article class="admin-order">
+        <div class="admin-order-head">
+          <div>
+            <p class="admin-kicker"><%= formatUkDateTime(order.created_at) %></p>
+            <h2><%= order.product_name %> <span>× <%= order.quantity %></span></h2>
+            <small><%= order.public_id %></small>
+          </div>
+          <div class="admin-order-total"><strong><%= formatMoney(order.total_minor, order.currency) %></strong><span><%= order.gateway %></span></div>
+          <span class="pill order-status order-status-<%= order.status %>"><%= order.status.replace(/_/g,' ') %></span>
+        </div>
+
+        <div class="admin-order-grid">
+          <div><span>Customer</span><strong><%= order.customer_name %></strong><a href="mailto:<%= order.customer_email %>"><%= order.customer_email %></a><small><%= order.customer_phone || 'No phone supplied' %></small></div>
+          <div><span>Delivery</span><strong><%= order.address1 %><%= order.address2 ? ', ' + order.address2 : '' %></strong><small><%= order.city %><%= order.region ? ', ' + order.region : '' %>, <%= order.postcode %> · <%= order.country_code %></small></div>
+          <div><span>Breakdown</span><strong>Products: <%= formatMoney(order.unit_price_minor * order.quantity, order.currency) %></strong><small>Delivery: <%= formatMoney(order.delivery_minor, order.currency) %></small></div>
+          <div><span>Gateway reference</span><strong class="order-ref"><%= order.gateway_ref || 'Not assigned' %></strong><small><%= order.notes || '' %></small></div>
+        </div>
+
+        <form class="admin-order-status-form" method="post" action="/admin/orders/<%= order.id %>/status">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <label>Order status
+            <select name="status">
+              <% ['pending','awaiting_payment','paid','processing','fulfilled','cancelled','refunded','failed'].forEach(status => { %>
+                <option value="<%= status %>" <%= order.status===status?'selected':'' %>><%= status.replace(/_/g,' ') %></option>
+              <% }) %>
+            </select>
+          </label>
+          <button class="secondary-button" type="submit">Update status</button>
+        </form>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('../partials/admin-foot') %>
