@@ -916,7 +916,10 @@ const server = app.listen(PORT, '0.0.0.0', () => console.log(`WatAir listening o
 function shutdown(signal) {
   console.log(`${signal} received; shutting down WatAir cleanly.`);
   server.close(() => {
-    try { db.close(); } catch {}
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+      db.close();
+    } catch {}
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10000).unref();
