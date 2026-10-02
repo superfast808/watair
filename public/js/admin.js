@@ -20,6 +20,28 @@
   }
 
 
+
+  // Product deletion requires typing the exact product name before submit.
+  document.querySelectorAll('[data-delete-product]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      const productName = button.dataset.productName || '';
+      const form = button.closest('form');
+      const confirmation = form?.querySelector('[data-delete-confirmation]');
+      if (!form || !confirmation || !productName) return;
+
+      const typed = prompt(`Permanently delete "${productName}"?\n\nType the product name exactly to confirm:`);
+      if (typed === null) return;
+      if (typed.trim() !== productName) {
+        alert('Product not deleted. The name did not match.');
+        return;
+      }
+
+      confirmation.value = productName;
+      form.requestSubmit(button);
+    });
+  });
+
   // Admin user password helpers.
   document.querySelectorAll('[data-password-toggle]').forEach(button => {
     button.addEventListener('click', () => {
