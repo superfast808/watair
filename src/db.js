@@ -216,7 +216,6 @@ function seed() {
     commerce_stripe_enabled: '0',
     commerce_paypal_enabled: '0',
     commerce_manual_enabled: '0',
-    commerce_legal_reviewed: '0',
     commerce_price_note: 'Delivery is calculated from the delivery address before payment.'
   };
   const set = db.prepare('INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)');
