@@ -158,7 +158,7 @@ function seed() {
     hero_text: 'Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.',
     hero_image: '/uploads/imported/legacy/media/1027/contact-banner.jpg',
     hero_image_style: 'photo',
-    footer_text: 'Atmospheric Water Generation solutions for the UK.',
+    footer_text: 'Atmospheric Water Generation solutions for the UK and Overseas.',
     company_location: 'Glasgow, United Kingdom'
   };
   const set = db.prepare('INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)');
@@ -280,6 +280,17 @@ function seed() {
       db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(catalogueCleanupKey, new Date().toISOString());
     });
     cleanup();
+  }
+
+  // Owner-approved positioning refresh. Apply once to existing databases, then
+  // leave the value editable in the CMS thereafter.
+  const positioningRefreshKey = 'owner_positioning_refresh_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(positioningRefreshKey)) {
+    const tx = db.transaction(() => {
+      db.prepare("INSERT INTO settings(key,value) VALUES('footer_text','Atmospheric Water Generation solutions for the UK and Overseas.') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+      db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(positioningRefreshKey, new Date().toISOString());
+    });
+    tx();
   }
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
