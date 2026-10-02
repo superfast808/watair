@@ -169,7 +169,7 @@ app.get('/', (req, res) => {
     meta: {
       title: 'WatAir UK | Atmospheric Water Generators',
       description: 'Atmospheric Water Generation systems for homes, offices and industrial applications across the UK.',
-      image: '/uploads/imported/legacy/images/home/products.jpg'
+      image: '/uploads/imported/legacy/media/1027/contact-banner.jpg'
     }
   });
 });
@@ -184,8 +184,25 @@ app.get('/products/home-office', (req, res) => res.render('products', {
 }));
 app.get('/products/commercial-industrial', (req, res) => res.render('products', {
   products: productsForCategory('commercial-industrial'), category: 'commercial-industrial',
-  meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.', image: '/uploads/imported/legacy/media/1010/pw-hr-5000l.png' }
+  meta: { title: 'Commercial & Industrial Atmospheric Water Generators | WatAir UK', description: 'Commercial and industrial water-from-air systems from 80 to 10,000 litres per day.', image: '/uploads/imported/legacy/media/1066/5500-product.png' }
 }));
+
+// Owner-approved range consolidation. Preserve existing links and search equity
+// while directing retired variants to the replacement model that remains live.
+const productRedirects = {
+  'pw-hr-15l': 'pw-hr-20l',
+  'pw-hr-100l': 'pw-hr-100l-low-power-consumption',
+  'pw-hr-250l': 'pw-hr-250l-low-power-consumption',
+  'pw-hr-500l': 'pw-hr-500l-low-power-consumption',
+  'pw-hr-1000l': 'pw-hr-1000l-low-power-consumption',
+  'pw-hr-3000l': 'pw-hr-4000l-low-power-consumption',
+  'pw-hr-5000l': 'pw-hr-5500l-low-power-consumption',
+  'pw-hr-10000l': 'pw-hr-10000l-low-power-consumption'
+};
+for (const [oldSlug, replacementSlug] of Object.entries(productRedirects)) {
+  app.get(`/products/${oldSlug}`, (req,res) => res.redirect(301, `/products/${replacementSlug}`));
+  app.get(`/products/${oldSlug}/datasheet.pdf`, (req,res) => res.redirect(301, `/products/${replacementSlug}/datasheet.pdf`));
+}
 app.get('/products/:slug/datasheet.pdf', (req, res) => {
   const product = parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(req.params.slug));
   if (!product) return res.status(404).send('Product not found');
@@ -276,7 +293,7 @@ app.get('/about', (req, res) => renderPage(res, getPage('about')));
 app.get('/environment/plastic-bottles', (req, res) => renderPage(res, getPage('plastic-bottles')));
 app.get('/environment/mains-water', (req, res) => renderPage(res, getPage('mains-water')));
 app.get('/resellers', (req, res) => renderPage(res, getPage('resellers')));
-app.get('/leasing', (req, res) => renderPage(res, getPage('leasing')));
+app.get(['/leasing','/leasing/'], (req, res) => res.redirect(301, '/contact'));
 app.get('/privacy', (req, res) => renderPage(res, getPage('privacy')));
 app.get('/faqs', (req, res) => res.render('faqs', {
   faqs,
@@ -319,7 +336,6 @@ app.post('/contact', contactLimiter, async (req, res) => {
   const allowedInterests = new Set([
     'Home & Office',
     'Commercial & Industrial',
-    'Leasing',
     'Reseller opportunity',
     'General enquiry'
   ]);
@@ -422,7 +438,6 @@ app.get('/sitemap.xml', (req,res) => {
     { path: '/environment/plastic-bottles', lastmod: pageUpdated['plastic-bottles'] },
     { path: '/environment/mains-water', lastmod: pageUpdated['mains-water'] },
     { path: '/resellers', lastmod: pageUpdated.resellers },
-    { path: '/leasing', lastmod: pageUpdated.leasing },
     { path: '/privacy', lastmod: pageUpdated.privacy },
     { path: '/contact', lastmod: siteLastmod },
     ...productRows.map(product => ({
