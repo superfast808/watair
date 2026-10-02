@@ -135,6 +135,7 @@ function formatUkDate(value) {
 
 app.use((req, res, next) => {
   res.locals.settings = settingsObject();
+  res.locals.navigationItems = db.prepare('SELECT * FROM navigation_items WHERE active=1 ORDER BY sort_order,id').all();
   res.locals.path = req.path;
   res.locals.baseUrl = baseUrl;
   res.locals.admin = readAdmin(req);
@@ -1463,6 +1464,114 @@ function cleanExternalUrl(value) {
     return '';
   }
 }
+
+function cleanNavigationUrl(value) {
+  const text = String(value || '').trim().slice(0, 500);
+  if (!text) return '';
+  if (text.startsWith('/') && !text.startsWith('//')) return text;
+  if (text.startsWith('#')) return text;
+  if (/^(mailto:|tel:)/i.test(text)) return text.replace(/[\r\n]/g, '');
+  try {
+    const url = new URL(text);
+    if (!['http:','https:'].includes(url.protocol)) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function navigationRows() {
+  return db.prepare('SELECT * FROM navigation_items ORDER BY sort_order,id').all();
+}
+
+app.get('/admin/navigation', (req,res) => {
+  res.render('admin/navigation', {
+    items: navigationRows(),
+    meta: { title: 'Navigation | WatAir CMS' }
+  });
+});
+
+app.post('/admin/navigation/new', requireCsrf, (req,res) => {
+  const label = String(req.body.label || '').trim().slice(0, 100);
+  const url = cleanNavigationUrl(req.body.url);
+  const style = req.body.style === 'cta' ? 'cta' : 'link';
+  if (!label || !url) return res.status(400).send('A label and valid internal or external URL are required.');
+
+  const nextOrder = Number(db.prepare('SELECT COALESCE(MAX(sort_order),0) n FROM navigation_items').get().n || 0) + 10;
+  db.prepare(`
+    INSERT INTO navigation_items(label,url,item_type,style,sort_order,active,new_window)
+    VALUES(?,?,'custom',?,?,1,?)
+  `).run(label, url, style, nextOrder, req.body.new_window ? 1 : 0);
+
+  res.redirect('/admin/navigation?created=1');
+});
+
+app.post('/admin/navigation/:id', requireCsrf, (req,res) => {
+  const item = db.prepare('SELECT * FROM navigation_items WHERE id=?').get(req.params.id);
+  if (!item) return res.status(404).send('Navigation item not found.');
+
+  const label = String(req.body.label || '').trim().slice(0, 100);
+  if (!label) return res.status(400).send('Navigation label is required.');
+
+  const isSimple = item.item_type === 'custom' || item.builtin_key === 'contact';
+  const url = isSimple ? cleanNavigationUrl(req.body.url) : item.url;
+  if (isSimple && !url) return res.status(400).send('A valid navigation URL is required.');
+
+  const requestedOrder = Number.parseInt(req.body.sort_order, 10);
+  const sortOrder = Number.isFinite(requestedOrder)
+    ? Math.max(-9999, Math.min(99999, requestedOrder))
+    : Number(item.sort_order || 100);
+  const style = isSimple && req.body.style === 'cta' ? 'cta' : 'link';
+
+  db.prepare(`
+    UPDATE navigation_items
+    SET label=?,url=?,style=?,sort_order=?,active=?,new_window=?,updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).run(
+    label,
+    url,
+    style,
+    sortOrder,
+    req.body.active ? 1 : 0,
+    isSimple && req.body.new_window ? 1 : 0,
+    item.id
+  );
+
+  res.redirect('/admin/navigation?saved=1');
+});
+
+app.post('/admin/navigation/:id/move', requireCsrf, (req,res) => {
+  const rows = navigationRows();
+  const index = rows.findIndex(item => Number(item.id) === Number(req.params.id));
+  if (index < 0) return res.status(404).send('Navigation item not found.');
+
+  const direction = req.body.direction === 'up' ? -1 : req.body.direction === 'down' ? 1 : 0;
+  const targetIndex = index + direction;
+  if (!direction || targetIndex < 0 || targetIndex >= rows.length) return res.redirect('/admin/navigation');
+
+  const normalized = rows.map((item, i) => ({ ...item, normalizedOrder: (i + 1) * 10 }));
+  const current = normalized[index];
+  const target = normalized[targetIndex];
+
+  const tx = db.transaction(() => {
+    normalized.forEach(item => {
+      db.prepare('UPDATE navigation_items SET sort_order=? WHERE id=?').run(item.normalizedOrder, item.id);
+    });
+    db.prepare('UPDATE navigation_items SET sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(target.normalizedOrder, current.id);
+    db.prepare('UPDATE navigation_items SET sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(current.normalizedOrder, target.id);
+  });
+  tx();
+
+  res.redirect('/admin/navigation?moved=1');
+});
+
+app.post('/admin/navigation/:id/delete', requireCsrf, (req,res) => {
+  const item = db.prepare('SELECT * FROM navigation_items WHERE id=?').get(req.params.id);
+  if (!item) return res.status(404).send('Navigation item not found.');
+  if (item.item_type !== 'custom') return res.status(400).send('Built-in navigation items can be hidden but not deleted.');
+  db.prepare('DELETE FROM navigation_items WHERE id=?').run(item.id);
+  res.redirect('/admin/navigation?deleted=1');
+});
 
 app.get('/admin/settings', (req,res) => {
   res.render('admin/settings', { values: settingsObject(), meta: { title: 'Site Settings | WatAir CMS' } });
