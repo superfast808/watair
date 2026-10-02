@@ -103,7 +103,7 @@ The checkout supports:
 - editable Terms of sale, Refunds & returns, Privacy and Cookie notices
 - a cookie/preference control ready for future optional analytics or marketing integrations
 
-Payment credentials stay in the server environment rather than SQLite. Configure the relevant values from `.env.example`, then enable the provider under **CMS → Commerce**. Full payment-card details are not handled or stored by the WatAir application.
+Payment credentials stay in the server environment rather than SQLite. Configure the relevant values from `.env.example`, then enable the provider under **CMS → Commerce**. Stripe is only exposed to customers when both its secret key and webhook secret are present, so payment confirmation cannot accidentally run without webhook verification. Full payment-card details are not handled or stored by the WatAir application.
 
 Product prices are currently treated as the final customer-facing product amount. The application does not separately calculate VAT/sales tax; agree the intended tax treatment before enabling live sales.
 
