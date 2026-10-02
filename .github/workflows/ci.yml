@@ -111,7 +111,7 @@ jobs:
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
-          grep -q 'rel="icon" href="/favicon.svg?v=1.1.0"' /tmp/home.html
+          grep -q 'rel="icon" href="/favicon.svg?v=1.1.1"' /tmp/home.html
           grep -q '<svg' /tmp/favicon.svg
           grep -q '^404$' /tmp/notfound-status.txt
           grep -q 'Page not found' /tmp/notfound.html
