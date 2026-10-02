@@ -386,8 +386,18 @@ app.get('/products/:slug', (req, res) => {
     .sort((a,b) => Math.abs(a.capacity_lpd - product.capacity_lpd) - Math.abs(b.capacity_lpd - product.capacity_lpd))
     .slice(0, 3);
 
+  const commerceSettings = settingsObject();
+  const commerceGateways = enabledGateways(commerceSettings);
+  const canBuyOnline =
+    commerceEnabled(commerceSettings) &&
+    Boolean(product.sellable) &&
+    Number(product.price_minor) > 0 &&
+    commerceGateways.length > 0;
+
   res.render('product', {
     product, related, family, previousProduct, nextProduct,
+    canBuyOnline,
+    commerceGateways,
     meta: { title: `${product.name}${product.subtitle ? ' – ' + product.subtitle : ''} | WatAir UK`, description: product.summary, image: product.image_url }
   });
 });
