@@ -19,6 +19,7 @@
 
     <form class="checkout-form" method="post" action="/checkout/<%= product.slug %>" data-checkout-form data-product-slug="<%= product.slug %>">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
 
       <section class="checkout-section">
         <div class="checkout-section-head"><span>1</span><div><h2>Contact</h2><p>For the order confirmation and delivery contact.</p></div></div>
