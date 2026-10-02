@@ -159,7 +159,10 @@ function seed() {
     hero_image: '/uploads/imported/legacy/media/1027/contact-banner.jpg',
     hero_image_style: 'photo',
     footer_text: 'Atmospheric Water Generation solutions for the UK and Overseas.',
-    company_location: 'Glasgow, United Kingdom'
+    company_location: 'Glasgow, United Kingdom',
+    facebook_url: '',
+    instagram_url: '',
+    linkedin_url: 'https://uk.linkedin.com/company/watair-uk'
   };
   const set = db.prepare('INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)');
   Object.entries(defaults).forEach(([k,v]) => set.run(k,v));
