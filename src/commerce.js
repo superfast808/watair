@@ -61,8 +61,7 @@ function deliveryQuote(db, product, countryCode, postcode) {
       specificity:
         (ruleClass === deliveryClass ? 10000 : 0) +
         (ruleCountry === country ? 5000 : 0) +
-        prefixLength * 100 -
-        Number(rule.priority || 0)
+        prefixLength * 100
     });
   }
 
