@@ -85,6 +85,8 @@ jobs:
           grep -q 'Skip to main content' /tmp/home.html
           grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
+          grep -q '20 Litres/day at 30°C &amp; 80% RH' /tmp/product.html
+          grep -q '53.1 × 30.7 × 58 cm' /tmp/product.html
           grep -q 'PW HR-20L' /tmp/products-home.html
           grep -q '20–10,000' /tmp/home.html
           grep -q 'home-photo-hero' /tmp/home.html
@@ -109,7 +111,7 @@ jobs:
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
           grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
-          grep -q 'rel="icon" href="/favicon.svg"' /tmp/home.html
+          grep -q 'rel="icon" href="/favicon.svg?v=1.1.0"' /tmp/home.html
           grep -q '<svg' /tmp/favicon.svg
           grep -q '^404$' /tmp/notfound-status.txt
           grep -q 'Page not found' /tmp/notfound.html
