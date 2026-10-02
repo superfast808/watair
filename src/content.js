@@ -142,6 +142,12 @@ const pages = [
     hero: 'Explore a lower-upfront-cost route to water from air',
     intro: 'Selected WatAir systems may be suitable for leasing or finance arrangements depending on the installation and customer requirements.',
     body: `<h2>Talk to us about the requirement</h2><p>Rather than forcing every project into the same purchasing model, we can discuss the application, expected output and preferred commercial approach.</p>`
+  },
+  {
+    slug: 'privacy', title: 'Privacy notice', eyebrow: 'Privacy & data',
+    hero: 'How WatAir handles information submitted through this website',
+    intro: 'This notice explains what information the WatAir website collects, why it is used and how to contact us about your personal information.',
+    body: `<h2>Information we collect</h2><p>If you send an enquiry through this website, we may collect your name, company, email address, telephone number, the subject of your enquiry, your message and basic technical information such as the IP address used to submit the form.</p><h2>How we use it</h2><p>We use enquiry information to respond to your request, discuss WatAir products or services and maintain an appropriate record of customer and project correspondence. We do not use the public website to set advertising or analytics cookies.</p><h2>How long information is kept</h2><p>Enquiry records are retained only for as long as reasonably necessary for the enquiry, any resulting business relationship, and relevant administrative or legal requirements. Website administrators can remove enquiry records from the CMS when they are no longer required.</p><h2>Who receives the information</h2><p>Information submitted through the contact form is stored within the WatAir website system and may also be sent to the configured WatAir contact mailbox so the team can respond. We do not sell information submitted through this website.</p><h2>Your choices and rights</h2><p>You can contact WatAir to ask about personal information submitted through the website, request a correction, or ask for information to be deleted where applicable. Contact us using the email address shown on this website.</p><h2>Cookies</h2><p>The public website does not currently use non-essential analytics or advertising cookies. The password-protected CMS uses an essential sign-in cookie for administrator sessions.</p><h2>Contact</h2><p>For privacy questions, contact WatAir using the email address or telephone number shown in the website footer and contact page.</p>`
   }
 ];
 
