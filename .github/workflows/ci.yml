@@ -37,6 +37,11 @@ jobs:
           upsert.run('commerce_enabled','1');
           upsert.run('commerce_currency','GBP');
           upsert.run('commerce_manual_enabled','1');
+          upsert.run('catalogue_hero_eyebrow','CI catalogue eyebrow');
+          upsert.run('catalogue_hero_title','CI editable catalogue hero');
+          upsert.run('catalogue_hero_text','Catalogue hero content managed from Site Settings.');
+          upsert.run('catalogue_hero_image','/uploads/imported/legacy/media/1070/10000l-pro.png');
+          upsert.run('catalogue_hero_image_style','graphic');
           db.prepare("UPDATE products SET sellable=1,price_minor=129900,delivery_class='standard',max_order_qty=2 WHERE slug='pw-hr-20l'").run();
           db.prepare("INSERT INTO delivery_rules(name,delivery_class,country_code,postcode_prefixes,price_minor,priority,active) VALUES('CI UK delivery','standard','GB','',2500,100,1)").run();
           db.close();
@@ -130,6 +135,12 @@ jobs:
           grep -q '20 Litres/day at 30°C &amp; 80% RH' /tmp/product.html
           grep -q '53.1 × 30.7 × 58 cm' /tmp/product.html
           grep -q 'PW HR-20L' /tmp/products-home.html
+          grep -q 'CI catalogue eyebrow' /tmp/products.html
+          grep -q 'CI editable catalogue hero' /tmp/products.html
+          grep -q 'Catalogue hero content managed from Site Settings.' /tmp/products.html
+          grep -q '/uploads/imported/legacy/media/1070/10000l-pro.png' /tmp/products.html
+          ! grep -q 'CI editable catalogue hero' /tmp/products-home.html
+          ! grep -q 'CI editable catalogue hero' /tmp/products-commercial.html
           grep -q '20–10,000' /tmp/home.html
           grep -q 'Atmospheric Water Generation solutions for the UK and Overseas.' /tmp/home.html
           ! grep -q 'Atmospheric Water Generation · United Kingdom' /tmp/home.html
@@ -229,6 +240,8 @@ jobs:
           grep -q 'Page content' /tmp/admin-page-edit.html
           grep -q 'Upload an image' /tmp/admin-media.html
           grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Catalogue hero' /tmp/admin-settings.html
+          grep -q 'Catalogue hero image' /tmp/admin-settings.html
           grep -q 'Facebook URL' /tmp/admin-settings.html
           grep -q 'Instagram URL' /tmp/admin-settings.html
           grep -q 'LinkedIn URL' /tmp/admin-settings.html
