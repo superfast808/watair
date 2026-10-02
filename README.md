@@ -27,7 +27,12 @@ A clean-room rebuild of the WatAir UK website: modern public site, structured 20
 - `/about`
 - `/resellers`
 - `/privacy`
+- `/terms`
+- `/refunds`
+- `/cookies`
 - `/contact`
+- `/buy/:slug` for opted-in sellable products
+- `/order/:publicId` for customer order status
 - `/sitemap.xml`
 - `/robots.txt`
 - `/.well-known/security.txt`
@@ -77,12 +82,44 @@ CMS features include:
 - homepage/global settings
 - SEO titles and descriptions
 - production-readiness checks on the dashboard
+- per-product sellable/price/delivery-class controls
+- commerce settings, payment-provider status and delivery-rule management
+- ecommerce order inbox and fulfilment-status controls
+
+## E-commerce
+
+E-commerce is deliberately disabled by default. Existing products also default to non-sellable, so deploying a commerce-capable release cannot expose prices or payment buttons until an administrator opts in.
+
+The checkout supports:
+
+- Stripe hosted Checkout for card payments
+- PayPal Checkout through the PayPal Orders API
+- manual payment/invoice orders
+- delivery pricing rules by product delivery class, country and optional postcode prefixes
+- configurable maximum quantity per product
+- stored order/customer/delivery snapshots in SQLite
+- Stripe webhook verification and PayPal server-side capture verification
+- customer/admin order email notifications when SMTP is configured
+- editable Terms of sale, Refunds & returns, Privacy and Cookie notices
+- a cookie/preference control ready for future optional analytics or marketing integrations
+
+Payment credentials stay in the server environment rather than SQLite. Configure the relevant values from `.env.example`, then enable the provider under **CMS → Commerce**. Full payment-card details are not handled or stored by the WatAir application.
+
+Product prices are currently treated as the final customer-facing product amount. The application does not separately calculate VAT/sales tax; agree the intended tax treatment before enabling live sales.
+
+For Stripe, configure the live webhook endpoint as:
+
+`POST https://watair.co.uk/payments/stripe/webhook`
+
+and subscribe at minimum to Checkout Session completion/expiry and asynchronous payment success/failure events.
+
+PayPal uses sandbox unless `PAYPAL_ENV=live`.
 
 ## Contact enquiries
 
 Every successful contact submission is stored in SQLite. If SMTP is configured, a notification is also sent to `CONTACT_TO`. A temporary SMTP failure therefore does not discard the enquiry.
 
-The privacy notice describes the information retained by the website. The public site does not currently use non-essential analytics or advertising cookies.
+The privacy notice describes enquiry and order information retained by the website. The cookie-preference control keeps optional analytics and marketing categories off unless the visitor opts in; no optional analytics or advertising integration is currently loaded by the application itself.
 
 ## Release checks
 
@@ -94,13 +131,14 @@ Before DNS cutover:
 4. Confirm the real administrator accounts and remove unused access.
 5. Configure SMTP and send a real contact-form test.
 6. Review every published product image and technical specification against the approved source material.
-7. Review the editable Privacy Notice with the site owner and update it if their internal retention/privacy process requires different wording.
-8. Confirm the CMS dashboard launch checks are green.
-9. Verify Plesk/nginx HTTPS and reverse proxy to the configured `HOST_PORT`.
-10. Test the home page, both range pages, several products, PDF downloads, FAQs, contact form, privacy page, sitemap and robots file.
-11. Test important legacy URLs and confirm they return 301 redirects.
-12. Back up both `data/` and `public/uploads/` immediately before DNS changes.
-13. Keep the legacy hosting/database backup available during the cutover window.
+7. Review the editable Terms of sale, Refunds & returns, Privacy and Cookie notices against the final business process.
+8. If e-commerce will be enabled, configure at least one payment provider, create delivery rules, opt specific products into online sales and complete a low-value live payment/refund test.
+9. Confirm the CMS dashboard launch checks are green.
+10. Verify Plesk/nginx HTTPS and reverse proxy to the configured `HOST_PORT`.
+11. Test the home page, both range pages, several products, PDF downloads, FAQs, contact form, privacy page, sitemap and robots file.
+12. Test important legacy URLs and confirm they return 301 redirects.
+13. Back up both `data/` and `public/uploads/` immediately before DNS changes.
+14. Keep the legacy hosting/database backup available during the cutover window.
 
 ## Post-launch
 
