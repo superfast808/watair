@@ -1371,7 +1371,7 @@ function deliveryRuleValues(body) {
     postcodePrefixes: String(body.postcode_prefixes || '').toUpperCase().replace(/[^A-Z0-9, *-]/g,'').slice(0,500),
     priceMinor,
     priority: Math.max(-10000, Math.min(10000, Number(body.priority || 100))),
-    active: body.active === undefined ? 1 : (body.active ? 1 : 0)
+    active: body.active ? 1 : 0
   };
 }
 
