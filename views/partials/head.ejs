@@ -90,7 +90,7 @@
         encodingFormat: 'application/pdf',
         url: canonicalUrl + '/datasheet.pdf'
       },
-      offers: settings.commerce_enabled === '1' && product.sellable && Number(product.price_minor) > 0 ? {
+      offers: typeof canBuyOnline !== 'undefined' && canBuyOnline ? {
         '@type': 'Offer',
         url: baseUrl + '/buy/' + product.slug,
         priceCurrency: settings.commerce_currency || 'GBP',
