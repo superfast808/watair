@@ -1135,7 +1135,8 @@ app.get('/admin/products/new', (req,res) => {
     product: {
       id: null, slug: '', name: '', subtitle: '', category: 'home-office',
       capacity_lpd: 0, summary: '', specs: {}, image_url: '',
-      featured: 0, published: 0, sort_order: 999
+      featured: 0, published: 0, sort_order: 999,
+      sellable: 0, price_minor: 0, delivery_class: 'standard', max_order_qty: 1
     },
     meta: { title: 'Add Product | WatAir CMS' }
   });
@@ -1146,9 +1147,12 @@ app.post('/admin/products/new', requireCsrf, (req,res) => {
   if (!name) return res.status(400).send('Product name is required');
   const slug = uniqueProductSlug(name);
   const specs = specsFromBody(req.body);
+  const priceMinor = parseMoneyToMinor(req.body.price);
+  if (req.body.sellable && (priceMinor === null || priceMinor <= 0)) return res.status(400).send('A valid price is required for a sellable product.');
   const result = db.prepare(`INSERT INTO products
-    (slug,name,subtitle,category,capacity_lpd,summary,specs_json,image_url,featured,published,sort_order,updated_at)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`)
+    (slug,name,subtitle,category,capacity_lpd,summary,specs_json,image_url,featured,published,sort_order,
+     sellable,price_minor,delivery_class,max_order_qty,updated_at)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`)
     .run(
       slug,
       name.slice(0,180),
@@ -1160,7 +1164,11 @@ app.post('/admin/products/new', requireCsrf, (req,res) => {
       String(req.body.image_url || '').slice(0,1200),
       req.body.featured ? 1 : 0,
       req.body.published ? 1 : 0,
-      Number(req.body.sort_order || 999)
+      Number(req.body.sort_order || 999),
+      req.body.sellable ? 1 : 0,
+      priceMinor || 0,
+      String(req.body.delivery_class || 'standard').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').slice(0,60) || 'standard',
+      Math.max(1, Math.min(25, Number(req.body.max_order_qty || 1)))
     );
   res.redirect(`/admin/products/${result.lastInsertRowid}?created=1`);
 });
@@ -1178,8 +1186,11 @@ app.get('/admin/products/:id', (req,res) => {
 
 app.post('/admin/products/:id', requireCsrf, (req,res) => {
   const specs = specsFromBody(req.body);
+  const priceMinor = parseMoneyToMinor(req.body.price);
+  if (req.body.sellable && (priceMinor === null || priceMinor <= 0)) return res.status(400).send('A valid price is required for a sellable product.');
   db.prepare(`UPDATE products
-    SET name=?,subtitle=?,category=?,capacity_lpd=?,summary=?,specs_json=?,image_url=?,featured=?,published=?,sort_order=?,updated_at=CURRENT_TIMESTAMP
+    SET name=?,subtitle=?,category=?,capacity_lpd=?,summary=?,specs_json=?,image_url=?,featured=?,published=?,sort_order=?,
+        sellable=?,price_minor=?,delivery_class=?,max_order_qty=?,updated_at=CURRENT_TIMESTAMP
     WHERE id=?`)
     .run(
       String(req.body.name || '').slice(0,180),
@@ -1192,6 +1203,10 @@ app.post('/admin/products/:id', requireCsrf, (req,res) => {
       req.body.featured ? 1 : 0,
       req.body.published ? 1 : 0,
       Number(req.body.sort_order || 0),
+      req.body.sellable ? 1 : 0,
+      priceMinor || 0,
+      String(req.body.delivery_class || 'standard').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').slice(0,60) || 'standard',
+      Math.max(1, Math.min(25, Number(req.body.max_order_qty || 1))),
       req.params.id
     );
   res.redirect(`/admin/products/${req.params.id}?saved=1`);
