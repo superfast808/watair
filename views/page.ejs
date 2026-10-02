@@ -35,19 +35,36 @@
 
 <section class="section-tight prose-shell">
   <article class="prose"><%- page.body_html %></article>
-  <aside class="page-side-card">
-    <p class="eyebrow">Explore WatAir</p>
-    <h3>From compact systems to industrial water generation.</h3>
-    <a href="/products/home-office">Home & Office <span>→</span></a>
-    <a href="/products/commercial-industrial">Commercial & Industrial <span>→</span></a>
-    <a href="/faqs">FAQs <span>→</span></a>
-    <a href="/contact">Talk to WatAir <span>→</span></a>
-  </aside>
+  <% if(page.slug === 'privacy'){ %>
+    <aside class="page-side-card">
+      <p class="eyebrow">Privacy contact</p>
+      <h3>Questions about information submitted through this website?</h3>
+      <a href="mailto:<%= settings.email %>"><%= settings.email %> <span>→</span></a>
+      <a href="/contact">Contact WatAir <span>→</span></a>
+      <a href="/">Return to homepage <span>→</span></a>
+    </aside>
+  <% } else { %>
+    <aside class="page-side-card">
+      <p class="eyebrow">Explore WatAir</p>
+      <h3>From compact systems to industrial water generation.</h3>
+      <a href="/products/home-office">Home & Office <span>→</span></a>
+      <a href="/products/commercial-industrial">Commercial & Industrial <span>→</span></a>
+      <a href="/faqs">FAQs <span>→</span></a>
+      <a href="/contact">Talk to WatAir <span>→</span></a>
+    </aside>
+  <% } %>
 </section>
 
+<% if(page.slug === 'privacy'){ %>
+<section class="cta-panel cta-dark">
+  <div><p class="eyebrow">Privacy questions</p><h2>Need to contact us about your information?</h2><p>Use the contact details shown on this site and tell us what you need help with.</p></div>
+  <a class="button button-aqua" href="/contact">Contact WatAir</a>
+</section>
+<% } else { %>
 <section class="cta-panel cta-dark">
   <div><p class="eyebrow">Talk to WatAir</p><h2>Want to know what this looks like for your site?</h2><p>Share the daily requirement and operating environment and we can discuss the right next step.</p></div>
   <a class="button button-aqua" href="/contact">Contact us</a>
 </section>
+<% } %>
 </main>
 <%- include('partials/footer') %>
