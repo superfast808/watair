@@ -560,8 +560,37 @@ app.get('/admin', (req,res) => {
   };
   const enquiries = db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC LIMIT 6').all();
   const recentProducts = products('1=1').slice(0, 6);
+  const missingImages = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (image_url IS NULL OR TRIM(image_url)='')").get().c;
+  const missingSpecs = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (specs_json IS NULL OR TRIM(specs_json)='' OR specs_json='{}')").get().c;
+  const releaseChecks = [
+    {
+      label: 'Canonical HTTPS URL',
+      ok: baseUrl.startsWith('https://'),
+      detail: baseUrl
+    },
+    {
+      label: 'Enquiry email notifications',
+      ok: Boolean(process.env.SMTP_HOST && process.env.CONTACT_TO),
+      detail: process.env.SMTP_HOST && process.env.CONTACT_TO ? 'SMTP is configured' : 'Configure SMTP_HOST and CONTACT_TO before launch'
+    },
+    {
+      label: 'Privacy notice',
+      ok: Boolean(getPage('privacy')),
+      detail: getPage('privacy') ? 'Published and linked in the footer' : 'Privacy page is not published'
+    },
+    {
+      label: 'Published product images',
+      ok: missingImages === 0,
+      detail: missingImages ? `${missingImages} published product(s) need an image` : 'All published products have imagery'
+    },
+    {
+      label: 'Published product specifications',
+      ok: missingSpecs === 0,
+      detail: missingSpecs ? `${missingSpecs} published product(s) need specifications` : 'All published products have specifications'
+    }
+  ];
   res.render('admin/dashboard', {
-    stats, enquiries, recentProducts, mediaSummary, uploads, importState: getMediaImportState(),
+    stats, enquiries, recentProducts, mediaSummary, uploads, releaseChecks, importState: getMediaImportState(),
     meta: { title: 'WatAir CMS' }
   });
 });
