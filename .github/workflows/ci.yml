@@ -160,7 +160,7 @@ jobs:
           grep -q '"delivery_minor":2500' /tmp/quote.json
           grep -q '"total_minor":132400' /tmp/quote.json
           grep -q 'Order received.' /tmp/order.html
-          grep -q 'awaiting payment arrangement' /tmp/order.html
+          grep -q 'manual payment arrangement' /tmp/order.html
           grep -q 'data-cookie-consent' /tmp/home.html
           grep -q 'privacy notice' /tmp/contact.html
           grep -q 'How many people?' /tmp/contact.html
