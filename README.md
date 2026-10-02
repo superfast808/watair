@@ -1,22 +1,25 @@
 # WatAir Next
 
-A clean-room rebuild of the WatAir UK website: modern public site, product catalogue, SEO continuity, contact lead capture and a lightweight CMS. The visual direction is deliberately more editorial and premium than the legacy site, while retaining WatAir's existing information architecture and product range.
+A clean-room rebuild of the WatAir UK website: modern public site, structured product catalogue, SEO continuity, contact lead capture and a lightweight owner-friendly CMS.
 
 ## Stack
 
 - Node.js 22 + Express
-- EJS server-rendered pages for strong SEO and fast first paint
-- SQLite (WAL mode) for content, catalogue, settings and leads
-- Lightweight password-protected CMS
-- Docker-first deployment, suitable for Linux Plesk + nginx reverse proxy
+- EJS server-rendered pages
+- SQLite in WAL mode
+- Password-protected CMS with multiple admin users
+- Docker deployment behind Plesk/nginx
+- Generated PDF product datasheets
+- Local owner-approved media library
 
-## Main routes
+## Main public routes
 
 - `/`
 - `/products`
 - `/products/home-office`
 - `/products/commercial-industrial`
 - `/products/:slug`
+- `/products/:slug/datasheet.pdf`
 - `/how-it-works`
 - `/faqs`
 - `/environment/plastic-bottles`
@@ -24,69 +27,84 @@ A clean-room rebuild of the WatAir UK website: modern public site, product catal
 - `/about`
 - `/resellers`
 - `/leasing`
+- `/privacy`
 - `/contact`
-- `/admin`
+- `/sitemap.xml`
+- `/robots.txt`
+- `/.well-known/security.txt`
+- `/health`
 
-Legacy WatAir paths are redirected with HTTP 301s to preserve search equity during migration.
+Legacy WatAir paths are redirected with HTTP 301s to preserve search continuity during migration.
 
-## Local / staging deployment
+## Deployment
 
 ```bash
 cp .env.example .env
-# Edit .env and set secure SESSION_SECRET, ADMIN_EMAIL and ADMIN_PASSWORD
+# Edit .env with the production URL, secrets and SMTP details.
 
 docker compose up -d --build
-curl http://127.0.0.1:8093/health
+docker compose ps
+curl http://127.0.0.1:${HOST_PORT:-8093}/health
 ```
 
-The default host binding is `127.0.0.1:8093` so the application is intended to sit behind Plesk/nginx rather than expose Node directly.
+The application binds to `127.0.0.1` on the host and is intended to sit behind Plesk/nginx, which terminates HTTPS.
 
-## Plesk reverse proxy
-
-Point the selected domain/subdomain to:
-
-```text
-http://127.0.0.1:8093
-```
-
-Let Plesk/nginx terminate HTTPS. Set `BASE_URL` to the final canonical HTTPS URL before launch.
+Before launch, `BASE_URL` must be the final canonical HTTPS domain because it drives canonical tags, Open Graph metadata, JSON-LD and the sitemap.
 
 ## Persistent data
 
 Docker persists:
 
 - `./data` — SQLite database
-- `./public/uploads` — CMS-uploaded media
+- `./public/uploads` — CMS-uploaded media and imported owner-approved legacy media
 
-Back both up together.
+Back these up together. Do not treat the Docker image itself as the backup.
 
 ## CMS
 
-The initial administrator is created on the first boot from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. In production there is deliberately no hard-coded fallback password.
+The first administrator is created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` on first boot. Additional administrators are managed inside the CMS.
 
-CMS functions currently include:
+CMS features include:
 
-- edit editorial pages and SEO metadata
-- edit product content/specifications/visibility/order
-- edit site-wide contact and hero settings
-- view and mark contact enquiries
-- image-upload endpoint ready for richer media controls
+- page editing with a visual content editor
+- page hero image selection
+- product create/edit/publish workflows
+- row-based technical specification editing
+- product and page media picker
+- media upload/library management
+- enquiry inbox with read/delete controls
+- multiple administrator accounts and password resets
+- homepage/global settings
+- SEO titles and descriptions
+- production-readiness checks on the dashboard
 
-## Content migration notes
+## Contact enquiries
 
-The first-pass seed content is based on the public WatAir site as it existed in October 2026. Product specifications are structured in the database so they can be corrected without code changes.
+Every successful contact submission is stored in SQLite. If SMTP is configured, a notification is also sent to `CONTACT_TO`. A temporary SMTP failure therefore does not discard the enquiry.
 
-The homepage temporarily references the legacy site's group product image. Before production cutover, migrate approved WatAir-owned imagery into `/public/uploads` (or the repository) and update the hero image in CMS. Do not rely on the old host after DNS cutover.
+The privacy notice describes the information retained by the website. The public site does not currently use non-essential analytics or advertising cookies.
 
-## Production checklist
+## Release checks
 
-1. Import/approve original WatAir images and logo assets.
-2. Verify every product specification against the customer's source material.
-3. Configure SMTP and test contact notifications.
-4. Set strong production secrets.
-5. Add Plesk/nginx reverse proxy and SSL.
-6. Test all old `.aspx` and current URLs for correct 301 redirects.
-7. Crawl staging for 404s, titles, canonicals and sitemap coverage.
-8. Back up the legacy site and database before DNS change.
-9. Change DNS only after customer sign-off.
-10. Monitor logs and enquiries after launch.
+Before DNS cutover:
+
+1. Set `BASE_URL=https://watair.co.uk`.
+2. Set a unique `SESSION_SECRET` of at least 32 characters.
+3. Confirm the real administrator accounts and remove unused access.
+4. Configure SMTP and send a real contact-form test.
+5. Review every published product image and technical specification against the approved source material.
+6. Review the editable Privacy Notice with the site owner and update it if their internal retention/privacy process requires different wording.
+7. Confirm the CMS dashboard launch checks are green.
+8. Verify Plesk/nginx HTTPS and reverse proxy to the configured `HOST_PORT`.
+9. Test the home page, both range pages, several products, PDF downloads, FAQs, contact form, privacy page, sitemap and robots file.
+10. Test important legacy URLs and confirm they return 301 redirects.
+11. Back up both `data/` and `public/uploads/` immediately before DNS changes.
+12. Keep the legacy hosting/database backup available during the cutover window.
+
+## Post-launch
+
+- watch Docker/Plesk logs for errors
+- confirm real enquiries arrive both in the CMS and by email
+- submit the sitemap in the relevant search-console account
+- monitor 404s and add redirects for any legacy URLs discovered after launch
+- take regular backups of the SQLite database and uploaded media
