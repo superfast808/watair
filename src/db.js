@@ -293,6 +293,34 @@ function seed() {
     tx();
   }
 
+  // Remove incidental UK-only wording from editable core pages while
+  // preserving the approved "UK and Overseas" positioning line.
+  const globalCopyRefreshKey = 'owner_global_copy_refresh_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(globalCopyRefreshKey)) {
+    const tx = db.transaction(() => {
+      db.prepare(`
+        UPDATE pages
+        SET intro='WatAir promotes Atmospheric Water Generation technology from compact home and office systems to large commercial and industrial installations.',
+            updated_at=CURRENT_TIMESTAMP
+        WHERE slug='about'
+          AND intro='WatAir UK was formed to promote Atmospheric Water Generation technology across the UK, from compact home and office systems to large industrial installations.'
+      `).run();
+
+      const how = db.prepare("SELECT id,body_html FROM pages WHERE slug='how-it-works'").get();
+      if (how?.body_html) {
+        const oldBlock = '<h2>Designed for the UK climate</h2><p>Output depends on temperature and relative humidity. The UK’s generally humid climate can make atmospheric water generation particularly relevant, while each model has its own operating range shown on the product specification page.</p>';
+        const newBlock = '<h2>Designed around real operating conditions</h2><p>Output depends on temperature and relative humidity, so expected performance should always be assessed against the conditions at the installation site. Each model has its own operating range shown on the product specification page.</p>';
+        const refreshed = how.body_html.replace(oldBlock, newBlock);
+        if (refreshed !== how.body_html) {
+          db.prepare('UPDATE pages SET body_html=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(refreshed, how.id);
+        }
+      }
+
+      db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(globalCopyRefreshKey, new Date().toISOString());
+    });
+    tx();
+  }
+
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
     const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
