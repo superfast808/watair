@@ -330,6 +330,7 @@ function renderPage(res, page, extra = {}) {
   if (!page) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
   const pageImages = {
     'how-it-works': '/uploads/imported/legacy/images/how-it-works/hydrologic-cycle.svg',
+    'water-quality-maintenance': '/images/pw-hr-20l.webp',
     'about': '/uploads/imported/legacy/media/1023/about-us-banner.jpg',
     'plastic-bottles': '/uploads/imported/legacy/media/1026/our-environment-banner.jpg',
     'mains-water': '/uploads/imported/legacy/media/1024/mains-water-banner.jpg',
@@ -746,6 +747,7 @@ app.get('/order/:publicId', (req,res) => {
 });
 
 app.get('/how-it-works', (req, res) => renderPage(res, getPage('how-it-works')));
+app.get('/water-quality-maintenance', (req, res) => renderPage(res, getPage('water-quality-maintenance')));
 app.get('/about', (req, res) => renderPage(res, getPage('about')));
 app.get('/environment/plastic-bottles', (req, res) => renderPage(res, getPage('plastic-bottles')));
 app.get('/environment/mains-water', (req, res) => renderPage(res, getPage('mains-water')));
@@ -893,6 +895,7 @@ app.get('/sitemap.xml', (req,res) => {
     { path: '/products/home-office', lastmod: siteLastmod },
     { path: '/products/commercial-industrial', lastmod: siteLastmod },
     { path: '/how-it-works', lastmod: pageUpdated['how-it-works'] },
+    { path: '/water-quality-maintenance', lastmod: pageUpdated['water-quality-maintenance'] },
     { path: '/faqs', lastmod: siteLastmod },
     { path: '/about', lastmod: pageUpdated.about },
     { path: '/environment/plastic-bottles', lastmod: pageUpdated['plastic-bottles'] },
