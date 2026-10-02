@@ -38,11 +38,11 @@
 
   <div class="contact-form-wrap">
     <% if(sent){ %>
-      <div class="success-box"><p class="eyebrow">Enquiry received</p><h2>Thanks — we have your enquiry.</h2><p>It has been logged and the WatAir team can follow up from here.</p><a class="button" href="/products">Browse the range</a></div>
+      <div class="success-box" role="status"><p class="eyebrow">Enquiry received</p><h2>Thanks — we have your enquiry.</h2><p>It has been logged and the WatAir team can follow up from here.</p><a class="button" href="/products">Browse the range</a></div>
     <% } else { %>
       <div class="form-heading"><p class="eyebrow">Start here</p><h2>Tell us a little about the requirement.</h2><p>We’ll use this to point you toward the most relevant system or next step.</p></div>
       <% if(selectedProduct){ %><div class="selected-product"><span>Selected model</span><strong><%= selectedProduct.name %><%= selectedProduct.subtitle ? ' – ' + selectedProduct.subtitle : '' %></strong><small><%= selectedProduct.capacity_lpd.toLocaleString('en-GB') %> litres/day rated output</small></div><% } %>
-      <% if(error){ %><div class="error-box"><%= error %></div><% } %>
+      <% if(error){ %><div class="error-box" role="alert"><%= error %></div><% } %>
       <form method="post" action="/contact" class="contact-form">
         <% if(selectedProduct){ %><input type="hidden" name="product" value="<%= selectedProduct.slug %>"><% } %>
         <div class="two-col">
