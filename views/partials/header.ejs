@@ -22,9 +22,21 @@
         </span>
         <span><%= settings.phone %></span>
       </a>
-      <a class="utility-social utility-linkedin" href="https://uk.linkedin.com/company/watair-uk" target="_blank" rel="noopener" aria-label="WatAir U.K on LinkedIn">
+      <% if(settings.facebook_url){ %>
+      <a class="utility-social utility-facebook" href="<%= settings.facebook_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on Facebook">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.6 22v-9h3l.5-3.5h-3.5V7.3c0-1 .3-1.7 1.8-1.7h1.9V2.5c-.3 0-1.5-.1-2.8-.1-2.8 0-4.7 1.7-4.7 4.8v2.3H6.7V13h3.1v9h3.8Z"/></svg>
+      </a>
+      <% } %>
+      <% if(settings.instagram_url){ %>
+      <a class="utility-social utility-instagram" href="<%= settings.instagram_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on Instagram">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.4" cy="6.8" r="1.2" fill="currentColor"/></svg>
+      </a>
+      <% } %>
+      <% if(settings.linkedin_url){ %>
+      <a class="utility-social utility-linkedin" href="<%= settings.linkedin_url %>" target="_blank" rel="noopener noreferrer" aria-label="WatAir on LinkedIn">
         <span class="linkedin-mark" aria-hidden="true">in</span>
       </a>
+      <% } %>
     </div>
   </div>
 </div>
