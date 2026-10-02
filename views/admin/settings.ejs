@@ -50,6 +50,18 @@
           <label class="full">Intro text<textarea name="hero_text" rows="4"><%= values.hero_text %></textarea></label>
         </div>
       </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">4</span>
+          <div><h2>Catalogue hero</h2><p>The opening message on the main All systems catalogue page.</p></div>
+        </div>
+        <div class="form-grid">
+          <label class="full">Eyebrow<input name="catalogue_hero_eyebrow" value="<%= values.catalogue_hero_eyebrow || '' %>" placeholder="Atmospheric Water Generators"></label>
+          <label class="full field-large">Main heading<input name="catalogue_hero_title" value="<%= values.catalogue_hero_title || '' %>" placeholder="Water generation at every scale"></label>
+          <label class="full">Intro text<textarea name="catalogue_hero_text" rows="4"><%= values.catalogue_hero_text || '' %></textarea></label>
+        </div>
+      </section>
     </div>
 
     <aside class="editor-side">
@@ -72,6 +84,29 @@
           <select name="hero_image_style">
             <option value="" <%= !values.hero_image_style ? 'selected' : '' %>>Product / graphic</option>
             <option value="photo" <%= values.hero_image_style==='photo' ? 'selected' : '' %>>Full photograph</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading compact"><div><h2>Catalogue hero image</h2><p>Used only on the main All systems catalogue page.</p></div></div>
+        <div class="media-field <%= values.catalogue_hero_image ? 'has-image' : '' %>" data-media-field>
+          <div class="media-preview">
+            <img src="<%= values.catalogue_hero_image || '' %>" alt="" data-media-preview <%= values.catalogue_hero_image ? '' : 'hidden' %>>
+            <div class="media-empty" data-media-empty <%= values.catalogue_hero_image ? 'hidden' : '' %>><strong>No image selected</strong><span>Choose from the library</span></div>
+          </div>
+          <input type="hidden" name="catalogue_hero_image" value="<%= values.catalogue_hero_image || '' %>" data-media-url>
+          <div class="media-field-actions">
+            <label class="secondary-button upload-label">Upload
+              <input type="file" accept="image/jpeg,image/png,image/webp" data-media-direct-upload hidden>
+            </label>
+            <button class="secondary-button" type="button" data-media-choose>Choose library</button>
+          </div>
+        </div>
+        <label class="field-stack">Image treatment
+          <select name="catalogue_hero_image_style">
+            <option value="" <%= !values.catalogue_hero_image_style || values.catalogue_hero_image_style==='graphic' ? 'selected' : '' %>>Product / graphic</option>
+            <option value="photo" <%= values.catalogue_hero_image_style==='photo' ? 'selected' : '' %>>Full photograph</option>
           </select>
         </label>
       </section>
