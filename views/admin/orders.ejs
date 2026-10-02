@@ -35,7 +35,7 @@
           <div><span>Customer</span><strong><%= order.customer_name %></strong><a href="mailto:<%= order.customer_email %>"><%= order.customer_email %></a><small><%= order.customer_phone || 'No phone supplied' %></small></div>
           <div><span>Delivery</span><strong><%= order.address1 %><%= order.address2 ? ', ' + order.address2 : '' %></strong><small><%= order.city %><%= order.region ? ', ' + order.region : '' %>, <%= order.postcode %> · <%= order.country_code %></small></div>
           <div><span>Breakdown</span><strong>Products: <%= formatMoney(order.unit_price_minor * order.quantity, order.currency) %></strong><small>Delivery: <%= formatMoney(order.delivery_minor, order.currency) %></small></div>
-          <div><span>Gateway reference</span><strong class="order-ref"><%= order.gateway_ref || 'Not assigned' %></strong><small><%= order.notes || '' %></small></div>
+          <div><span>Gateway reference</span><strong class="order-ref"><%= order.gateway_ref || 'Not assigned' %></strong><small><%= order.notes || '' %><%= order.terms_accepted_at ? ' · Terms accepted ' + formatUkDateTime(order.terms_accepted_at) : '' %></small></div>
         </div>
 
         <form class="admin-order-status-form" method="post" action="/admin/orders/<%= order.id %>/status">
