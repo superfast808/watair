@@ -1048,6 +1048,13 @@ app.get('/admin', (req,res) => {
   const recentProducts = products('1=1').slice(0, 6);
   const missingImages = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (image_url IS NULL OR TRIM(image_url)='')").get().c;
   const missingSpecs = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND (specs_json IS NULL OR TRIM(specs_json)='' OR specs_json='{}')").get().c;
+  const commerceSettings = settingsObject();
+  const commerceOn = commerceEnabled(commerceSettings);
+  const sellableProducts = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND sellable=1 AND price_minor>0").get().c;
+  const activeDeliveryRules = db.prepare("SELECT COUNT(*) c FROM delivery_rules WHERE active=1").get().c;
+  const activeGateways = enabledGateways(commerceSettings);
+  const commerceReady = !commerceOn || (sellableProducts > 0 && activeDeliveryRules > 0 && activeGateways.length > 0);
+  const legalCommercePagesReady = ['terms','refunds','privacy','cookies'].every(slug => Boolean(getPage(slug)));
   let canonicalHost = '';
   try { canonicalHost = new URL(baseUrl).hostname.toLowerCase(); } catch {}
   const canonicalReady = baseUrl.startsWith('https://') && ['watair.co.uk','www.watair.co.uk'].includes(canonicalHost);
@@ -1091,6 +1098,20 @@ app.get('/admin', (req,res) => {
       label: 'Published product specifications',
       ok: missingSpecs === 0,
       detail: missingSpecs ? `${missingSpecs} published product(s) need specifications` : 'All published products have specifications'
+    },
+    {
+      label: 'E-commerce configuration',
+      ok: commerceReady,
+      detail: !commerceOn
+        ? 'Online sales are safely disabled'
+        : commerceReady
+          ? `${sellableProducts} sellable product(s), ${activeDeliveryRules} delivery rule(s), ${activeGateways.length} payment option(s)`
+          : 'Commerce is enabled but needs a sellable product, delivery rule and configured payment option'
+    },
+    {
+      label: 'Commerce legal pages',
+      ok: legalCommercePagesReady,
+      detail: legalCommercePagesReady ? 'Terms, refunds, privacy and cookie notices are published' : 'One or more commerce legal pages are missing'
     }
   ];
   res.render('admin/dashboard', {
