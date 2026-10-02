@@ -392,6 +392,226 @@ app.get('/products/:slug', (req, res) => {
   });
 });
 
+function checkoutViewData(product, req, overrides = {}) {
+  const settings = settingsObject();
+  return {
+    product,
+    gateways: enabledGateways(settings),
+    csrf: csrfFor(req),
+    error: null,
+    formValues: {},
+    meta: {
+      title: `Buy ${product.name} | WatAir`,
+      description: `Secure checkout for ${product.name}.`,
+      noindex: true,
+      image: product.image_url
+    },
+    ...overrides
+  };
+}
+
+app.get('/buy/:slug', (req,res) => {
+  const settings = settingsObject();
+  const product = sellableProduct(req.params.slug);
+  if (!product || !commerceEnabled(settings)) return res.redirect(302, '/products/' + encodeURIComponent(req.params.slug));
+  const gateways = enabledGateways(settings);
+  if (!gateways.length) {
+    return res.status(503).render('checkout', checkoutViewData(product, req, {
+      gateways,
+      error: 'Online payment is not configured yet. Please contact WatAir to order this product.'
+    }));
+  }
+  res.render('checkout', checkoutViewData(product, req, { gateways }));
+});
+
+app.post('/checkout/quote/:slug', checkoutLimiter, (req,res) => {
+  const settings = settingsObject();
+  const product = sellableProduct(req.params.slug);
+  if (!product || !commerceEnabled(settings)) return res.status(404).json({ error: 'Product is not available for online purchase.' });
+
+  const quantity = Math.max(1, Math.min(Number(product.max_order_qty || 1), Number(req.body.quantity || 1)));
+  const rule = deliveryQuote(db, product, req.body.country_code, req.body.postcode);
+  if (!rule) return res.status(404).json({ error: 'Delivery is not configured for that destination. Please contact WatAir.' });
+
+  const currency = normaliseCurrency(settings.commerce_currency);
+  const subtotal = Number(product.price_minor) * quantity;
+  const delivery = Number(rule.price_minor || 0);
+  res.json({
+    currency,
+    quantity,
+    subtotal_minor: subtotal,
+    delivery_minor: delivery,
+    total_minor: subtotal + delivery,
+    delivery_label: rule.name,
+    delivery_formatted: formatMoney(delivery, currency),
+    total_formatted: formatMoney(subtotal + delivery, currency)
+  });
+});
+
+app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
+  const settings = settingsObject();
+  const product = sellableProduct(req.params.slug);
+  if (!product || !commerceEnabled(settings)) return res.status(404).send('Product is not available for online purchase.');
+
+  const gateways = enabledGateways(settings);
+  const gateway = cleanFormValue(req.body.gateway, 30);
+  const gatewayAllowed = gateways.some(item => item.id === gateway);
+  const maxQty = Math.max(1, Number(product.max_order_qty || 1));
+  const quantity = Math.max(1, Math.min(maxQty, Math.floor(Number(req.body.quantity || 1)) || 1));
+  const formValues = {
+    customer_name: cleanFormValue(req.body.customer_name, 150),
+    customer_email: cleanFormValue(req.body.customer_email, 254).toLowerCase(),
+    customer_phone: cleanFormValue(req.body.customer_phone, 80),
+    address1: cleanFormValue(req.body.address1, 180),
+    address2: cleanFormValue(req.body.address2, 180),
+    city: cleanFormValue(req.body.city, 120),
+    region: cleanFormValue(req.body.region, 120),
+    postcode: cleanFormValue(req.body.postcode, 24),
+    country_code: cleanFormValue(req.body.country_code, 2).toUpperCase(),
+    quantity,
+    gateway,
+    accept_terms: req.body.accept_terms === '1'
+  };
+
+  const missing = !formValues.customer_name || !validEmail(formValues.customer_email) ||
+    !formValues.address1 || !formValues.city || !formValues.postcode ||
+    !/^[A-Z]{2}$/.test(formValues.country_code) || !formValues.accept_terms || !gatewayAllowed;
+  const rule = missing ? null : deliveryQuote(db, product, formValues.country_code, formValues.postcode);
+
+  if (missing || !rule) {
+    const error = missing
+      ? 'Please complete the required contact, delivery, payment and terms fields.'
+      : 'Delivery is not configured for that destination. Please contact WatAir before ordering.';
+    return res.status(400).render('checkout', checkoutViewData(product, req, { gateways, error, formValues }));
+  }
+
+  const currency = normaliseCurrency(settings.commerce_currency);
+  const unitPrice = Math.max(0, Number(product.price_minor || 0));
+  const delivery = Math.max(0, Number(rule.price_minor || 0));
+  const total = unitPrice * quantity + delivery;
+  const publicId = crypto.randomUUID();
+
+  db.prepare(`
+    INSERT INTO orders(
+      public_id,product_id,product_slug,product_name,quantity,currency,
+      unit_price_minor,delivery_minor,total_minor,
+      customer_name,customer_email,customer_phone,
+      address1,address2,city,region,postcode,country_code,
+      gateway,status,notes
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    publicId, product.id, product.slug, product.name, quantity, currency,
+    unitPrice, delivery, total,
+    formValues.customer_name, formValues.customer_email, formValues.customer_phone,
+    formValues.address1, formValues.address2, formValues.city, formValues.region,
+    formValues.postcode, formValues.country_code,
+    gateway, gateway === 'manual' ? 'awaiting_payment' : 'pending',
+    'Delivery rule: ' + rule.name
+  );
+
+  const order = orderByPublicId(publicId);
+
+  try {
+    if (gateway === 'manual') {
+      return res.redirect(303, '/order/' + encodeURIComponent(publicId));
+    }
+
+    if (gateway === 'stripe') {
+      const session = await createStripeCheckout({
+        order,
+        baseUrl,
+        secret: process.env.STRIPE_SECRET_KEY
+      });
+      if (!session?.id || !session?.url) throw new Error('Stripe did not return a checkout session.');
+      db.prepare('UPDATE orders SET gateway_ref=?,updated_at=CURRENT_TIMESTAMP WHERE public_id=?')
+        .run(String(session.id), publicId);
+      return res.redirect(303, session.url);
+    }
+
+    if (gateway === 'paypal') {
+      const paypalOrder = await createPayPalOrder({
+        order,
+        baseUrl,
+        brandName: settings.site_name || 'WatAir'
+      });
+      const approveUrl = paypalOrder?.links?.find(link => link.rel === 'payer-action' || link.rel === 'approve')?.href;
+      if (!paypalOrder?.id || !approveUrl) throw new Error('PayPal did not return an approval link.');
+      db.prepare('UPDATE orders SET gateway_ref=?,updated_at=CURRENT_TIMESTAMP WHERE public_id=?')
+        .run(String(paypalOrder.id), publicId);
+      return res.redirect(303, approveUrl);
+    }
+
+    throw new Error('Unsupported payment gateway.');
+  } catch (err) {
+    console.error('Checkout provider error:', err.message);
+    setOrderStatus(publicId, 'failed');
+    return res.status(502).render('checkout', checkoutViewData(product, req, {
+      gateways,
+      error: 'The payment provider could not be reached. No completed payment has been recorded. Please try again or contact WatAir.',
+      formValues
+    }));
+  }
+});
+
+app.get('/payments/stripe/return', async (req,res) => {
+  const order = orderByPublicId(req.query.order);
+  const sessionId = cleanFormValue(req.query.session_id, 220);
+  if (!order || order.gateway !== 'stripe' || !sessionId) return res.redirect('/products');
+
+  try {
+    const session = await retrieveStripeSession(sessionId, process.env.STRIPE_SECRET_KEY);
+    const publicId = String(session?.metadata?.order_id || session?.client_reference_id || '');
+    const amountMatches = Number(session?.amount_total) === Number(order.total_minor);
+    const currencyMatches = String(session?.currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
+    if (publicId === order.public_id && amountMatches && currencyMatches && session.payment_status === 'paid') {
+      setOrderStatus(order.public_id, 'paid', String(session.id || ''));
+    }
+  } catch (err) {
+    console.error('Stripe return verification failed:', err.message);
+  }
+  res.redirect(303, '/order/' + encodeURIComponent(order.public_id));
+});
+
+app.get('/payments/paypal/return', async (req,res) => {
+  const order = orderByPublicId(req.query.order);
+  const paypalOrderId = cleanFormValue(req.query.token, 220);
+  if (!order || order.gateway !== 'paypal' || !paypalOrderId) return res.redirect('/products');
+
+  try {
+    if (order.gateway_ref && order.gateway_ref !== paypalOrderId) throw new Error('PayPal order reference does not match.');
+    const capture = await capturePayPalOrder(paypalOrderId);
+    const unit = capture?.purchase_units?.[0];
+    const captured = unit?.payments?.captures?.[0];
+    const amountValue = Math.round(Number(captured?.amount?.value || 0) * 100);
+    const amountMatches = amountValue === Number(order.total_minor);
+    const currencyMatches = String(captured?.amount?.currency_code || '').toUpperCase() === String(order.currency || '').toUpperCase();
+    const referenceMatches = String(unit?.custom_id || unit?.reference_id || '') === order.public_id;
+    if (capture?.status === 'COMPLETED' && captured?.status === 'COMPLETED' && amountMatches && currencyMatches && referenceMatches) {
+      setOrderStatus(order.public_id, 'paid', paypalOrderId);
+    } else {
+      setOrderStatus(order.public_id, 'failed', paypalOrderId);
+    }
+  } catch (err) {
+    console.error('PayPal capture failed:', err.message);
+    setOrderStatus(order.public_id, 'failed', paypalOrderId);
+  }
+  res.redirect(303, '/order/' + encodeURIComponent(order.public_id));
+});
+
+app.get('/order/:publicId', (req,res) => {
+  const order = orderByPublicId(req.params.publicId);
+  if (!order) return res.status(404).render('404', { meta: { title: 'Order not found | WatAir', noindex: true } });
+  res.setHeader('Cache-Control', 'no-store');
+  res.render('order', {
+    order,
+    meta: {
+      title: 'Order status | WatAir',
+      description: 'WatAir order status.',
+      noindex: true
+    }
+  });
+});
+
 app.get('/how-it-works', (req, res) => renderPage(res, getPage('how-it-works')));
 app.get('/about', (req, res) => renderPage(res, getPage('about')));
 app.get('/environment/plastic-bottles', (req, res) => renderPage(res, getPage('plastic-bottles')));
