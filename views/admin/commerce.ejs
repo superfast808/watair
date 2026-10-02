@@ -93,7 +93,7 @@
         <input type="number" name="priority" value="<%= rule.priority %>">
         <label class="rule-active"><input type="checkbox" name="active" <%= rule.active?'checked':'' %>><span>Active</span></label>
         <button class="secondary-button" type="submit">Save</button>
-        <button class="danger-button" type="submit" formaction="/admin/commerce/delivery-rules/<%= rule.id %>/delete" formnovalidate onclick="return confirm('Delete this delivery rule?')">Delete</button>
+        <button class="danger-button" type="submit" formaction="/admin/commerce/delivery-rules/<%= rule.id %>/delete" formnovalidate data-confirm-action="Delete this delivery rule?">Delete</button>
       </form>
     <% }) %>
   </div>
