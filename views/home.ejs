@@ -67,7 +67,7 @@
     <div class="product-grid featured-grid">
       <% featured.forEach(product => { %>
         <a class="product-card image-card" href="/products/<%= product.slug %>">
-          <div class="product-art">
+          <div class="product-art" data-product-art="<%= product.slug %>">
             <% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy" decoding="async"><% } %>
             <span class="capacity"><strong><%= product.capacity_lpd.toLocaleString('en-GB') %></strong><small>L/day</small></span>
           </div>
