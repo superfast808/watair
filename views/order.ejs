@@ -1,0 +1,38 @@
+<%- include('partials/head') %><%- include('partials/header') %>
+<main id="main-content">
+<section class="order-status-shell section-tight">
+  <div class="order-status-card">
+    <p class="eyebrow">Order <%= order.public_id.slice(0,8).toUpperCase() %></p>
+    <% if(order.status === 'paid' || order.status === 'processing' || order.status === 'fulfilled'){ %>
+      <h1>Payment received.</h1>
+      <p>Thank you. Your order has been recorded and WatAir can now arrange the next fulfilment step.</p>
+    <% } else if(order.status === 'awaiting_payment'){ %>
+      <h1>Order received.</h1>
+      <p>Your order has been recorded and is awaiting the agreed manual payment arrangement.</p>
+    <% } else if(order.status === 'cancelled'){ %>
+      <h1>Payment cancelled.</h1>
+      <p>No completed payment is recorded for this order. You can return to the product and try again or contact WatAir.</p>
+    <% } else if(order.status === 'failed'){ %>
+      <h1>Payment was not completed.</h1>
+      <p>The order is retained, but payment has not completed. Please contact WatAir if you need help.</p>
+    <% } else { %>
+      <h1>Payment confirmation pending.</h1>
+      <p>Your order is recorded. Payment confirmation may take a short time to reach the website.</p>
+    <% } %>
+
+    <div class="order-status-summary">
+      <div><span>Product</span><strong><%= order.product_name %> × <%= order.quantity %></strong></div>
+      <div><span>Delivery</span><strong><%= formatMoney(order.delivery_minor, order.currency) %></strong></div>
+      <div><span>Total</span><strong><%= formatMoney(order.total_minor, order.currency) %></strong></div>
+      <div><span>Status</span><strong><%= order.status.replace(/_/g,' ') %></strong></div>
+    </div>
+
+    <p class="order-email-note">Order correspondence will use <strong><%= order.customer_email %></strong>.</p>
+    <div class="hero-actions">
+      <a class="button button-aqua" href="/products">View products</a>
+      <a class="text-link" href="/contact">Contact WatAir →</a>
+    </div>
+  </div>
+</section>
+</main>
+<%- include('partials/footer') %>
