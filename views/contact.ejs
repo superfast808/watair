@@ -44,11 +44,26 @@
       <% if(selectedProduct){ %><div class="selected-product"><span>Selected model</span><strong><%= selectedProduct.name %><%= selectedProduct.subtitle ? ' – ' + selectedProduct.subtitle : '' %></strong><small><%= selectedProduct.capacity_lpd.toLocaleString('en-GB') %> litres/day rated output</small></div><% } %>
       <% if(error){ %><div class="error-box"><%= error %></div><% } %>
       <form method="post" action="/contact" class="contact-form">
-        <div class="two-col"><label>Name<input name="name" required maxlength="150"></label><label>Company<input name="company" maxlength="150"></label></div>
-        <div class="two-col"><label>Email<input type="email" name="email" required maxlength="254"></label><label>Phone<input name="phone" maxlength="80"></label></div>
-        <label>What are you interested in?<select name="interest"><option value="">Choose one</option><option <%= selectedProduct?.category==='home-office'?'selected':'' %>>Home & Office</option><option <%= selectedProduct?.category==='commercial-industrial'?'selected':'' %>>Commercial & Industrial</option><option>Leasing</option><option>Reseller opportunity</option><option>General enquiry</option></select></label>
-        <label>Tell us about the requirement<textarea name="message" required maxlength="5000" rows="7" placeholder="For example: location, litres per day, number of users, intended use, or the model you are considering."><%= selectedProduct ? 'I am interested in the ' + selectedProduct.name + (selectedProduct.subtitle ? ' (' + selectedProduct.subtitle + ')' : '') + '.\n\n' : '' %></textarea></label>
+        <% if(selectedProduct){ %><input type="hidden" name="product" value="<%= selectedProduct.slug %>"><% } %>
+        <div class="two-col">
+          <label>Name<input name="name" required maxlength="150" autocomplete="name" value="<%= formValues?.name || '' %>"></label>
+          <label>Company<input name="company" maxlength="150" autocomplete="organization" value="<%= formValues?.company || '' %>"></label>
+        </div>
+        <div class="two-col">
+          <label>Email<input type="email" name="email" required maxlength="254" autocomplete="email" inputmode="email" value="<%= formValues?.email || '' %>"></label>
+          <label>Phone<input name="phone" maxlength="80" autocomplete="tel" inputmode="tel" value="<%= formValues?.phone || '' %>"></label>
+        </div>
+        <label>What are you interested in?
+          <select name="interest">
+            <option value="">Choose one</option>
+            <% ['Home & Office','Commercial & Industrial','Leasing','Reseller opportunity','General enquiry'].forEach(option => { const selected = formValues?.interest ? formValues.interest === option : (option === 'Home & Office' && selectedProduct?.category==='home-office') || (option === 'Commercial & Industrial' && selectedProduct?.category==='commercial-industrial'); %>
+              <option value="<%= option %>" <%= selected ? 'selected' : '' %>><%= option %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>Tell us about the requirement<textarea name="message" required maxlength="5000" rows="7" placeholder="For example: location, litres per day, number of users, intended use, or the model you are considering."><%= formValues?.message || (selectedProduct ? 'I am interested in the ' + selectedProduct.name + (selectedProduct.subtitle ? ' (' + selectedProduct.subtitle + ')' : '') + '.\n\n' : '') %></textarea></label>
         <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <p class="form-privacy">We use the details you provide to respond to your enquiry. See our <a href="/privacy">privacy notice</a>.</p>
         <button class="button button-aqua" type="submit">Send enquiry</button>
       </form>
     <% } %>
