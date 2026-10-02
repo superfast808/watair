@@ -260,7 +260,7 @@ async function notifyOrderIfNeeded(publicId) {
       from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
       to: order.customer_email,
       subject: paid ? `WatAir order ${orderRef} confirmed` : `WatAir order ${orderRef} received`,
-      text: `Hello ${order.customer_name},\n\n${paid ? 'We have received payment for your WatAir order.' : 'We have received your WatAir order. The team will contact you about the manual payment arrangement.'}\n\n${order.product_name} x ${order.quantity}\nDelivery: ${formatMoney(order.delivery_minor, order.currency)}\nTotal: ${formatMoney(order.total_minor, order.currency)}\n\nOrder status: ${baseUrl}/order/${order.public_id}\nRefunds and returns: ${baseUrl}/refunds\n\nWatAir`
+      text: `Hello ${order.customer_name},\n\n${paid ? 'We have received payment for your WatAir order.' : 'We have received your WatAir order. The team will contact you about the manual payment arrangement.'}\n\n${order.product_name} x ${order.quantity}\nDelivery: ${formatMoney(order.delivery_minor, order.currency)}\nTotal: ${formatMoney(order.total_minor, order.currency)}\n\nOrder status: ${baseUrl}/order/${order.public_id}\nRefunds and returns: ${baseUrl}/refunds\nOperation & water-quality guidance: ${baseUrl}/water-quality-maintenance\n\nWatAir`
     });
 
     db.prepare("UPDATE orders SET notified_at=CURRENT_TIMESTAMP WHERE public_id=? AND notified_at='sending'").run(order.public_id);
@@ -463,7 +463,7 @@ app.get('/products/:slug/datasheet.pdf', (req, res) => {
     `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watair.co.uk`,
     48, footerY + 15
   );
-  doc.fillColor('#829aa1').fontSize(7.5).text('Generated from the current published WatAir product specification.', 48, footerY + 30);
+  doc.fillColor('#829aa1').fontSize(7.5).text('Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watair.co.uk/water-quality-maintenance', 48, footerY + 28, { width: 499, lineGap: 1 });
 
   doc.end();
 });
