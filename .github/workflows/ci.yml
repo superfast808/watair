@@ -112,6 +112,50 @@ jobs:
 
           TOKEN=$(node -e "const jwt=require('jsonwebtoken'); process.stdout.write(jwt.sign({sub:1,email:'ci@example.com',role:'admin'}, process.env.SESSION_SECRET,{expiresIn:'1h'}))")
           AUTH="Cookie: watair_admin=$TOKEN"
+          CSRF=$(node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHmac('sha256', process.env.SESSION_SECRET).update(process.argv[1]).digest('hex'))" "$TOKEN")
+
+          printf '\x89PNG\r\n\x1a\nrelease-test' > /tmp/release-test.png
+          curl -fsS -H "$AUTH" -H "x-csrf-token: $CSRF" \
+            -F "image=@/tmp/release-test.png;type=image/png" \
+            http://127.0.0.1:8099/admin/upload > /tmp/upload-valid.json
+          grep -q '"content_type":"image/png"' /tmp/upload-valid.json
+
+          printf '<script>not-an-image</script>' > /tmp/not-image.jpg
+          curl -sS -o /tmp/upload-invalid.json -w '%{http_code}' \
+            -H "$AUTH" -H "x-csrf-token: $CSRF" \
+            -F "image=@/tmp/not-image.jpg;type=image/jpeg" \
+            http://127.0.0.1:8099/admin/upload > /tmp/upload-invalid-status.txt
+          grep -q '^400
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/new > /tmp/admin-product-new.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/1 > /tmp/admin-product-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/pages/1 > /tmp/admin-page-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/enquiries > /tmp/admin-enquiries.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
+
+          grep -q 'Welcome back' /tmp/admin-dashboard.html
+          grep -q 'Launch checks' /tmp/admin-dashboard.html
+          grep -q 'Add product' /tmp/admin-product-new.html
+          grep -q 'Technical specifications' /tmp/admin-product-edit.html
+          grep -q 'Page content' /tmp/admin-page-edit.html
+          grep -q 'Upload an image' /tmp/admin-media.html
+          grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Add an admin user' /tmp/admin-users.html
+          grep -q 'Generate secure password' /tmp/admin-users.html
+          grep -q 'CI Contact' /tmp/admin-enquiries.html
+          grep -q 'Delete enquiry' /tmp/admin-enquiries.html
+          grep -q '"assets"' /tmp/admin-assets.json
+
+      - name: Validate production Docker configuration
+        run: |
+          cp .env.example .env
+          docker compose config > /dev/null
+          docker build -t watair-ci .
+ /tmp/upload-invalid-status.txt
+          grep -q 'does not appear to be a valid' /tmp/upload-invalid.json
 
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin > /tmp/admin-dashboard.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
