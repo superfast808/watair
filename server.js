@@ -1,6 +1,7 @@
 require('dotenv/config');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -16,6 +17,19 @@ const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
 const { startLegacyMediaImport, getMediaImportState, getMediaSummary, loadManifest, localAssetForLegacyUrl } = require('./src/media-import');
+const {
+  normaliseCurrency,
+  parseMoneyToMinor,
+  minorToInput,
+  formatMoney,
+  deliveryQuote,
+  enabledGateways,
+  createStripeCheckout,
+  retrieveStripeSession,
+  verifyStripeWebhook,
+  createPayPalOrder,
+  capturePayPalOrder
+} = require('./src/commerce');
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -62,6 +76,11 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(cookieParser());
+
+// Stripe signs the exact raw payload, so its webhook must run before the
+// general JSON body parser.
+app.post('/payments/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), stripeWebhookHandler);
+
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -116,11 +135,14 @@ app.use((req, res, next) => {
   res.locals.assetVersion = appVersion;
   res.locals.formatUkDateTime = formatUkDateTime;
   res.locals.formatUkDate = formatUkDate;
+  res.locals.formatMoney = formatMoney;
+  res.locals.minorToInput = minorToInput;
   next();
 });
 
 const contactLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 6, standardHeaders: true, legacyHeaders: false });
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
+const checkoutLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
 
 function parseProduct(row) {
   if (!row) return null;
