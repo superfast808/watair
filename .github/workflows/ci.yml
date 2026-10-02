@@ -165,6 +165,10 @@ jobs:
           grep -q 'Page content' /tmp/admin-page-edit.html
           grep -q 'Upload an image' /tmp/admin-media.html
           grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Facebook URL' /tmp/admin-settings.html
+          grep -q 'Instagram URL' /tmp/admin-settings.html
+          grep -q 'LinkedIn URL' /tmp/admin-settings.html
+          grep -q 'https://uk.linkedin.com/company/watair-uk' /tmp/home.html
           grep -q 'Add an admin user' /tmp/admin-users.html
           grep -q 'Generate secure password' /tmp/admin-users.html
           grep -q 'CI Contact' /tmp/admin-enquiries.html
