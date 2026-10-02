@@ -235,7 +235,7 @@ function seed() {
             updated_at=CURRENT_TIMESTAMP
           WHERE id=?
         `).run(JSON.stringify(approved20Specs), current20.id);
-        if (old20) db.prepare('UPDATE products SET published=0,featured=0 WHERE id=?').run(old20.id);
+        if (old20) db.prepare('DELETE FROM products WHERE id=?').run(old20.id);
       }
 
       db.prepare('UPDATE products SET featured=0').run();
@@ -243,7 +243,7 @@ function seed() {
         db.prepare('UPDATE products SET featured=1 WHERE slug=? AND published=1').run(slug);
       }
       for (const slug of retiredSlugs) {
-        db.prepare('UPDATE products SET published=0,featured=0,updated_at=CURRENT_TIMESTAMP WHERE slug=?').run(slug);
+        db.prepare('DELETE FROM products WHERE slug=?').run(slug);
       }
 
       db.prepare("DELETE FROM pages WHERE slug='leasing'").run();
@@ -254,6 +254,32 @@ function seed() {
       db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(catalogueRefreshKey, new Date().toISOString());
     });
     refresh();
+  }
+
+  // Follow-up cleanup is deliberately separate so databases that already ran
+  // the first owner refresh also get the final hard removals and approved hero.
+  const catalogueCleanupKey = 'owner_catalogue_cleanup_2026_10_v2';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(catalogueCleanupKey)) {
+    const retiredSlugs = [
+      'pw-hr-100l',
+      'pw-hr-250l',
+      'pw-hr-500l',
+      'pw-hr-1000l',
+      'pw-hr-3000l',
+      'pw-hr-5000l',
+      'pw-hr-10000l'
+    ];
+    const cleanup = db.transaction(() => {
+      for (const slug of retiredSlugs) db.prepare('DELETE FROM products WHERE slug=?').run(slug);
+      db.prepare("DELETE FROM products WHERE slug='pw-hr-15l'").run();
+
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_image','/uploads/imported/legacy/media/1027/contact-banner.jpg') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_image_style','photo') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('hero_text','Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+
+      db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(catalogueCleanupKey, new Date().toISOString());
+    });
+    cleanup();
   }
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
