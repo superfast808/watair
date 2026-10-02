@@ -9,6 +9,13 @@
     : isCommercial
       ? 'Commercial and industrial atmospheric water generators from 80 to 10,000 litres per day.'
       : 'Browse the complete WatAir atmospheric water generator range.';
+  const catalogueHero = {
+    eyebrow: settings.catalogue_hero_eyebrow || 'Atmospheric Water Generators',
+    title: settings.catalogue_hero_title || 'Water generation at every scale',
+    text: settings.catalogue_hero_text || 'From compact hot-and-cold dispensers to industrial systems rated at up to 10,000 litres per day.',
+    image: settings.catalogue_hero_image || '/uploads/imported/legacy/images/home/products.jpg',
+    photo: settings.catalogue_hero_image_style === 'photo'
+  };
 %>
 
 <%- include('partials/breadcrumbs', { items: [
@@ -17,11 +24,11 @@
   ...(isHomeOffice ? [{ label: 'Home & Office' }] : isCommercial ? [{ label: 'Commercial & Industrial' }] : [])
 ] }) %>
 
-<section class="page-hero scenic-hero product-list-hero">
+<section class="page-hero scenic-hero product-list-hero <%= category === 'all' && catalogueHero.photo ? 'hero-has-photo' : '' %>">
   <div class="page-hero-copy">
-    <p class="eyebrow">Atmospheric Water Generators</p>
-    <h1><%= isHomeOffice ? 'Home & Office' : isCommercial ? 'Commercial & Industrial' : 'Water generation at every scale' %></h1>
-    <p><%= isHomeOffice ? 'Compact systems for homes, offices and smaller workplaces — hot and cold drinking water generated from ambient air.' : isCommercial ? 'Higher-output systems for facilities, remote sites and industrial demand, from 80 to 10,000 litres per day.' : 'From compact hot-and-cold dispensers to industrial systems rated at up to 10,000 litres per day.' %></p>
+    <p class="eyebrow"><%= isHomeOffice ? 'Atmospheric Water Generators' : isCommercial ? 'Atmospheric Water Generators' : catalogueHero.eyebrow %></p>
+    <h1><%= isHomeOffice ? 'Home & Office' : isCommercial ? 'Commercial & Industrial' : catalogueHero.title %></h1>
+    <p><%= isHomeOffice ? 'Compact systems for homes, offices and smaller workplaces — hot and cold drinking water generated from ambient air.' : isCommercial ? 'Higher-output systems for facilities, remote sites and industrial demand, from 80 to 10,000 litres per day.' : catalogueHero.text %></p>
 
     <% if(products.length){ %>
     <div class="hero-inline-stats">
@@ -31,8 +38,8 @@
     </div>
     <% } %>
   </div>
-  <div class="page-hero-art">
-    <img src="<%= isHomeOffice ? '/images/pw-hr-20l.webp' : isCommercial ? '/uploads/imported/legacy/media/1066/5500-product.png' : '/uploads/imported/legacy/images/home/products.jpg' %>" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+  <div class="page-hero-art <%= category === 'all' && catalogueHero.photo ? 'page-hero-photo' : '' %>">
+    <img src="<%= isHomeOffice ? '/images/pw-hr-20l.webp' : isCommercial ? '/uploads/imported/legacy/media/1066/5500-product.png' : catalogueHero.image %>" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
   </div>
 </section>
 
