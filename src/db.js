@@ -377,6 +377,18 @@ function seed() {
     tx();
   }
 
+  // Ecommerce privacy expansion for existing databases. Append only once and
+  // leave all other CMS-edited privacy content intact.
+  const ecommercePrivacyKey = 'owner_ecommerce_privacy_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(ecommercePrivacyKey)) {
+    const privacy = db.prepare("SELECT id,body_html FROM pages WHERE slug='privacy'").get();
+    if (privacy?.body_html && !privacy.body_html.includes('Orders and payments')) {
+      const commercePrivacy = '<h2>Orders and payments</h2><p>If you place an order, we may collect the products ordered, delivery address, order value and payment status. We use that information to fulfil purchases, provide customer service, prevent fraud and maintain appropriate transaction records. Full payment-card details are handled by the selected payment provider and are not stored in the WatAir website database.</p><h2>Payment and delivery providers</h2><p>Payment and delivery providers may receive the information necessary to provide their services. If you choose Stripe or PayPal, relevant order and contact details are sent to that provider so payment can be processed.</p><h2>Order retention</h2><p>Order and transaction records may need to be retained where required for accounting, tax, warranty, fraud-prevention or legal purposes.</p><h2>Cookies and browser storage</h2><p>See the <a href="/cookies">Cookie notice</a> for information about essential storage, consent preferences and third-party payment-provider technologies.</p>';
+      db.prepare('UPDATE pages SET body_html=body_html || ?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(commercePrivacy, privacy.id);
+    }
+    db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(ecommercePrivacyKey, new Date().toISOString());
+  }
+
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
     const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
