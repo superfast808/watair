@@ -817,6 +817,7 @@ app.post('/admin/settings', requireCsrf, (req,res) => {
 app.get('/admin/enquiries', (req,res) => {
   res.render('admin/enquiries', {
     enquiries: db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC').all(),
+    reqQuery: req.query,
     meta: { title: 'Enquiries | WatAir CMS' }
   });
 });
