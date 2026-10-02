@@ -500,7 +500,10 @@ app.post('/checkout/quote/:slug', checkoutLimiter, (req,res) => {
   const product = sellableProduct(req.params.slug);
   if (!product || !commerceEnabled(settings)) return res.status(404).json({ error: 'Product is not available for online purchase.' });
 
-  const quantity = Math.max(1, Math.min(Number(product.max_order_qty || 1), Number(req.body.quantity || 1)));
+  const requestedQty = Math.floor(Number(req.body.quantity || 1));
+  const quantity = Number.isFinite(requestedQty)
+    ? Math.max(1, Math.min(Number(product.max_order_qty || 1), requestedQty))
+    : 1;
   const rule = deliveryQuote(db, product, req.body.country_code, req.body.postcode);
   if (!rule) return res.status(404).json({ error: 'Delivery is not configured for that destination. Please contact WatAir.' });
 
