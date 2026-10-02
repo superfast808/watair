@@ -490,10 +490,15 @@ app.get('/buy/:slug', (req,res) => {
   const product = sellableProduct(req.params.slug);
   if (!product || !commerceEnabled(settings)) return res.redirect(302, '/products/' + encodeURIComponent(req.params.slug));
   const gateways = enabledGateways(settings);
-  if (!gateways.length) {
+  const deliveryRules = db.prepare(
+    "SELECT COUNT(*) c FROM delivery_rules WHERE active=1 AND (delivery_class=? OR delivery_class='*')"
+  ).get(String(product.delivery_class || 'standard').toLowerCase()).c;
+  if (!gateways.length || !deliveryRules) {
     return res.status(503).render('checkout', checkoutViewData(product, req, {
       gateways,
-      error: 'Online payment is not configured yet. Please contact WatAir to order this product.'
+      error: !gateways.length
+        ? 'Online payment is not configured yet. Please contact WatAir to order this product.'
+        : 'Online delivery is not configured for this product yet. Please contact WatAir to order it.'
     }));
   }
   res.render('checkout', checkoutViewData(product, req, { gateways }));
