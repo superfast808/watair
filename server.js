@@ -46,7 +46,9 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: isProd ? '7d' : 0,
+  // Public assets are not filename-fingerprinted, so keep cache lifetime modest
+  // to ensure normal visitors receive CSS/JS updates without a hard refresh.
+  maxAge: isProd ? '1h' : 0,
   immutable: false
 }));
 
