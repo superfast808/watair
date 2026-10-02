@@ -21,6 +21,14 @@
 
 
 
+  // Confirm destructive admin actions without inline JavaScript (keeps CSP strict).
+  document.querySelectorAll('[data-confirm-action]').forEach(button => {
+    button.addEventListener('click', event => {
+      const message = button.dataset.confirmAction || 'Are you sure?';
+      if (!window.confirm(message)) event.preventDefault();
+    });
+  });
+
   // Product deletion requires typing the exact product name before submit.
   document.querySelectorAll('[data-delete-product]').forEach(button => {
     button.addEventListener('click', event => {
