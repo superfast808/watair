@@ -168,7 +168,7 @@ app.get('/', (req, res) => {
     allProducts,
     meta: {
       title: 'WatAir UK | Atmospheric Water Generators',
-      description: 'Atmospheric Water Generation systems for homes, offices and industrial applications across the UK.',
+      description: 'Atmospheric Water Generation systems from 20 to 10,000 litres per day for homes, workplaces and industrial applications across the UK.',
       image: '/uploads/imported/legacy/media/1027/contact-banner.jpg'
     }
   });
@@ -176,11 +176,11 @@ app.get('/', (req, res) => {
 
 app.get('/products', (req, res) => res.render('products', {
   products: products(), category: 'all',
-  meta: { title: 'Atmospheric Water Generators | WatAir UK', description: 'Explore WatAir atmospheric water generators from compact home and office systems to 10,000 litre-per-day industrial units.', image: '/uploads/imported/legacy/images/home/products.jpg' }
+  meta: { title: 'Atmospheric Water Generators | WatAir UK', description: 'Explore WatAir atmospheric water generators from compact 20 litre-per-day home and office systems to 10,000 litre-per-day industrial units.', image: '/uploads/imported/legacy/images/home/products.jpg' }
 }));
 app.get('/products/home-office', (req, res) => res.render('products', {
   products: productsForCategory('home-office'), category: 'home-office',
-  meta: { title: 'Home & Office Atmospheric Water Generators | WatAir UK', description: 'Compact water-from-air systems for homes and workplaces.', image: '/uploads/imported/legacy/media/1003/pw-hr-30l.png' }
+  meta: { title: 'Home & Office Atmospheric Water Generators | WatAir UK', description: 'Compact water-from-air systems from 20 to 60 litres per day for homes and workplaces.', image: '/uploads/imported/legacy/media/1003/pw-hr-30l.png' }
 }));
 app.get('/products/commercial-industrial', (req, res) => res.render('products', {
   products: productsForCategory('commercial-industrial'), category: 'commercial-industrial',
