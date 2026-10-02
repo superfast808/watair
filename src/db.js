@@ -77,28 +77,28 @@ ensureColumn('pages', 'hero_image', "TEXT DEFAULT ''");
 ensureColumn('pages', 'hero_style', "TEXT DEFAULT ''");
 ensureColumn('admins', 'display_name', "TEXT DEFAULT ''");
 
-const legacyProductImages = {
-  'pw-hr-15l': 'https://www.watairuk.co.uk/media/1002/pw-hr-15l.png',
-  'pw-hr-25l-low-power-consumption': 'https://www.watairuk.co.uk/media/1040/25l-1x.png',
-  'pw-hr-30l': 'https://www.watairuk.co.uk/media/1003/pw-hr-30l.png',
-  'pw-hr-60l': 'https://www.watairuk.co.uk/media/1004/pw-hr-60l.png',
-  'pw-hr-80l-low-power-consumption': 'https://www.watairuk.co.uk/media/1050/80l-product-small-2.png',
-  'pw-hr-100l': 'https://www.watairuk.co.uk/media/1005/pw-hr-100l.png',
-  'pw-hr-100l-low-power-consumption': 'https://www.watairuk.co.uk/media/1053/100-l-product.png',
-  'pw-hr-250l': 'https://www.watairuk.co.uk/media/1006/pw-hr-250l.png',
-  'pw-hr-250l-low-power-consumption': 'https://www.watairuk.co.uk/media/1054/250l-product.png',
-  'pw-hr-500l': 'https://www.watairuk.co.uk/media/1007/pw-hr-500l.png',
-  'pw-hr-500l-low-power-consumption': 'https://www.watairuk.co.uk/media/1072/500l-product.png',
-  'pw-hr-1000l': 'https://www.watairuk.co.uk/media/1008/pw-hr-1000l.png',
-  'pw-hr-1000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1056/500l-product.png',
-  'pw-hr-2000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1058/2000l-product.png',
-  'pw-hr-3000l': 'https://www.watairuk.co.uk/media/1009/pw-hr-3000l.png',
-  'pw-hr-4000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1064/4000l-product.png',
-  'pw-hr-5000l': 'https://www.watairuk.co.uk/media/1010/pw-hr-5000l.png',
-  'pw-hr-5500l-low-power-consumption': 'https://www.watairuk.co.uk/media/1066/5500-product.png',
-  'pw-hr-8000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1068/8000l-product.png',
-  'pw-hr-10000l': 'https://www.watairuk.co.uk/media/1001/pw-hr-10000l.png',
-  'pw-hr-10000l-low-power-consumption': 'https://www.watairuk.co.uk/media/1070/10000l-pro.png'
+const defaultProductImages = {
+  'pw-hr-15l': '/uploads/imported/legacy/media/1002/pw-hr-15l.png',
+  'pw-hr-25l-low-power-consumption': '/uploads/imported/legacy/media/1040/25l-1x.png',
+  'pw-hr-30l': '/uploads/imported/legacy/media/1003/pw-hr-30l.png',
+  'pw-hr-60l': '/uploads/imported/legacy/media/1004/pw-hr-60l.png',
+  'pw-hr-80l-low-power-consumption': '/uploads/imported/legacy/media/1050/80l-product-small-2.png',
+  'pw-hr-100l': '/uploads/imported/legacy/media/1005/pw-hr-100l.png',
+  'pw-hr-100l-low-power-consumption': '/uploads/imported/legacy/media/1053/100-l-product.png',
+  'pw-hr-250l': '/uploads/imported/legacy/media/1006/pw-hr-250l.png',
+  'pw-hr-250l-low-power-consumption': '/uploads/imported/legacy/media/1054/250l-product.png',
+  'pw-hr-500l': '/uploads/imported/legacy/media/1007/pw-hr-500l.png',
+  'pw-hr-500l-low-power-consumption': '/uploads/imported/legacy/media/1072/500l-product.png',
+  'pw-hr-1000l': '/uploads/imported/legacy/media/1008/pw-hr-1000l.png',
+  'pw-hr-1000l-low-power-consumption': '/uploads/imported/legacy/media/1056/500l-product.png',
+  'pw-hr-2000l-low-power-consumption': '/uploads/imported/legacy/media/1058/2000l-product.png',
+  'pw-hr-3000l': '/uploads/imported/legacy/media/1009/pw-hr-3000l.png',
+  'pw-hr-4000l-low-power-consumption': '/uploads/imported/legacy/media/1064/4000l-product.png',
+  'pw-hr-5000l': '/uploads/imported/legacy/media/1010/pw-hr-5000l.png',
+  'pw-hr-5500l-low-power-consumption': '/uploads/imported/legacy/media/1066/5500-product.png',
+  'pw-hr-8000l-low-power-consumption': '/uploads/imported/legacy/media/1068/8000l-product.png',
+  'pw-hr-10000l': '/uploads/imported/legacy/media/1001/pw-hr-10000l.png',
+  'pw-hr-10000l-low-power-consumption': '/uploads/imported/legacy/media/1070/10000l-pro.png'
 };
 
 function seed() {
@@ -127,7 +127,7 @@ function seed() {
     WHERE slug=? AND (image_url IS NULL OR TRIM(image_url)='')
   `);
   const imageTx = db.transaction(() => {
-    Object.entries(legacyProductImages).forEach(([slug, image]) => imageUpdate.run(image, slug));
+    Object.entries(defaultProductImages).forEach(([slug, image]) => imageUpdate.run(image, slug));
   });
   imageTx();
 
@@ -156,7 +156,7 @@ function seed() {
     phone: '0141 442 0201',
     hero_title: 'Water from air. Wherever you need it.',
     hero_text: 'Atmospheric Water Generation for homes, workplaces and industrial-scale water resilience.',
-    hero_image: 'https://www.watairuk.co.uk/images/home/products.jpg',
+    hero_image: '/uploads/imported/legacy/images/home/products.jpg',
     footer_text: 'Atmospheric Water Generation solutions for the UK.',
     company_location: 'Glasgow, United Kingdom'
   };
