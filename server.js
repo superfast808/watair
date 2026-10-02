@@ -93,7 +93,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-  if (req.path.startsWith('/admin')) {
+  const privateCommercePath =
+    req.path.startsWith('/buy/') ||
+    req.path.startsWith('/checkout/') ||
+    req.path.startsWith('/order/') ||
+    req.path.startsWith('/payments/');
+
+  if (req.path.startsWith('/admin') || privateCommercePath) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     res.setHeader('Cache-Control', 'no-store');
   }
