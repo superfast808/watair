@@ -39,19 +39,9 @@ const products = [
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '80 Litres/day', 'Working temperature': '15–40°C', 'Working humidity': '30–95%', 'Dimensions': '52 × 67 × 110 cm', 'Net weight': '70 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '1.25 kWh' }
   },
   {
-    slug: 'pw-hr-100l', name: 'PW HR-100L', category: 'commercial-industrial', capacity_lpd: 100,
-    summary: 'Commercial-scale unit for workplaces, facilities and remote applications.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '100 Litres', 'Water generated': '100 Litres/day generated at 30°C & 80% RH', 'Filtration & sterilisation': '10 stage', 'Working temperature': '15–38°C', 'Working humidity': '45–95%', 'Dimensions': '142 × 65 × 105 cm', 'Net weight': '190 kg', 'Refrigerant': 'R407c', 'Noise level': '<75 dB' }
-  },
-  {
     slug: 'pw-hr-100l-low-power-consumption', name: 'PW HR-100L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 100,
     summary: 'Low-energy commercial unit with external water storage.',
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '100 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '75 × 69 × 164 cm', 'Net weight': '195 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '1.33 kWh' }
-  },
-  {
-    slug: 'pw-hr-250l', name: 'PW HR-250L', category: 'commercial-industrial', capacity_lpd: 250,
-    summary: 'Mid-capacity commercial generator with integrated water storage.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '110 Litres', 'Water generated': '250 Litres/day generated at 30°C & 80% RH', 'Filtration & sterilisation': '17 stage', 'Working temperature': '15–38°C', 'Working humidity': '45–95%', 'Dimensions': '160 × 72 × 128 cm', 'Net weight': '320 kg', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
   },
   {
     slug: 'pw-hr-250l-low-power-consumption', name: 'PW HR-250L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 250,
@@ -59,19 +49,9 @@ const products = [
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '250 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '127 × 108 × 104 cm', 'Net weight': '350 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '2.45 kWh' }
   },
   {
-    slug: 'pw-hr-500l', name: 'PW HR-500L', category: 'commercial-industrial', capacity_lpd: 500,
-    summary: 'Robust commercial system producing up to 500 litres of drinking water per day.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '240 Litres', 'Water generated': '500 Litres/day generated at 30°C & 80% RH', 'Filtration & sterilisation': '13 stage', 'Working temperature': '15–38°C', 'Working humidity': '45–95%', 'Dimensions': '235 × 85 × 145 cm', 'Net weight': '560 kg', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
-  },
-  {
     slug: 'pw-hr-500l-low-power-consumption', name: 'PW HR-500L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 500,
     summary: 'Energy-conscious 500 litre-per-day unit for larger facilities.',
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '500 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '157 × 108 × 124 cm', 'Net weight': '600 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '4.3 kWh' }
-  },
-  {
-    slug: 'pw-hr-1000l', name: 'PW HR-1000L', category: 'commercial-industrial', capacity_lpd: 1000,
-    summary: 'Industrial atmospheric water generation at up to 1,000 litres per day.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '240 Litres', 'Water generated': '1,000 Litres/day generated at 30°C & 80% RH', 'Filtration & sterilisation': '9 stage', 'Working temperature': '15–38°C', 'Working humidity': '45–95%', 'Dimensions': '280 × 180 × 162 cm', 'Net weight': '2,000 kg', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
   },
   {
     slug: 'pw-hr-1000l-low-power-consumption', name: 'PW HR-1000L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 1000,
@@ -84,19 +64,9 @@ const products = [
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '2,000 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '222 × 156 × 202 cm', 'Net weight': '1,000 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '17.5 kWh' }
   },
   {
-    slug: 'pw-hr-3000l', name: 'PW HR-3000L', category: 'commercial-industrial', capacity_lpd: 3000,
-    summary: 'Large industrial atmospheric water generator with integrated storage.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '1,200 Litres', 'Water generated': '3,000 Litres/day generated at 30°C & 80% RH', 'Working temperature': '15–38°C', 'Working humidity': '45–95%', 'Dimensions': '400 × 220 × 220 cm', 'Net weight': '2,500 kg', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
-  },
-  {
     slug: 'pw-hr-4000l-low-power-consumption', name: 'PW HR-4000L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 4000,
     summary: 'Four-thousand litre-per-day production for demanding industrial deployments.',
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '4,000 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '314 × 156 × 202 cm', 'Net weight': '2,800 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '35 kWh' }
-  },
-  {
-    slug: 'pw-hr-5000l', name: 'PW HR-5000L', category: 'commercial-industrial', capacity_lpd: 5000,
-    summary: 'Large-scale water-from-air production for buildings and industrial sites.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '1,800 Litres', 'Water generated': '5,000 Litres/day generated at 30°C & 80% RH', 'Working temperature': '20–32°C', 'Working humidity': '45–95%', 'Dimensions': '530 × 220 × 220 cm', 'Net weight': '3,200 kg', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
   },
   {
     slug: 'pw-hr-5500l-low-power-consumption', name: 'PW HR-5500L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 5500,
@@ -107,11 +77,6 @@ const products = [
     slug: 'pw-hr-8000l-low-power-consumption', name: 'PW HR-8000L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 8000,
     summary: 'Eight-thousand litre-per-day output for major facilities and resilient water supply.',
     specs: { 'Output': 'Ambient', 'Storage capacity': 'External tanks', 'Water generated': '8,000 Litres/day', 'Working temperature': '15–45°C', 'Working humidity': '30–100%', 'Dimensions': '444 × 317 × 203 cm', 'Net weight': '5,600 kg', 'Refrigerant': 'R134a', 'Certificates': 'CE, CB, UL, IEC', 'Power consumption': '60 kWh' }
-  },
-  {
-    slug: 'pw-hr-10000l', name: 'PW HR-10000L', category: 'commercial-industrial', capacity_lpd: 10000,
-    summary: 'Maximum-scale integrated generation for building and infrastructure applications.',
-    specs: { 'Output': 'Ambient', 'Storage capacity': '2,600 Litres', 'Water generated': '10,000 Litres/day generated at 30°C & 80% RH', 'Working temperature': '20–32°C', 'Working humidity': '45–95%', 'Dimensions': '530 × 220 × 220 cm (×2)', 'Net weight': '3,200 kg (×2)', 'Refrigerant': 'R407c', 'Noise level': '<79 dB' }
   },
   {
     slug: 'pw-hr-10000l-low-power-consumption', name: 'PW HR-10000L', subtitle: 'Low Power Consumption', category: 'commercial-industrial', capacity_lpd: 10000,
