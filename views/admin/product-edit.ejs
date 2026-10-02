@@ -3,7 +3,8 @@
 <form class="admin-form admin-editor" method="post" action="<%= isNew ? '/admin/products/new' : '/admin/products/' + product.id %>">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
 
-  <header class="admin-page-head">
+  <% if(!isNew && reqQuery?.delete_error){ %><div class="alert admin-alert"><strong>Product not deleted.</strong> The confirmation name did not match.</div><% } %>
+<header class="admin-page-head">
     <div>
       <p><a href="/admin/products">Products</a> / <%= isNew ? 'Add product' : 'Edit product' %></p>
       <h1><%= isNew ? 'Add a product' : product.name %></h1>
@@ -132,6 +133,25 @@
         <button class="admin-button wide-button" type="submit"><%= isNew ? 'Create product' : 'Save product' %></button>
         <span>Changes are only published when you save.</span>
       </div>
+
+      <% if(!isNew){ %>
+        <section class="admin-card product-danger-zone">
+          <p class="admin-kicker">Danger zone</p>
+          <h2>Delete product</h2>
+          <p>This permanently removes the product from the CMS and public catalogue. If you only want to hide it temporarily, switch off <strong>Published</strong> instead.</p>
+          <input type="hidden" name="delete_confirmation" value="" data-delete-confirmation>
+          <button
+            class="danger-button wide-button"
+            type="submit"
+            formaction="/admin/products/<%= product.id %>/delete"
+            formmethod="post"
+            formnovalidate
+            data-delete-product
+            data-product-name="<%= product.name %>"
+          >Delete product permanently</button>
+          <small>The image itself is left in the media library in case it is used elsewhere.</small>
+        </section>
+      <% } %>
     </aside>
   </div>
 </form>
