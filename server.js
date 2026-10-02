@@ -784,7 +784,11 @@ app.post('/admin/pages/:id', requireCsrf, (req,res) => {
 });
 
 app.get('/admin/products', (req,res) => {
-  res.render('admin/products', { products: products('1=1'), meta: { title: 'Products | WatAir CMS' } });
+  res.render('admin/products', {
+    products: products('1=1'),
+    reqQuery: req.query,
+    meta: { title: 'Products | WatAir CMS' }
+  });
 });
 
 app.get('/admin/products/new', (req,res) => {
@@ -852,6 +856,19 @@ app.post('/admin/products/:id', requireCsrf, (req,res) => {
       req.params.id
     );
   res.redirect(`/admin/products/${req.params.id}?saved=1`);
+});
+
+app.post('/admin/products/:id/delete', requireCsrf, (req,res) => {
+  const product = db.prepare('SELECT id,name,slug FROM products WHERE id=?').get(req.params.id);
+  if (!product) return res.status(404).send('Product not found');
+
+  const confirmation = String(req.body.delete_confirmation || '').trim();
+  if (confirmation !== product.name) {
+    return res.redirect(`/admin/products/${product.id}?delete_error=1`);
+  }
+
+  db.prepare('DELETE FROM products WHERE id=?').run(product.id);
+  res.redirect('/admin/products?product_deleted=1');
 });
 
 function validateAdminPassword(password, email = '') {
