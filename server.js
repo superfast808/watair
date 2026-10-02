@@ -537,6 +537,7 @@ app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
   if (!product || !commerceEnabled(settings)) return res.status(404).send('Product is not available for online purchase.');
 
   const gateways = enabledGateways(settings);
+  if (cleanFormValue(req.body.website, 500)) return res.redirect(303, '/products/' + encodeURIComponent(product.slug));
   const gateway = cleanFormValue(req.body.gateway, 30);
   const gatewayAllowed = gateways.some(item => item.id === gateway);
   const maxQty = Math.max(1, Number(product.max_order_qty || 1));
