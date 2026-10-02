@@ -170,6 +170,10 @@ function commerceEnabled(settings = settingsObject()) {
   return String(settings.commerce_enabled || '0') === '1';
 }
 
+function commerceAcceptingOrders(settings = settingsObject()) {
+  return commerceEnabled(settings) && String(settings.commerce_legal_reviewed || '0') === '1';
+}
+
 function sellableProduct(slug) {
   return parseProduct(db.prepare(
     'SELECT * FROM products WHERE slug=? AND published=1 AND sellable=1 AND price_minor>0'
@@ -453,7 +457,7 @@ app.get('/products/:slug', (req, res) => {
     "SELECT COUNT(*) c FROM delivery_rules WHERE active=1 AND (delivery_class=? OR delivery_class='*')"
   ).get(String(product.delivery_class || 'standard').toLowerCase()).c;
   const canBuyOnline =
-    commerceEnabled(commerceSettings) &&
+    commerceAcceptingOrders(commerceSettings) &&
     Boolean(product.sellable) &&
     Number(product.price_minor) > 0 &&
     commerceGateways.length > 0 &&
@@ -488,7 +492,7 @@ function checkoutViewData(product, req, overrides = {}) {
 app.get('/buy/:slug', (req,res) => {
   const settings = settingsObject();
   const product = sellableProduct(req.params.slug);
-  if (!product || !commerceEnabled(settings)) return res.redirect(302, '/products/' + encodeURIComponent(req.params.slug));
+  if (!product || !commerceAcceptingOrders(settings)) return res.redirect(302, '/products/' + encodeURIComponent(req.params.slug));
   const gateways = enabledGateways(settings);
   const deliveryRules = db.prepare(
     "SELECT COUNT(*) c FROM delivery_rules WHERE active=1 AND (delivery_class=? OR delivery_class='*')"
@@ -507,7 +511,7 @@ app.get('/buy/:slug', (req,res) => {
 app.post('/checkout/quote/:slug', checkoutLimiter, (req,res) => {
   const settings = settingsObject();
   const product = sellableProduct(req.params.slug);
-  if (!product || !commerceEnabled(settings)) return res.status(404).json({ error: 'Product is not available for online purchase.' });
+  if (!product || !commerceAcceptingOrders(settings)) return res.status(404).json({ error: 'Product is not available for online purchase.' });
 
   const requestedQty = Math.floor(Number(req.body.quantity || 1));
   const quantity = Number.isFinite(requestedQty)
@@ -534,7 +538,7 @@ app.post('/checkout/quote/:slug', checkoutLimiter, (req,res) => {
 app.post('/checkout/:slug', checkoutLimiter, requireCsrf, async (req,res) => {
   const settings = settingsObject();
   const product = sellableProduct(req.params.slug);
-  if (!product || !commerceEnabled(settings)) return res.status(404).send('Product is not available for online purchase.');
+  if (!product || !commerceAcceptingOrders(settings)) return res.status(404).send('Product is not available for online purchase.');
 
   const gateways = enabledGateways(settings);
   if (cleanFormValue(req.body.website, 500)) return res.redirect(303, '/products/' + encodeURIComponent(product.slug));
@@ -1063,7 +1067,8 @@ app.get('/admin', (req,res) => {
   const sellableProducts = db.prepare("SELECT COUNT(*) c FROM products WHERE published=1 AND sellable=1 AND price_minor>0").get().c;
   const activeDeliveryRules = db.prepare("SELECT COUNT(*) c FROM delivery_rules WHERE active=1").get().c;
   const activeGateways = enabledGateways(commerceSettings);
-  const commerceReady = !commerceOn || (sellableProducts > 0 && activeDeliveryRules > 0 && activeGateways.length > 0);
+  const legalReviewed = String(commerceSettings.commerce_legal_reviewed || '0') === '1';
+  const commerceReady = !commerceOn || (sellableProducts > 0 && activeDeliveryRules > 0 && activeGateways.length > 0 && legalReviewed);
   const legalCommercePagesReady = ['terms','refunds','privacy','cookies'].every(slug => Boolean(getPage(slug)));
   let canonicalHost = '';
   try { canonicalHost = new URL(baseUrl).hostname.toLowerCase(); } catch {}
@@ -1115,8 +1120,8 @@ app.get('/admin', (req,res) => {
       detail: !commerceOn
         ? 'Online sales are safely disabled'
         : commerceReady
-          ? `${sellableProducts} sellable product(s), ${activeDeliveryRules} delivery rule(s), ${activeGateways.length} payment option(s)`
-          : 'Commerce is enabled but needs a sellable product, delivery rule and configured payment option'
+          ? `${sellableProducts} sellable product(s), ${activeDeliveryRules} delivery rule(s), ${activeGateways.length} payment option(s), legal review confirmed`
+          : 'Commerce is enabled but needs a sellable product, delivery rule, configured payment option and legal review sign-off'
     },
     {
       label: 'Commerce legal pages',
@@ -1457,6 +1462,7 @@ app.post('/admin/commerce/settings', requireCsrf, (req,res) => {
     commerce_stripe_enabled: req.body.commerce_stripe_enabled ? '1' : '0',
     commerce_paypal_enabled: req.body.commerce_paypal_enabled ? '1' : '0',
     commerce_manual_enabled: req.body.commerce_manual_enabled ? '1' : '0',
+    commerce_legal_reviewed: req.body.commerce_legal_reviewed ? '1' : '0',
     commerce_price_note: String(req.body.commerce_price_note || '').trim().slice(0,300)
   };
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
