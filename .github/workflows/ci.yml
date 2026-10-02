@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --omit=dev
+
+      - run: npm install --omit=dev --no-audit --no-fund
       - run: npm run check
-      - name: Smoke-test public pages and SEO output
+
+      - name: Smoke-test public site and CMS
         env:
           NODE_ENV: production
           PORT: 8099
@@ -24,16 +27,20 @@ jobs:
           ADMIN_EMAIL: ci@example.com
           ADMIN_PASSWORD: CI-test-password-123456789
         run: |
+          set -euo pipefail
+
           node server.js > /tmp/watair.log 2>&1 &
           APP_PID=$!
           trap 'kill $APP_PID 2>/dev/null || true' EXIT
 
           for i in {1..25}; do
-            if curl -fsS http://127.0.0.1:8099/health >/dev/null; then
+            if curl -fsS http://127.0.0.1:8099/health > /tmp/health.json; then
               break
             fi
             sleep 1
           done
+
+          grep -q '"ok":true' /tmp/health.json
 
           curl -fsS http://127.0.0.1:8099/ > /tmp/home.html
           curl -fsS http://127.0.0.1:8099/products > /tmp/products.html
@@ -43,12 +50,36 @@ jobs:
           curl -fsS http://127.0.0.1:8099/faqs > /tmp/faqs.html
           curl -fsS http://127.0.0.1:8099/contact > /tmp/contact.html
           curl -fsS http://127.0.0.1:8099/about > /tmp/about.html
-          curl -sS -o /tmp/notfound.html -w '%{http_code}' http://127.0.0.1:8099/definitely-not-a-page > /tmp/notfound-status.txt
+          curl -fsS http://127.0.0.1:8099/privacy > /tmp/privacy.html
           curl -fsS http://127.0.0.1:8099/sitemap.xml > /tmp/sitemap.xml
           curl -fsS http://127.0.0.1:8099/robots.txt > /tmp/robots.txt
+          curl -fsS http://127.0.0.1:8099/.well-known/security.txt > /tmp/security.txt
           curl -fsSL http://127.0.0.1:8099/favicon.ico > /tmp/favicon.svg
 
+          curl -sS -o /tmp/notfound.html -w '%{http_code}' http://127.0.0.1:8099/definitely-not-a-page > /tmp/notfound-status.txt
+
+          curl -sS -o /tmp/contact-invalid.html -w '%{http_code}' \
+            -X POST http://127.0.0.1:8099/contact \
+            --data-urlencode 'name=CI Invalid' \
+            --data-urlencode 'email=not-an-email' \
+            --data-urlencode 'message=Testing invalid email validation.' \
+            > /tmp/contact-invalid-status.txt
+
+          curl -sS -D /tmp/contact-valid-headers.txt -o /dev/null \
+            -X POST http://127.0.0.1:8099/contact \
+            --data-urlencode 'name=CI Contact' \
+            --data-urlencode 'company=WatAir CI' \
+            --data-urlencode 'email=ci-contact@example.com' \
+            --data-urlencode 'interest=General enquiry' \
+            --data-urlencode 'message=Automated release smoke test enquiry.'
+
+          curl -sS -D /tmp/reseller-headers.txt -o /dev/null http://127.0.0.1:8099/reseller
+          curl -sS -D /tmp/admin-headers.txt -o /dev/null http://127.0.0.1:8099/admin/login
+          curl -sS -D /tmp/home-headers.txt -o /dev/null http://127.0.0.1:8099/
+
           grep -q 'application/ld+json' /tmp/home.html
+          grep -q 'Skip to main content' /tmp/home.html
+          grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
           grep -q 'PW HR-15L' /tmp/products-home.html
           grep -q 'PW HR-60L' /tmp/products-home.html
@@ -58,19 +89,30 @@ jobs:
           grep -q 'Choose a model' /tmp/products-commercial.html
           grep -q 'data-capacity-filter="80-250"' /tmp/products-commercial.html
           grep -q 'data-faq-search' /tmp/faqs.html
-          grep -q 'Skip to main content' /tmp/home.html
-          grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
+          grep -q '"@type":"BreadcrumbList"' /tmp/about.html
+          grep -q 'How WatAir handles information' /tmp/privacy.html
+          grep -q 'privacy notice' /tmp/contact.html
+          grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
+          grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
+          grep -q 'Canonical: https://watair.co.uk/.well-known/security.txt' /tmp/security.txt
+          grep -q 'rel="icon" href="/favicon.svg"' /tmp/home.html
+          grep -q '<svg' /tmp/favicon.svg
           grep -q '^404$' /tmp/notfound-status.txt
           grep -q 'Page not found' /tmp/notfound.html
-          grep -q '"@type":"BreadcrumbList"' /tmp/about.html
-          grep -q 'rel="icon" href="/favicon.svg"' /tmp/home.html
-          grep -q '<lastmod>' /tmp/sitemap.xml
-          grep -q 'Sitemap: https://watair.co.uk/sitemap.xml' /tmp/robots.txt
-          grep -q '<svg' /tmp/favicon.svg
+          grep -q '^400$' /tmp/contact-invalid-status.txt
+          grep -q 'valid email address' /tmp/contact-invalid.html
+          grep -q 'CI Invalid' /tmp/contact-invalid.html
+          grep -q '303' /tmp/contact-valid-headers.txt
+          grep -qi '^location: /contact?sent=1' /tmp/contact-valid-headers.txt
+          grep -q '301' /tmp/reseller-headers.txt
+          grep -qi '^location: /resellers' /tmp/reseller-headers.txt
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/admin-headers.txt
+          grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=(), payment=()' /tmp/home-headers.txt
 
           TOKEN=$(node -e "const jwt=require('jsonwebtoken'); process.stdout.write(jwt.sign({sub:1,email:'ci@example.com',role:'admin'}, process.env.SESSION_SECRET,{expiresIn:'1h'}))")
           AUTH="Cookie: watair_admin=$TOKEN"
+
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin > /tmp/admin-dashboard.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/new > /tmp/admin-product-new.html
@@ -79,9 +121,11 @@ jobs:
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/enquiries > /tmp/admin-enquiries.html
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
 
           grep -q 'Welcome back' /tmp/admin-dashboard.html
+          grep -q 'Launch checks' /tmp/admin-dashboard.html
           grep -q 'Add product' /tmp/admin-product-new.html
           grep -q 'Technical specifications' /tmp/admin-product-edit.html
           grep -q 'Page content' /tmp/admin-page-edit.html
@@ -89,4 +133,12 @@ jobs:
           grep -q 'Homepage hero image' /tmp/admin-settings.html
           grep -q 'Add an admin user' /tmp/admin-users.html
           grep -q 'Generate secure password' /tmp/admin-users.html
+          grep -q 'CI Contact' /tmp/admin-enquiries.html
+          grep -q 'Delete enquiry' /tmp/admin-enquiries.html
           grep -q '"assets"' /tmp/admin-assets.json
+
+      - name: Validate production Docker configuration
+        run: |
+          cp .env.example .env
+          docker compose config > /dev/null
+          docker build -t watair-ci .
