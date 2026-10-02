@@ -1,13 +1,7 @@
 <div class="utility-bar">
   <div class="utility-inner">
     <div class="utility-links">
-      <a class="utility-item utility-primary" href="/leasing">
-        <span class="utility-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20"><path d="M4 6.5h12M5.5 3.5h9l1 3v9h-11v-9l1-3ZM7 10h6M7 13h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-        <span>Leasing Available</span>
-      </a>
-      <a class="utility-item utility-reseller" href="/resellers">
+      <a class="utility-item utility-primary utility-reseller" href="/resellers">
         <span class="utility-icon" aria-hidden="true">
           <svg viewBox="0 0 20 20"><path d="M10 3.2a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM4.5 16.5c.45-3.05 2.3-4.7 5.5-4.7s5.05 1.65 5.5 4.7M15.5 5.3v3.4M13.8 7h3.4" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/></svg>
         </span>
@@ -52,14 +46,14 @@
       <div class="nav-dropdown nav-dropdown-products">
         <div class="nav-dropdown-intro">
           <p class="eyebrow">Product range</p>
-          <h3>Water generation from 16 to 10,000 litres per day.</h3>
+          <h3>Water generation from 20 to 10,000 litres per day.</h3>
           <p>Choose a range, then drill into individual models, technical specifications and downloadable datasheets.</p>
           <a class="nav-feature-link" href="/products">View all systems →</a>
         </div>
         <div class="nav-menu-column">
           <span class="nav-menu-label">Home & Office</span>
-          <a href="/products/home-office"><strong>View Home & Office range</strong><small>16–60 litres/day</small></a>
-          <a href="/products/pw-hr-15l">PW HR-15L <small>16 L/day</small></a>
+          <a href="/products/home-office"><strong>View Home & Office range</strong><small>20–60 litres/day</small></a>
+          <a href="/products/pw-hr-20l">PW HR-20L <small>20 L/day · Desktop / Countertop</small></a>
           <a href="/products/pw-hr-25l-low-power-consumption">PW HR-25L <small>25 L/day</small></a>
           <a href="/products/pw-hr-30l">PW HR-30L <small>30 L/day</small></a>
           <a href="/products/pw-hr-60l">PW HR-60L <small>60 L/day</small></a>
@@ -68,9 +62,9 @@
           <span class="nav-menu-label">Commercial & Industrial</span>
           <a href="/products/commercial-industrial"><strong>View Commercial & Industrial</strong><small>80–10,000 litres/day</small></a>
           <a href="/products/pw-hr-80l-low-power-consumption">Compact commercial <small>80 L/day</small></a>
-          <a href="/products/pw-hr-250l">Mid-range <small>250 L/day</small></a>
-          <a href="/products/pw-hr-1000l">High output <small>1,000 L/day</small></a>
-          <a href="/products/pw-hr-10000l">Industrial scale <small>10,000 L/day</small></a>
+          <a href="/products/pw-hr-250l-low-power-consumption">Mid-range <small>250 L/day</small></a>
+          <a href="/products/pw-hr-1000l-low-power-consumption">High output <small>1,000 L/day</small></a>
+          <a href="/products/pw-hr-10000l-low-power-consumption">Industrial scale <small>10,000 L/day</small></a>
         </div>
       </div>
     </div>
@@ -96,14 +90,13 @@
       </div>
     </div>
 
-    <div class="nav-group <%= path === '/about' || path === '/resellers' || path === '/leasing' ? 'active' : '' %>" data-nav-group>
+    <div class="nav-group <%= path === '/about' || path === '/resellers' ? 'active' : '' %>" data-nav-group>
       <button class="nav-trigger" type="button" data-nav-trigger aria-expanded="false">
         <span class="nav-label">About</span> <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 12 12" focusable="false" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </button>
       <div class="nav-dropdown nav-dropdown-small">
         <a href="/about"><strong>About WatAir</strong><small>Atmospheric Water Generation solutions for the UK</small></a>
         <a href="/resellers"><strong>Become a reseller</strong><small>Partner opportunities and commercial enquiries</small></a>
-        <a href="/leasing"><strong>Leasing</strong><small>Explore flexible procurement options</small></a>
       </div>
     </div>
 
