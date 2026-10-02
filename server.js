@@ -29,7 +29,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https://www.watairuk.co.uk'],
+      imgSrc: ["'self'", 'data:'],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
       connectSrc: ["'self'"],
