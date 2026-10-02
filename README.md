@@ -39,7 +39,8 @@ Legacy WatAir paths are redirected with HTTP 301s to preserve search continuity 
 
 ```bash
 cp .env.example .env
-# Edit .env with the production URL, secrets and SMTP details.
+# Edit .env with the production URL, administrator details and SMTP settings.
+# Generate SESSION_SECRET with something like: openssl rand -hex 32
 
 docker compose up -d --build
 docker compose ps
@@ -61,7 +62,7 @@ Back these up together. Do not treat the Docker image itself as the backup.
 
 ## CMS
 
-The first administrator is created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` on first boot. Additional administrators are managed inside the CMS.
+The first administrator is created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` on first boot. Production startup deliberately refuses missing/example first-admin credentials or a weak initial password. Additional administrators are managed inside the CMS.
 
 CMS features include:
 
@@ -88,17 +89,18 @@ The privacy notice describes the information retained by the website. The public
 Before DNS cutover:
 
 1. Set `BASE_URL=https://watair.co.uk`.
-2. Set a unique `SESSION_SECRET` of at least 32 characters.
-3. Confirm the real administrator accounts and remove unused access.
-4. Configure SMTP and send a real contact-form test.
-5. Review every published product image and technical specification against the approved source material.
-6. Review the editable Privacy Notice with the site owner and update it if their internal retention/privacy process requires different wording.
-7. Confirm the CMS dashboard launch checks are green.
-8. Verify Plesk/nginx HTTPS and reverse proxy to the configured `HOST_PORT`.
-9. Test the home page, both range pages, several products, PDF downloads, FAQs, contact form, privacy page, sitemap and robots file.
-10. Test important legacy URLs and confirm they return 301 redirects.
-11. Back up both `data/` and `public/uploads/` immediately before DNS changes.
-12. Keep the legacy hosting/database backup available during the cutover window.
+2. Set a unique `SESSION_SECRET` of at least 32 characters and confirm production starts without configuration warnings.
+3. Set `TRUST_PROXY=1` when Plesk/nginx is the single reverse proxy so rate limiting sees the real client IP.
+4. Confirm the real administrator accounts and remove unused access.
+5. Configure SMTP and send a real contact-form test.
+6. Review every published product image and technical specification against the approved source material.
+7. Review the editable Privacy Notice with the site owner and update it if their internal retention/privacy process requires different wording.
+8. Confirm the CMS dashboard launch checks are green.
+9. Verify Plesk/nginx HTTPS and reverse proxy to the configured `HOST_PORT`.
+10. Test the home page, both range pages, several products, PDF downloads, FAQs, contact form, privacy page, sitemap and robots file.
+11. Test important legacy URLs and confirm they return 301 redirects.
+12. Back up both `data/` and `public/uploads/` immediately before DNS changes.
+13. Keep the legacy hosting/database backup available during the cutover window.
 
 ## Post-launch
 
