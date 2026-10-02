@@ -20,6 +20,7 @@
   ));
   const orgId = baseUrl + '/#organization';
   const websiteId = baseUrl + '/#website';
+  const socialProfiles = [settings.facebook_url, settings.instagram_url, settings.linkedin_url].filter(Boolean);
   const schemaGraph = [];
 
   schemaGraph.push({
@@ -36,7 +37,7 @@
     email: settings.email,
     telephone: settings.phone,
     areaServed: { '@type': 'Country', name: 'United Kingdom' },
-    sameAs: ['https://uk.linkedin.com/company/watair-uk'],
+    sameAs: socialProfiles,
     contactPoint: [{
       '@type': 'ContactPoint',
       contactType: 'sales and customer enquiries',
