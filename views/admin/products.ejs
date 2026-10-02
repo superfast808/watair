@@ -9,6 +9,10 @@
   <a class="admin-button button-link" href="/admin/products/new">+ Add product</a>
 </header>
 
+<% if(reqQuery?.product_deleted){ %>
+  <div class="notice-success"><strong>Product deleted.</strong> It has been removed from the catalogue.</div>
+<% } %>
+
 <section class="admin-card admin-list-card">
   <div class="list-toolbar">
     <div>
