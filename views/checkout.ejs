@@ -1,0 +1,101 @@
+<%- include('partials/head') %><%- include('partials/header') %>
+<main id="main-content">
+<%- include('partials/breadcrumbs', { items: [
+  { label: 'Home', href: '/' },
+  { label: 'Atmospheric Water Generators', href: '/products' },
+  { label: product.name, href: '/products/' + product.slug },
+  { label: 'Checkout' }
+] }) %>
+
+<section class="checkout-shell section-tight">
+  <div class="checkout-main">
+    <div class="checkout-heading">
+      <p class="eyebrow">Secure checkout</p>
+      <h1>Buy <%= product.name %></h1>
+      <p>Enter the delivery details below. Delivery is calculated from the configured delivery rules before you are sent to the selected payment provider.</p>
+    </div>
+
+    <% if(error){ %><div class="error-box" role="alert"><%= error %></div><% } %>
+
+    <form class="checkout-form" method="post" action="/checkout/<%= product.slug %>" data-checkout-form data-product-slug="<%= product.slug %>">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+      <section class="checkout-section">
+        <div class="checkout-section-head"><span>1</span><div><h2>Contact</h2><p>For the order confirmation and delivery contact.</p></div></div>
+        <div class="two-col">
+          <label>Name<input name="customer_name" required maxlength="150" autocomplete="name" value="<%= formValues.customer_name || '' %>"></label>
+          <label>Email<input type="email" name="customer_email" required maxlength="254" autocomplete="email" value="<%= formValues.customer_email || '' %>"></label>
+        </div>
+        <label>Phone<input name="customer_phone" maxlength="80" autocomplete="tel" value="<%= formValues.customer_phone || '' %>"></label>
+      </section>
+
+      <section class="checkout-section">
+        <div class="checkout-section-head"><span>2</span><div><h2>Delivery</h2><p>Availability and price can vary by model and destination.</p></div></div>
+        <label>Address line 1<input name="address1" required maxlength="180" autocomplete="address-line1" value="<%= formValues.address1 || '' %>"></label>
+        <label>Address line 2<input name="address2" maxlength="180" autocomplete="address-line2" value="<%= formValues.address2 || '' %>"></label>
+        <div class="two-col">
+          <label>Town / city<input name="city" required maxlength="120" autocomplete="address-level2" value="<%= formValues.city || '' %>"></label>
+          <label>Region / county<input name="region" maxlength="120" autocomplete="address-level1" value="<%= formValues.region || '' %>"></label>
+        </div>
+        <div class="two-col">
+          <label>Postcode / ZIP<input name="postcode" required maxlength="24" autocomplete="postal-code" value="<%= formValues.postcode || '' %>" data-checkout-postcode></label>
+          <label>Country
+            <select name="country_code" required autocomplete="country" data-checkout-country>
+              <% [
+                ['GB','United Kingdom'],['IE','Ireland'],['FR','France'],['DE','Germany'],['ES','Spain'],['IT','Italy'],
+                ['NL','Netherlands'],['BE','Belgium'],['PT','Portugal'],['US','United States'],['CA','Canada'],
+                ['AU','Australia'],['NZ','New Zealand'],['AE','United Arab Emirates'],['SG','Singapore']
+              ].forEach(([code,label]) => { %>
+                <option value="<%= code %>" <%= (formValues.country_code || 'GB') === code ? 'selected' : '' %>><%= label %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+        <label>Quantity
+          <select name="quantity" data-checkout-quantity>
+            <% for(let i=1;i<=Math.max(1,product.max_order_qty || 1);i++){ %>
+              <option value="<%= i %>" <%= Number(formValues.quantity || 1)===i?'selected':'' %>><%= i %></option>
+            <% } %>
+          </select>
+        </label>
+        <p class="checkout-availability" data-delivery-status aria-live="polite">Enter a postcode to calculate delivery.</p>
+      </section>
+
+      <section class="checkout-section">
+        <div class="checkout-section-head"><span>3</span><div><h2>Payment</h2><p>Choose an enabled payment method.</p></div></div>
+        <div class="gateway-options">
+          <% gateways.forEach((gateway,index) => { %>
+            <label class="gateway-option">
+              <input type="radio" name="gateway" value="<%= gateway.id %>" <%= (formValues.gateway ? formValues.gateway===gateway.id : index===0) ? 'checked' : '' %>>
+              <span><strong><%= gateway.label %></strong><small><%= gateway.detail %></small></span>
+            </label>
+          <% }) %>
+        </div>
+      </section>
+
+      <label class="checkout-terms">
+        <input type="checkbox" name="accept_terms" value="1" required <%= formValues.accept_terms ? 'checked' : '' %>>
+        <span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of sale</a> and <a href="/refunds" target="_blank" rel="noopener">Refunds & returns policy</a>.</span>
+      </label>
+      <p class="form-privacy">Order details are handled as described in our <a href="/privacy">Privacy notice</a>. WatAir does not store full payment-card details.</p>
+
+      <button class="button button-aqua checkout-submit" type="submit">Continue to payment</button>
+    </form>
+  </div>
+
+  <aside class="checkout-summary" data-checkout-summary data-unit-price="<%= product.price_minor %>" data-currency="<%= settings.commerce_currency || 'GBP' %>">
+    <div class="checkout-product-art"><% if(product.image_url){ %><img src="<%= product.image_url %>" alt="<%= product.name %>"><% } %></div>
+    <p class="eyebrow">Order summary</p>
+    <h2><%= product.name %></h2>
+    <% if(product.subtitle){ %><p class="checkout-subtitle"><%= product.subtitle %></p><% } %>
+    <dl>
+      <div><dt>Unit price</dt><dd><%= formatMoney(product.price_minor, settings.commerce_currency) %></dd></div>
+      <div><dt>Delivery</dt><dd data-delivery-price>To be calculated</dd></div>
+      <div class="checkout-total"><dt>Total</dt><dd data-checkout-total><%= formatMoney(product.price_minor, settings.commerce_currency) %></dd></div>
+    </dl>
+    <small><%= settings.commerce_price_note || 'Delivery is calculated before payment.' %></small>
+    <a href="/products/<%= product.slug %>">← Back to product</a>
+  </aside>
+</section>
+</main>
+<%- include('partials/footer') %>
