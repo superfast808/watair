@@ -1332,6 +1332,90 @@ app.post('/admin/settings', requireCsrf, (req,res) => {
   res.redirect('/admin/settings?saved=1');
 });
 
+app.get('/admin/commerce', (req,res) => {
+  res.render('admin/commerce', {
+    settings: settingsObject(),
+    gatewayConfig: gatewayConfiguration(),
+    deliveryRules: db.prepare('SELECT * FROM delivery_rules ORDER BY priority,id').all(),
+    meta: { title: 'Commerce | WatAir CMS' }
+  });
+});
+
+app.post('/admin/commerce/settings', requireCsrf, (req,res) => {
+  const currency = normaliseCurrency(req.body.commerce_currency);
+  const values = {
+    commerce_enabled: req.body.commerce_enabled ? '1' : '0',
+    commerce_currency: currency,
+    commerce_stripe_enabled: req.body.commerce_stripe_enabled ? '1' : '0',
+    commerce_paypal_enabled: req.body.commerce_paypal_enabled ? '1' : '0',
+    commerce_manual_enabled: req.body.commerce_manual_enabled ? '1' : '0',
+    commerce_price_note: String(req.body.commerce_price_note || '').trim().slice(0,300)
+  };
+  const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+  const tx = db.transaction(() => Object.entries(values).forEach(([key,value]) => upsert.run(key,value)));
+  tx();
+  res.redirect('/admin/commerce?saved=1');
+});
+
+function deliveryRuleValues(body) {
+  const priceMinor = parseMoneyToMinor(body.price);
+  if (priceMinor === null || priceMinor < 0) return null;
+  const deliveryClass = String(body.delivery_class || 'standard')
+    .trim().toLowerCase().replace(/[^a-z0-9_*-]+/g,'-').slice(0,60) || 'standard';
+  const countryCode = String(body.country_code || 'GB').trim().toUpperCase();
+  if (countryCode !== '*' && !/^[A-Z]{2}$/.test(countryCode)) return null;
+  return {
+    name: String(body.name || '').trim().slice(0,120),
+    deliveryClass,
+    countryCode,
+    postcodePrefixes: String(body.postcode_prefixes || '').toUpperCase().replace(/[^A-Z0-9, *-]/g,'').slice(0,500),
+    priceMinor,
+    priority: Math.max(-10000, Math.min(10000, Number(body.priority || 100))),
+    active: body.active === undefined ? 1 : (body.active ? 1 : 0)
+  };
+}
+
+app.post('/admin/commerce/delivery-rules', requireCsrf, (req,res) => {
+  const rule = deliveryRuleValues({ ...req.body, active: true });
+  if (!rule?.name) return res.status(400).send('A valid delivery rule name, country and price are required.');
+  db.prepare(`
+    INSERT INTO delivery_rules(name,delivery_class,country_code,postcode_prefixes,price_minor,priority,active)
+    VALUES(?,?,?,?,?,?,?)
+  `).run(rule.name,rule.deliveryClass,rule.countryCode,rule.postcodePrefixes,rule.priceMinor,rule.priority,rule.active);
+  res.redirect('/admin/commerce?rule_created=1');
+});
+
+app.post('/admin/commerce/delivery-rules/:id', requireCsrf, (req,res) => {
+  const rule = deliveryRuleValues(req.body);
+  if (!rule?.name) return res.status(400).send('A valid delivery rule name, country and price are required.');
+  db.prepare(`
+    UPDATE delivery_rules
+    SET name=?,delivery_class=?,country_code=?,postcode_prefixes=?,price_minor=?,priority=?,active=?,updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).run(rule.name,rule.deliveryClass,rule.countryCode,rule.postcodePrefixes,rule.priceMinor,rule.priority,rule.active,req.params.id);
+  res.redirect('/admin/commerce?rule_saved=1');
+});
+
+app.post('/admin/commerce/delivery-rules/:id/delete', requireCsrf, (req,res) => {
+  db.prepare('DELETE FROM delivery_rules WHERE id=?').run(req.params.id);
+  res.redirect('/admin/commerce?rule_deleted=1');
+});
+
+app.get('/admin/orders', (req,res) => {
+  res.render('admin/orders', {
+    orders: db.prepare('SELECT * FROM orders ORDER BY created_at DESC,id DESC LIMIT 500').all(),
+    meta: { title: 'Orders | WatAir CMS' }
+  });
+});
+
+app.post('/admin/orders/:id/status', requireCsrf, (req,res) => {
+  const allowed = new Set(['pending','awaiting_payment','paid','processing','fulfilled','cancelled','refunded','failed']);
+  const status = String(req.body.status || '');
+  if (!allowed.has(status)) return res.status(400).send('Invalid order status.');
+  db.prepare('UPDATE orders SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(status,req.params.id);
+  res.redirect('/admin/orders');
+});
+
 app.get('/admin/enquiries', (req,res) => {
   res.render('admin/enquiries', {
     enquiries: db.prepare('SELECT * FROM enquiries ORDER BY created_at DESC').all(),
