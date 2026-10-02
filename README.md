@@ -80,6 +80,7 @@ CMS features include:
 - enquiry inbox with read/delete controls
 - multiple administrator accounts and password resets
 - homepage/global settings
+- primary navigation management: rename, hide, reorder and add custom links/CTAs
 - SEO titles and descriptions
 - production-readiness checks on the dashboard
 - per-product sellable/price/delivery-class controls
