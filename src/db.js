@@ -284,17 +284,33 @@ function seed() {
 
   const adminCount = db.prepare('SELECT COUNT(*) c FROM admins').get().c;
   if (!adminCount) {
-    const email = process.env.ADMIN_EMAIL;
-    const password = process.env.ADMIN_PASSWORD;
+    const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const password = String(process.env.ADMIN_PASSWORD || '');
+    const production = process.env.NODE_ENV === 'production';
+    const usingExampleCredentials =
+      email === 'admin@example.com' ||
+      password === 'replace-with-a-long-unique-password';
+
+    if (production && usingExampleCredentials) {
+      throw new Error('Refusing to create the first production admin with example credentials. Set a real ADMIN_EMAIL and unique ADMIN_PASSWORD.');
+    }
+    if (production && (!email || !password)) {
+      throw new Error('No admin account exists. Set ADMIN_EMAIL and ADMIN_PASSWORD before the first production boot.');
+    }
+    if (production && !/^\S+@\S+\.\S+$/.test(email)) {
+      throw new Error('ADMIN_EMAIL must be a valid email address before the first production boot.');
+    }
+    if (production && (password.length < 14 || !/[A-Za-z]/.test(password) || !/\d/.test(password))) {
+      throw new Error('ADMIN_PASSWORD must be at least 14 characters and contain at least one letter and one number.');
+    }
+
     if (email && password) {
       const hash = bcrypt.hashSync(password, 12);
-      db.prepare('INSERT INTO admins(email,password_hash) VALUES(?,?)').run(email.toLowerCase(), hash);
-    } else if (process.env.NODE_ENV !== 'production') {
+      db.prepare('INSERT INTO admins(email,password_hash) VALUES(?,?)').run(email, hash);
+    } else {
       const hash = bcrypt.hashSync('ChangeMe-Development-Only!', 12);
       db.prepare('INSERT INTO admins(email,password_hash) VALUES(?,?)').run('admin@localhost', hash);
       console.warn('DEV ONLY admin: admin@localhost / ChangeMe-Development-Only!');
-    } else {
-      console.warn('No admin created. Set ADMIN_EMAIL and ADMIN_PASSWORD, then restart before first use.');
     }
   }
 }
