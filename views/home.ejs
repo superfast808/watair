@@ -1,25 +1,24 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 <main id="main-content">
-  <% const localHeroImage = settings.hero_image && !settings.hero_image.includes('watairuk.co.uk') ? settings.hero_image : '/uploads/imported/legacy/images/home/products.jpg'; const heroImageStyle = settings.hero_image_style === 'photo' ? 'photo' : 'graphic'; %>
-  <section class="hero hero-premium">
-    <div class="hero-copy">
+  <% const localHeroImage = settings.hero_image && !settings.hero_image.includes('watairuk.co.uk') ? settings.hero_image : '/uploads/imported/legacy/media/1027/contact-banner.jpg'; %>
+  <section class="page-hero scenic-hero hero-has-photo home-photo-hero">
+    <div class="page-hero-copy">
       <p class="eyebrow">Atmospheric Water Generation · United Kingdom</p>
       <h1><%= settings.hero_title %></h1>
-      <p class="hero-text"><%= settings.hero_text %> Generate fresh water at the point of use, without a mains water feed.</p>
+      <p><%= settings.hero_text %> Explore systems for everything from compact countertop use to major commercial and industrial demand.</p>
       <div class="hero-actions">
         <a class="button button-aqua" href="/products">Explore the range</a>
         <a class="text-link text-link-light" href="/how-it-works">How the technology works <span>↗</span></a>
       </div>
-      <div class="hero-facts">
-        <div><strong>16–10,000</strong><span>litres/day across the range</span></div>
-        <div><strong>No mains feed</strong><span>water generated from ambient air</span></div>
-        <div><strong>UK support</strong><span>home, commercial & industrial</span></div>
+      <div class="hero-inline-stats home-hero-stats">
+        <span><strong>20–10,000</strong> L/day range</span>
+        <span><strong>From air</strong> generated at point of use</span>
+        <a href="/contact">Talk to WatAir →</a>
       </div>
     </div>
-    <div class="hero-visual <%= heroImageStyle === 'photo' ? 'hero-visual-photo' : '' %>">
-      <img src="<%= localHeroImage %>" alt="WatAir atmospheric water generator range" decoding="async" fetchpriority="high">
-      <div class="hero-caption"><span>Water from air</span><strong>One technology. Multiple scales.</strong></div>
+    <div class="page-hero-art page-hero-photo">
+      <img src="<%= localHeroImage %>" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
     </div>
   </section>
 
@@ -79,7 +78,7 @@
   </section>
 
   <section class="scale-panel">
-    <div class="scale-image"><img src="/uploads/imported/legacy/media/1010/pw-hr-5000l.png" alt="WatAir PW HR-5000L industrial atmospheric water generator" loading="lazy" decoding="async"></div>
+    <div class="scale-image"><img src="/uploads/imported/legacy/media/1066/5500-product.png" alt="WatAir PW HR-5500L low-power industrial atmospheric water generator" loading="lazy" decoding="async"></div>
     <div class="scale-copy">
       <p class="eyebrow">Commercial & industrial</p>
       <h2>Scale the same principle to serious daily demand.</h2>
