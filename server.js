@@ -190,6 +190,9 @@ function setOrderStatus(publicId, status, gatewayRef = '') {
   const negativeStates = new Set(['pending','awaiting_payment','cancelled','failed']);
   if (protectedPaidStates.has(current.status) && negativeStates.has(status)) return 0;
 
+  const progressRank = { paid: 1, processing: 2, fulfilled: 3 };
+  if (progressRank[current.status] && progressRank[status] && progressRank[status] < progressRank[current.status]) return 0;
+
   return db.prepare(`
     UPDATE orders
     SET status=?,
