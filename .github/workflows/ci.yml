@@ -68,6 +68,7 @@ jobs:
           curl -fsS http://127.0.0.1:8099/faqs > /tmp/faqs.html
           curl -fsS http://127.0.0.1:8099/contact > /tmp/contact.html
           curl -fsS http://127.0.0.1:8099/about > /tmp/about.html
+          curl -fsS http://127.0.0.1:8099/water-quality-maintenance > /tmp/maintenance.html
           curl -fsS http://127.0.0.1:8099/privacy > /tmp/privacy.html
           curl -fsS http://127.0.0.1:8099/terms > /tmp/terms.html
           curl -fsS http://127.0.0.1:8099/refunds > /tmp/refunds.html
@@ -162,6 +163,13 @@ jobs:
           grep -q '/uploads/imported/legacy/media/1070/10000l-pro.png' /tmp/faqs.html
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
+          grep -q 'Good water quality depends on correct operation and maintenance' /tmp/maintenance.html
+          grep -q 'The operator/user manual supplied for the specific WatAir model is the controlling instruction' /tmp/maintenance.html
+          grep -q 'Legionella and microbiological risk' /tmp/maintenance.html
+          grep -q 'hse.gov.uk/legionnaires/' /tmp/maintenance.html
+          grep -q 'Safe drinking water depends on correct operation and maintenance.' /tmp/product.html
+          grep -q 'operation, water-quality and maintenance requirements' /tmp/checkout.html
+          grep -q 'Operation, water hygiene and maintenance' /tmp/terms.html
           grep -q 'How WatAir handles information' /tmp/privacy.html
           grep -q 'Orders and payments' /tmp/privacy.html
           grep -q 'Terms for purchases made through the WatAir website' /tmp/terms.html
@@ -185,6 +193,7 @@ jobs:
           ! grep -q 'we can discuss the right next step.' /tmp/about.html
           grep -q 'Atmospheric Water Generation solutions</small>' /tmp/about.html
           grep -q 'WatAir promotes Atmospheric Water Generation technology' /tmp/about.html
+          grep -q '<loc>https://watair.co.uk/water-quality-maintenance</loc>' /tmp/sitemap.xml
           grep -q '<loc>https://watair.co.uk/privacy</loc>' /tmp/sitemap.xml
           grep -q '<loc>https://watair.co.uk/terms</loc>' /tmp/sitemap.xml
           grep -q '<loc>https://watair.co.uk/refunds</loc>' /tmp/sitemap.xml
@@ -231,6 +240,7 @@ jobs:
 
           grep -q 'Welcome back' /tmp/admin-dashboard.html
           grep -q 'Launch checks' /tmp/admin-dashboard.html
+          grep -q 'Water quality guidance' /tmp/admin-dashboard.html
           grep -q 'Add product' /tmp/admin-product-new.html
           grep -q 'Technical specifications' /tmp/admin-product-edit.html
           grep -q 'Delete product permanently' /tmp/admin-product-edit.html
