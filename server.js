@@ -28,6 +28,7 @@ const {
   retrieveStripeSession,
   verifyStripeWebhook,
   createPayPalOrder,
+  retrievePayPalOrder,
   capturePayPalOrder
 } = require('./src/commerce');
 
@@ -269,6 +270,22 @@ function gatewayConfiguration() {
     paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
     paypalEnvironment: String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase() === 'live' ? 'live' : 'sandbox'
   };
+}
+
+function paypalPaymentMatches(payload, order) {
+  const unit = payload?.purchase_units?.[0];
+  const captured = unit?.payments?.captures?.[0];
+  const amountValue = Math.round(Number(captured?.amount?.value || 0) * 100);
+  const amountMatches = amountValue === Number(order.total_minor);
+  const currencyMatches = String(captured?.amount?.currency_code || '').toUpperCase() === String(order.currency || '').toUpperCase();
+  const referenceMatches = String(unit?.custom_id || unit?.reference_id || '') === order.public_id;
+  return Boolean(
+    payload?.status === 'COMPLETED' &&
+    captured?.status === 'COMPLETED' &&
+    amountMatches &&
+    currencyMatches &&
+    referenceMatches
+  );
 }
 
 async function stripeWebhookHandler(req, res) {
@@ -679,21 +696,26 @@ app.get('/payments/paypal/return', async (req,res) => {
   try {
     if (order.gateway_ref && order.gateway_ref !== paypalOrderId) throw new Error('PayPal order reference does not match.');
     const capture = await capturePayPalOrder(paypalOrderId);
-    const unit = capture?.purchase_units?.[0];
-    const captured = unit?.payments?.captures?.[0];
-    const amountValue = Math.round(Number(captured?.amount?.value || 0) * 100);
-    const amountMatches = amountValue === Number(order.total_minor);
-    const currencyMatches = String(captured?.amount?.currency_code || '').toUpperCase() === String(order.currency || '').toUpperCase();
-    const referenceMatches = String(unit?.custom_id || unit?.reference_id || '') === order.public_id;
-    if (capture?.status === 'COMPLETED' && captured?.status === 'COMPLETED' && amountMatches && currencyMatches && referenceMatches) {
+    if (paypalPaymentMatches(capture, order)) {
       setOrderStatus(order.public_id, 'paid', paypalOrderId);
       await notifyOrderIfNeeded(order.public_id);
     } else {
       setOrderStatus(order.public_id, 'failed', paypalOrderId);
     }
   } catch (err) {
-    console.error('PayPal capture failed:', err.message);
-    setOrderStatus(order.public_id, 'failed', paypalOrderId);
+    console.error('PayPal capture response:', err.message);
+    try {
+      const authoritative = await retrievePayPalOrder(paypalOrderId);
+      if (paypalPaymentMatches(authoritative, order)) {
+        setOrderStatus(order.public_id, 'paid', paypalOrderId);
+        await notifyOrderIfNeeded(order.public_id);
+      } else {
+        setOrderStatus(order.public_id, 'failed', paypalOrderId);
+      }
+    } catch (verifyErr) {
+      console.error('PayPal verification failed:', verifyErr.message);
+      setOrderStatus(order.public_id, 'failed', paypalOrderId);
+    }
   }
   res.redirect(303, '/order/' + encodeURIComponent(order.public_id));
 });
