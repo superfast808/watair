@@ -31,6 +31,18 @@
       <section class="admin-card editor-section">
         <div class="section-heading">
           <span class="section-number">2</span>
+          <div><h2>Social profiles</h2><p>Add the official WatAir profiles. Leave a field blank to hide that network from the website.</p></div>
+        </div>
+        <div class="form-grid">
+          <label class="full">Facebook URL<input type="url" name="facebook_url" placeholder="https://www.facebook.com/..." value="<%= values.facebook_url || '' %>"></label>
+          <label class="full">Instagram URL<input type="url" name="instagram_url" placeholder="https://www.instagram.com/..." value="<%= values.instagram_url || '' %>"></label>
+          <label class="full">LinkedIn URL<input type="url" name="linkedin_url" placeholder="https://www.linkedin.com/company/..." value="<%= values.linkedin_url || '' %>"></label>
+        </div>
+      </section>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number">3</span>
           <div><h2>Homepage hero</h2><p>The large opening message on the homepage.</p></div>
         </div>
         <div class="form-grid">
