@@ -415,6 +415,18 @@ function seed() {
     db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(ecommercePrivacyKey, new Date().toISOString());
   }
 
+  // Add the owner/operator water-quality responsibility clause to existing
+  // Terms pages once, without replacing any other CMS-edited legal content.
+  const waterQualityTermsKey = 'owner_water_quality_terms_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(waterQualityTermsKey)) {
+    const terms = db.prepare("SELECT id,body_html FROM pages WHERE slug='terms'").get();
+    if (terms?.body_html && !terms.body_html.includes('Operation, water hygiene and maintenance')) {
+      const clause = '<h2>Operation, water hygiene and maintenance</h2><p>The purchaser, owner and operator must operate and maintain the equipment and any connected storage or distribution system in accordance with the model-specific operator manual, commissioning instructions, maintenance schedule and applicable site water-hygiene requirements. Required cleaning, sanitisation, filter or treatment-component replacement, shutdown and recommissioning procedures form part of normal safe operation. Failure to follow those requirements can impair water quality and may create microbiological risk. Water should not be used for drinking where required maintenance or sanitisation has been missed, after an event requiring recommissioning until that procedure is complete, or where there is reason to doubt water quality. See <a href="/water-quality-maintenance">Water quality, hygiene &amp; maintenance</a>. Nothing in this section excludes liability or statutory rights that cannot lawfully be excluded.</p>';
+      db.prepare('UPDATE pages SET body_html=body_html || ?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(clause, terms.id);
+    }
+    db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(waterQualityTermsKey, new Date().toISOString());
+  }
+
   const navigationCount = db.prepare('SELECT COUNT(*) c FROM navigation_items').get().c;
   if (!navigationCount) {
     const insertNavigation = db.prepare(`
