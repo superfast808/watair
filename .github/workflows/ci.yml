@@ -49,7 +49,7 @@ jobs:
 
           node server.js > /tmp/watair.log 2>&1 &
           APP_PID=$!
-          trap 'kill $APP_PID 2>/dev/null || true' EXIT
+          trap 'STATUS=$?; if [ "$STATUS" -ne 0 ]; then echo "--- WatAir server log ---"; cat /tmp/watair.log || true; fi; kill $APP_PID 2>/dev/null || true; exit $STATUS' EXIT
 
           for i in {1..25}; do
             if curl -fsS http://127.0.0.1:8099/health > /tmp/health.json; then
