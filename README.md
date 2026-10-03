@@ -80,6 +80,7 @@ CMS features include:
 - enquiry inbox with read/delete controls
 - multiple administrator accounts and password resets
 - homepage/global settings
+- SMTP mail configuration and test delivery from Site settings
 - primary navigation management: rename, hide, reorder and add custom links/CTAs
 - water-quality, hygiene and maintenance guidance linked from products, checkout and legal terms
 - SEO titles and descriptions
@@ -119,7 +120,7 @@ PayPal uses sandbox unless `PAYPAL_ENV=live`.
 
 ## Contact enquiries
 
-Every successful contact submission is stored in SQLite. If SMTP is configured, a notification is also sent to `CONTACT_TO`. A temporary SMTP failure therefore does not discard the enquiry.
+Every successful contact submission is stored in SQLite. SMTP can be configured under **CMS → Site settings → Email delivery**; the `.env` SMTP values remain the fallback until CMS mail settings are saved. A temporary SMTP failure therefore does not discard the enquiry. The SMTP password is kept outside normal site settings, encrypted at rest using `SESSION_SECRET`, and is never displayed back in the CMS. If `SESSION_SECRET` is intentionally changed, re-enter the CMS SMTP password afterwards.
 
 The privacy notice describes enquiry and order information retained by the website. The cookie-preference control keeps optional analytics and marketing categories off unless the visitor opts in; no optional analytics or advertising integration is currently loaded by the application itself.
 
@@ -131,7 +132,7 @@ Before DNS cutover:
 2. Set a unique `SESSION_SECRET` of at least 32 characters and confirm production starts without configuration warnings.
 3. Set `TRUST_PROXY=1` when Plesk/nginx is the single reverse proxy so rate limiting sees the real client IP.
 4. Confirm the real administrator accounts and remove unused access.
-5. Configure SMTP and send a real contact-form test.
+5. Configure SMTP under **CMS → Site settings → Email delivery**, use **Save & send test email**, then submit a real contact-form test.
 6. Review every published product image and technical specification against the approved source material.
 7. Review the editable Terms of sale, Refunds & returns, Privacy and Cookie notices against the final business process.
 8. If e-commerce will be enabled, configure at least one payment provider, create delivery rules, opt specific products into online sales and complete a low-value live payment/refund test.
