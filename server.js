@@ -604,7 +604,7 @@ app.get('/products/:slug/datasheet.pdf', (req, res) => {
   doc.moveTo(48, footerY - 12).lineTo(547, footerY - 12).strokeColor('#d5e3e6').stroke();
   doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text('WatAir UK', 48, footerY);
   doc.fillColor(muted).fontSize(8.5).font('Helvetica').text(
-    `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watair.co.uk`,
+    `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watairuk.co.uk`,
     48, footerY + 15
   );
   doc.fillColor('#829aa1').fontSize(7.5).text('Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watairuk.co.uk/water-quality-maintenance', 48, footerY + 28, { width: 499, lineGap: 1 });
@@ -1005,6 +1005,9 @@ app.get('/.well-known/security.txt', (req,res) => {
 });
 
 app.get('/robots.txt', (req,res) => {
+  if (isProd && !isCanonicalRequest(req)) {
+    return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
+  }
   res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /buy/\nDisallow: /checkout/\nDisallow: /order/\nDisallow: /payments/\nSitemap: ${baseUrl}/sitemap.xml\n`);
 });
 
