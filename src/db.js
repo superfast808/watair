@@ -369,7 +369,7 @@ function seed() {
   const positioningRefreshKey = 'owner_positioning_refresh_2026_10_v1';
   if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(positioningRefreshKey)) {
     const tx = db.transaction(() => {
-      db.prepare("INSERT INTO settings(key,value) VALUES('footer_text','Atmospheric Water Generation solutions for the UK and Overseas.') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+      db.prepare("INSERT INTO settings(key,value) VALUES('footer_text','Atmospheric Water Generation solutions.') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
       db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(positioningRefreshKey, new Date().toISOString());
     });
     tx();
