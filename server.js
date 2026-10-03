@@ -37,6 +37,33 @@ const PORT = Number(process.env.PORT || 8080);
 const isProd = process.env.NODE_ENV === 'production';
 const baseUrl = (process.env.BASE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
 
+function configuredCanonicalHostname() {
+  try { return new URL(baseUrl).hostname.toLowerCase(); } catch { return ''; }
+}
+
+function isCanonicalRequest(req) {
+  const canonicalHost = configuredCanonicalHostname();
+  const requestHost = String(req.hostname || '').toLowerCase();
+  if (!canonicalHost || !requestHost) return false;
+  const canonicalBare = canonicalHost.replace(/^www\./, '');
+  const requestBare = requestHost.replace(/^www\./, '');
+  return canonicalBare === requestBare;
+}
+
+function presentationBaseUrl(req) {
+  if (isCanonicalRequest(req)) return baseUrl;
+
+  const rawHost = String(req.get('host') || '').trim();
+  if (!rawHost || /[\r\n]/.test(rawHost)) return baseUrl;
+  try {
+    const candidate = new URL(`${req.protocol}://${rawHost}`);
+    if (!['http:','https:'].includes(candidate.protocol)) return baseUrl;
+    return candidate.origin;
+  } catch {
+    return baseUrl;
+  }
+}
+
 if (isProd) {
   const sessionSecret = String(process.env.SESSION_SECRET || '');
   if (sessionSecret.length < 32 || sessionSecret === 'replace-with-at-least-32-random-characters') {
@@ -137,7 +164,11 @@ app.use((req, res, next) => {
   res.locals.settings = settingsObject();
   res.locals.navigationItems = db.prepare('SELECT * FROM navigation_items WHERE active=1 ORDER BY sort_order,id').all();
   res.locals.path = req.path;
-  res.locals.baseUrl = baseUrl;
+  res.locals.baseUrl = presentationBaseUrl(req);
+  res.locals.isCanonicalHost = isCanonicalRequest(req);
+  if (isProd && !res.locals.isCanonicalHost) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
   res.locals.admin = readAdmin(req);
   res.locals.currentYear = new Date().getFullYear();
   res.locals.assetVersion = appVersion;
@@ -281,7 +312,7 @@ function smtpConfiguration() {
       secure: values.smtp_secure === '1',
       user,
       password,
-      from: String(values.smtp_from || 'WatAir Website <website@watair.co.uk>').trim(),
+      from: String(values.smtp_from || 'WatAir Website <website@watairuk.co.uk>').trim(),
       to: recipient,
       passwordSet: Boolean(password),
       storedPasswordSet: Boolean(storedPassword),
@@ -303,7 +334,7 @@ function smtpConfiguration() {
     secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
     user,
     password,
-    from: String(process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>').trim(),
+    from: String(process.env.SMTP_FROM || 'WatAir Website <website@watairuk.co.uk>').trim(),
     to: recipient,
     passwordSet: Boolean(password),
     storedPasswordSet: false,
@@ -576,7 +607,7 @@ app.get('/products/:slug/datasheet.pdf', (req, res) => {
     `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watair.co.uk`,
     48, footerY + 15
   );
-  doc.fillColor('#829aa1').fontSize(7.5).text('Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watair.co.uk/water-quality-maintenance', 48, footerY + 28, { width: 499, lineGap: 1 });
+  doc.fillColor('#829aa1').fontSize(7.5).text('Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watairuk.co.uk/water-quality-maintenance', 48, footerY + 28, { width: 499, lineGap: 1 });
 
   doc.end();
 });
@@ -1221,7 +1252,7 @@ app.get('/admin', (req,res) => {
   const legalCommercePagesReady = ['terms','refunds','privacy','cookies'].every(slug => Boolean(getPage(slug)));
   let canonicalHost = '';
   try { canonicalHost = new URL(baseUrl).hostname.toLowerCase(); } catch {}
-  const canonicalReady = baseUrl.startsWith('https://') && ['watair.co.uk','www.watair.co.uk'].includes(canonicalHost);
+  const canonicalReady = baseUrl.startsWith('https://') && ['watairuk.co.uk','www.watairuk.co.uk'].includes(canonicalHost);
   const sessionSecretReady =
     String(process.env.SESSION_SECRET || '').length >= 32 &&
     process.env.SESSION_SECRET !== 'replace-with-at-least-32-random-characters';
@@ -1718,7 +1749,7 @@ function smtpSettingsFromBody(body) {
   if (body.smtp_enabled && !recipient) return { error: 'Enter at least one valid notification email address.' };
 
   const user = cleanMailHeader(body.smtp_user, 320);
-  const from = cleanMailHeader(body.smtp_from, 500) || 'WatAir Website <website@watair.co.uk>';
+  const from = cleanMailHeader(body.smtp_from, 500) || 'WatAir Website <website@watairuk.co.uk>';
 
   return {
     values: {
