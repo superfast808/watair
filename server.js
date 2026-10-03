@@ -267,7 +267,9 @@ function smtpConfiguration() {
   const cmsConfigured = values.smtp_configured === '1';
 
   if (cmsConfigured) {
-    const password = getStoredSecret('smtp_password') || String(process.env.SMTP_PASS || '');
+    const storedPassword = getStoredSecret('smtp_password');
+    const environmentPassword = String(process.env.SMTP_PASS || '');
+    const password = storedPassword || environmentPassword;
     const host = String(values.smtp_host || '').trim();
     const recipient = String(values.smtp_to || '').trim();
     const user = String(values.smtp_user || '').trim();
@@ -281,7 +283,9 @@ function smtpConfiguration() {
       password,
       from: String(values.smtp_from || 'WatAir Website <website@watair.co.uk>').trim(),
       to: recipient,
-      passwordSet: Boolean(getStoredSecret('smtp_password') || process.env.SMTP_PASS),
+      passwordSet: Boolean(password),
+      storedPasswordSet: Boolean(storedPassword),
+      environmentPasswordSet: Boolean(environmentPassword),
       canSend: Boolean(host && recipient && (!user || password)),
       ready: values.smtp_enabled === '1' && Boolean(host && recipient && (!user || password))
     };
@@ -302,9 +306,16 @@ function smtpConfiguration() {
     from: String(process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>').trim(),
     to: recipient,
     passwordSet: Boolean(password),
+    storedPasswordSet: false,
+    environmentPasswordSet: Boolean(password),
     canSend: Boolean(host && recipient && (!user || password)),
     ready: Boolean(host && recipient && (!user || password))
   };
+}
+
+function smtpAdminState() {
+  const { password, ...safeConfig } = smtpConfiguration();
+  return safeConfig;
 }
 
 function createMailTransport(config = smtpConfiguration()) {
@@ -1755,7 +1766,7 @@ function saveSmtpSettings(body) {
 app.get('/admin/settings', (req,res) => {
   res.render('admin/settings', {
     values: settingsObject(),
-    smtp: smtpConfiguration(),
+    smtp: smtpAdminState(),
     reqQuery: req.query,
     meta: { title: 'Site Settings | WatAir CMS' }
   });
