@@ -101,8 +101,16 @@
             <input name="smtp_user" value="<%= smtp.user || '' %>" autocomplete="off">
           </label>
           <label>Password
-            <input type="password" name="smtp_password" value="" autocomplete="new-password" placeholder="<%= smtp.passwordSet ? 'Stored securely — leave blank to keep' : 'SMTP password' %>">
-            <small><%= smtp.passwordSet ? 'A password is already available. It is never displayed back in the CMS.' : 'Leave blank if the SMTP server does not require authentication.' %></small>
+            <input type="password" name="smtp_password" value="" autocomplete="new-password" placeholder="<%= smtp.passwordSet ? 'Password available — leave blank to keep' : 'SMTP password' %>">
+            <small>
+              <% if(smtp.storedPasswordSet){ %>
+                An encrypted CMS password is stored and is never displayed back.
+              <% } else if(smtp.environmentPasswordSet){ %>
+                The password is currently supplied by the server environment. Enter one here to move it into encrypted CMS storage.
+              <% } else { %>
+                Leave blank if the SMTP server does not require authentication.
+              <% } %>
+            </small>
           </label>
           <label class="full">From address
             <input name="smtp_from" value="<%= smtp.from || '' %>" placeholder="WatAir Website <website@watair.co.uk>">
@@ -118,10 +126,10 @@
             <input type="checkbox" name="smtp_secure" <%= smtp.secure ? 'checked' : '' %>>
             <span>Use implicit TLS/SSL from connection start <small>Normally enabled for port 465; leave off for STARTTLS on port 587.</small></span>
           </label>
-          <% if(smtp.passwordSet){ %>
+          <% if(smtp.storedPasswordSet){ %>
             <label class="rule-active smtp-clear-password">
               <input type="checkbox" name="smtp_clear_password">
-              <span>Clear the stored CMS SMTP password</span>
+              <span>Clear the encrypted CMS SMTP password</span>
             </label>
           <% } %>
         </div>
