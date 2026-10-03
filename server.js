@@ -210,6 +210,110 @@ function setOrderStatus(publicId, status, gatewayRef = '') {
   `).run(status, gatewayRef, gatewayRef, publicId).changes;
 }
 
+function smtpSecretKey() {
+  return crypto.createHash('sha256')
+    .update(String(process.env.SESSION_SECRET || 'development-only-secret-change-me-please'))
+    .digest();
+}
+
+function encryptStoredSecret(value) {
+  const text = String(value || '');
+  if (!text) return '';
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', smtpSecretKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return ['v1', iv.toString('base64url'), tag.toString('base64url'), encrypted.toString('base64url')].join('.');
+}
+
+function decryptStoredSecret(value) {
+  const text = String(value || '');
+  if (!text) return '';
+  try {
+    const [version, ivText, tagText, encryptedText] = text.split('.');
+    if (version !== 'v1' || !ivText || !tagText || !encryptedText) return '';
+    const decipher = crypto.createDecipheriv('aes-256-gcm', smtpSecretKey(), Buffer.from(ivText, 'base64url'));
+    decipher.setAuthTag(Buffer.from(tagText, 'base64url'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(encryptedText, 'base64url')),
+      decipher.final()
+    ]).toString('utf8');
+  } catch (err) {
+    console.error('Stored SMTP password could not be decrypted:', err.message);
+    return '';
+  }
+}
+
+function getStoredSecret(key) {
+  const row = db.prepare('SELECT value FROM app_secrets WHERE key=?').get(key);
+  return row ? decryptStoredSecret(row.value) : '';
+}
+
+function setStoredSecret(key, value) {
+  const encrypted = encryptStoredSecret(value);
+  if (!encrypted) {
+    db.prepare('DELETE FROM app_secrets WHERE key=?').run(key);
+    return;
+  }
+  db.prepare(`
+    INSERT INTO app_secrets(key,value,updated_at)
+    VALUES(?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP
+  `).run(key, encrypted);
+}
+
+function smtpConfiguration() {
+  const values = settingsObject();
+  const cmsConfigured = values.smtp_configured === '1';
+
+  if (cmsConfigured) {
+    const password = getStoredSecret('smtp_password') || String(process.env.SMTP_PASS || '');
+    const host = String(values.smtp_host || '').trim();
+    const recipient = String(values.smtp_to || '').trim();
+    const user = String(values.smtp_user || '').trim();
+    return {
+      source: 'cms',
+      enabled: values.smtp_enabled === '1',
+      host,
+      port: Math.max(1, Math.min(65535, Number(values.smtp_port || 587) || 587)),
+      secure: values.smtp_secure === '1',
+      user,
+      password,
+      from: String(values.smtp_from || 'WatAir Website <website@watair.co.uk>').trim(),
+      to: recipient,
+      passwordSet: Boolean(getStoredSecret('smtp_password') || process.env.SMTP_PASS),
+      ready: values.smtp_enabled === '1' && Boolean(host && recipient && (!user || password))
+    };
+  }
+
+  const host = String(process.env.SMTP_HOST || '').trim();
+  const recipient = String(process.env.CONTACT_TO || '').trim();
+  const user = String(process.env.SMTP_USER || '').trim();
+  const password = String(process.env.SMTP_PASS || '');
+  return {
+    source: 'environment',
+    enabled: Boolean(host && recipient),
+    host,
+    port: Math.max(1, Math.min(65535, Number(process.env.SMTP_PORT || 587) || 587)),
+    secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
+    user,
+    password,
+    from: String(process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>').trim(),
+    to: recipient,
+    passwordSet: Boolean(password),
+    ready: Boolean(host && recipient && (!user || password))
+  };
+}
+
+function createMailTransport(config = smtpConfiguration()) {
+  return nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: config.user ? { user: config.user, pass: config.password } : undefined
+  });
+}
+
 async function notifyOrderIfNeeded(publicId) {
   if (!process.env.SMTP_HOST || !process.env.CONTACT_TO) return;
   const order = orderByPublicId(publicId);
