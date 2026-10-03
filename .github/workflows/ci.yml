@@ -259,7 +259,7 @@ jobs:
           grep -q 'Instagram URL' /tmp/admin-settings.html
           grep -q 'LinkedIn URL' /tmp/admin-settings.html
           grep -q 'Email delivery (SMTP)' /tmp/admin-settings.html
-          grep -q 'Save &amp; send test email' /tmp/admin-settings.html
+          grep -q 'Save & send test email' /tmp/admin-settings.html
           grep -q 'https://uk.linkedin.com/company/watair-uk' /tmp/home.html
           grep -q 'Add an admin user' /tmp/admin-users.html
           grep -q 'Generate secure password' /tmp/admin-users.html
