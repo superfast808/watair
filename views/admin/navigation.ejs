@@ -25,6 +25,15 @@
       <div class="navigation-count"><strong><%= items.length %></strong><span>items</span></div>
     </div>
 
+    <div class="navigation-live-preview">
+      <span class="navigation-live-label">Live menu</span>
+      <div class="navigation-live-items">
+        <% items.filter(item => item.active).forEach(item => { %>
+          <span class="navigation-live-pill <%= item.style === 'cta' ? 'is-cta' : '' %>"><%= item.label %></span>
+        <% }) %>
+      </div>
+    </div>
+
     <div class="navigation-list navigation-card-list">
       <% items.forEach((item,index) => {
         const simpleItem = item.item_type === 'custom' || item.builtin_key === 'contact';
@@ -48,6 +57,7 @@
           method="post"
           action="/admin/navigation/<%= item.id %>"
           data-navigation-card
+          data-navigation-id="<%= item.id %>"
         >
           <input type="hidden" name="_csrf" value="<%= csrf %>">
 
