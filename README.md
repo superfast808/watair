@@ -54,7 +54,7 @@ curl http://127.0.0.1:${HOST_PORT:-8093}/health
 
 The application binds to `127.0.0.1` on the host and is intended to sit behind Plesk/nginx, which terminates HTTPS.
 
-Before launch, `BASE_URL` must be the final canonical HTTPS domain because it drives canonical tags, Open Graph metadata, JSON-LD and the sitemap.
+Before launch, `BASE_URL` must be the final canonical HTTPS domain. Requests made on that live hostname use it for canonical tags, Open Graph metadata, JSON-LD and the sitemap. Requests made on a different test/staging hostname self-reference that hostname instead and are marked noindex, so sharing a preview link does not advertise or redirect users toward the production domain.
 
 ## Persistent data
 
