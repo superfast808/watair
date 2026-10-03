@@ -258,6 +258,8 @@ jobs:
           grep -q 'Facebook URL' /tmp/admin-settings.html
           grep -q 'Instagram URL' /tmp/admin-settings.html
           grep -q 'LinkedIn URL' /tmp/admin-settings.html
+          grep -q 'Email delivery (SMTP)' /tmp/admin-settings.html
+          grep -q 'Save &amp; send test email' /tmp/admin-settings.html
           grep -q 'https://uk.linkedin.com/company/watair-uk' /tmp/home.html
           grep -q 'Add an admin user' /tmp/admin-users.html
           grep -q 'Generate secure password' /tmp/admin-users.html
@@ -268,6 +270,55 @@ jobs:
           grep -q 'CI Buyer' /tmp/admin-orders.html
           grep -q '£1,324.00' /tmp/admin-orders.html
           grep -q '"assets"' /tmp/admin-assets.json
+
+          ADMIN_CSRF=$(TOKEN="$TOKEN" node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHmac('sha256',process.env.SESSION_SECRET).update(process.env.TOKEN).digest('hex'))")
+          curl -sS -o /dev/null -D /tmp/smtp-save-headers.txt \
+            -H "$AUTH" \
+            -X POST http://127.0.0.1:8099/admin/settings \
+            --data-urlencode "_csrf=$ADMIN_CSRF" \
+            --data-urlencode 'site_name=WatAir UK' \
+            --data-urlencode 'company_location=Glasgow, United Kingdom' \
+            --data-urlencode 'email=info@watairuk.co.uk' \
+            --data-urlencode 'phone=0141 442 0201' \
+            --data-urlencode 'footer_text=Atmospheric Water Generation solutions.' \
+            --data-urlencode 'hero_title=Water from air. Wherever you need it.' \
+            --data-urlencode 'hero_text=Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.' \
+            --data-urlencode 'hero_image=/uploads/imported/legacy/media/1027/contact-banner.jpg' \
+            --data-urlencode 'hero_image_style=photo' \
+            --data-urlencode 'catalogue_hero_eyebrow=Atmospheric Water Generators' \
+            --data-urlencode 'catalogue_hero_title=Water generation at every scale' \
+            --data-urlencode 'catalogue_hero_text=From compact systems to industrial-scale generation.' \
+            --data-urlencode 'catalogue_hero_image=/uploads/imported/legacy/images/home/products.jpg' \
+            --data-urlencode 'catalogue_hero_image_style=graphic' \
+            --data-urlencode 'linkedin_url=https://uk.linkedin.com/company/watair-uk' \
+            --data-urlencode 'smtp_enabled=1' \
+            --data-urlencode 'smtp_host=smtp.example.test' \
+            --data-urlencode 'smtp_port=587' \
+            --data-urlencode 'smtp_user=ci-smtp-user' \
+            --data-urlencode 'smtp_password=CI-SMTP-secret-987654321' \
+            --data-urlencode 'smtp_from=WatAir CI <ci@example.com>' \
+            --data-urlencode 'smtp_to=ci@example.com'
+
+          grep -q '302' /tmp/smtp-save-headers.txt
+          node <<'NODE'
+          const Database = require('better-sqlite3');
+          const db = new Database('data/watair.db');
+          const secret = db.prepare("SELECT value FROM app_secrets WHERE key='smtp_password'").get();
+          if (!secret || !secret.value.startsWith('v1.') || secret.value.includes('CI-SMTP-secret-987654321')) {
+            throw new Error('SMTP password was not stored as encrypted secret data');
+          }
+          if (db.prepare("SELECT 1 FROM settings WHERE key='smtp_password'").get()) {
+            throw new Error('SMTP password leaked into ordinary settings');
+          }
+          const smtpHost = db.prepare("SELECT value FROM settings WHERE key='smtp_host'").get();
+          if (smtpHost?.value !== 'smtp.example.test') throw new Error('SMTP host was not saved');
+          db.close();
+          NODE
+
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings-smtp.html
+          grep -q 'Using CMS configuration' /tmp/admin-settings-smtp.html
+          grep -q 'encrypted CMS password is stored' /tmp/admin-settings-smtp.html
+          ! grep -q 'CI-SMTP-secret-987654321' /tmp/admin-settings-smtp.html
 
       - name: Reject unsafe first-boot admin credentials
         env:
