@@ -1653,12 +1653,12 @@ app.post('/admin/navigation/new', requireCsrf, (req,res) => {
   if (!label || !url) return res.status(400).send('A label and valid internal or external URL are required.');
 
   const nextOrder = Number(db.prepare('SELECT COALESCE(MAX(sort_order),0) n FROM navigation_items').get().n || 0) + 10;
-  db.prepare(`
+  const result = db.prepare(`
     INSERT INTO navigation_items(label,url,item_type,style,sort_order,active,new_window)
     VALUES(?,?,'custom',?,?,1,?)
   `).run(label, url, style, nextOrder, req.body.new_window ? 1 : 0);
 
-  res.redirect('/admin/navigation?created=1');
+  res.redirect('/admin/navigation?created=' + result.lastInsertRowid);
 });
 
 app.post('/admin/navigation/:id', requireCsrf, (req,res) => {
@@ -1692,7 +1692,7 @@ app.post('/admin/navigation/:id', requireCsrf, (req,res) => {
     item.id
   );
 
-  res.redirect('/admin/navigation?saved=1');
+  res.redirect('/admin/navigation?saved=' + item.id);
 });
 
 app.post('/admin/navigation/:id/move', requireCsrf, (req,res) => {
