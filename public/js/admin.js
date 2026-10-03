@@ -29,6 +29,36 @@
     });
   });
 
+  // Navigation manager: keep the menu overview compact and reveal editing
+  // controls only for the item being worked on.
+  document.querySelectorAll('[data-navigation-edit]').forEach(button => {
+    button.addEventListener('click', () => {
+      const card = button.closest('[data-navigation-card]');
+      const panel = card?.querySelector('[data-navigation-panel]');
+      if (!card || !panel) return;
+
+      const opening = panel.hidden;
+      document.querySelectorAll('[data-navigation-card].is-open').forEach(openCard => {
+        if (openCard === card) return;
+        const openPanel = openCard.querySelector('[data-navigation-panel]');
+        const openButton = openCard.querySelector('[data-navigation-edit]');
+        if (openPanel) openPanel.hidden = true;
+        openCard.classList.remove('is-open');
+        openButton?.setAttribute('aria-expanded', 'false');
+      });
+
+      panel.hidden = !opening;
+      card.classList.toggle('is-open', opening);
+      button.setAttribute('aria-expanded', opening ? 'true' : 'false');
+      button.querySelector('span:first-child').textContent = opening ? 'Close editor' : 'Edit item';
+
+      if (opening) {
+        const firstField = panel.querySelector('input:not([type="checkbox"]):not(:disabled), select:not(:disabled)');
+        firstField?.focus({ preventScroll: true });
+      }
+    });
+  });
+
   // Product deletion requires typing the exact product name before submit.
   document.querySelectorAll('[data-delete-product]').forEach(button => {
     button.addEventListener('click', event => {
