@@ -16,6 +16,7 @@
   const usePhotoHero = heroStyle === 'photo';
   const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
   const isMaintenance = page.slug === 'water-quality-maintenance';
+  const isPrivacy = page.slug === 'privacy';
   const isLegal = ['privacy','terms','refunds','cookies'].includes(page.slug);
   const crumbs = [
     { label: 'Home', href: '/' },
@@ -37,9 +38,9 @@
   </div>
 </section>
 
-<section class="section-tight prose-shell">
+<section class="section-tight prose-shell <%= isPrivacy ? 'prose-shell-single' : '' %>">
   <article class="prose"><%- page.body_html %></article>
-  <% if(isLegal){ %>
+  <% if(isLegal && !isPrivacy){ %>
     <aside class="page-side-card">
       <p class="eyebrow">Legal & ordering</p>
       <h3>Policies for enquiries and online purchases.</h3>
@@ -71,7 +72,12 @@
   <% } %>
 </section>
 
-<% if(isLegal){ %>
+<% if(isPrivacy){ %>
+<section class="cta-panel cta-dark">
+  <div><p class="eyebrow">Privacy questions?</p><h2>Want to know more about how we handle your information?</h2><p>Contact WatAir if you have a question about personal information, privacy or your data rights.</p></div>
+  <a class="button button-aqua" href="/contact">Contact WatAir</a>
+</section>
+<% } else if(isLegal){ %>
 <section class="cta-panel cta-dark">
   <div><p class="eyebrow">Questions?</p><h2>Need to discuss an order or policy?</h2><p>Contact WatAir with the order reference where relevant and we can help with the next step.</p></div>
   <a class="button button-aqua" href="/contact">Contact WatAir</a>
