@@ -282,6 +282,7 @@ function smtpConfiguration() {
       from: String(values.smtp_from || 'WatAir Website <website@watair.co.uk>').trim(),
       to: recipient,
       passwordSet: Boolean(getStoredSecret('smtp_password') || process.env.SMTP_PASS),
+      canSend: Boolean(host && recipient && (!user || password)),
       ready: values.smtp_enabled === '1' && Boolean(host && recipient && (!user || password))
     };
   }
@@ -301,6 +302,7 @@ function smtpConfiguration() {
     from: String(process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>').trim(),
     to: recipient,
     passwordSet: Boolean(password),
+    canSend: Boolean(host && recipient && (!user || password)),
     ready: Boolean(host && recipient && (!user || password))
   };
 }
@@ -1681,21 +1683,115 @@ app.post('/admin/navigation/:id/delete', requireCsrf, (req,res) => {
   res.redirect('/admin/navigation?deleted=1');
 });
 
-app.get('/admin/settings', (req,res) => {
-  res.render('admin/settings', { values: settingsObject(), meta: { title: 'Site Settings | WatAir CMS' } });
-});
-app.post('/admin/settings', requireCsrf, (req,res) => {
+function cleanMailHeader(value, maxLength = 500) {
+  return String(value || '').replace(/[\r\n]+/g, ' ').trim().slice(0, maxLength);
+}
+
+function smtpRecipients(value) {
+  const addresses = cleanMailHeader(value, 1000)
+    .split(/[;,]/)
+    .map(item => item.trim())
+    .filter(Boolean);
+  if (!addresses.length || addresses.some(address => !validEmail(address))) return null;
+  return addresses.join(', ');
+}
+
+function smtpSettingsFromBody(body) {
+  const host = cleanMailHeader(body.smtp_host, 255).toLowerCase();
+  if (host && !/^[a-z0-9.-]+$/i.test(host)) return { error: 'Enter a valid SMTP host name.' };
+
+  const port = Number.parseInt(body.smtp_port || '587', 10);
+  if (!Number.isFinite(port) || port < 1 || port > 65535) return { error: 'SMTP port must be between 1 and 65535.' };
+
+  const recipient = smtpRecipients(body.smtp_to);
+  if (body.smtp_enabled && !recipient) return { error: 'Enter at least one valid notification email address.' };
+
+  const user = cleanMailHeader(body.smtp_user, 320);
+  const from = cleanMailHeader(body.smtp_from, 500) || 'WatAir Website <website@watair.co.uk>';
+
+  return {
+    values: {
+      smtp_configured: '1',
+      smtp_enabled: body.smtp_enabled ? '1' : '0',
+      smtp_host: host,
+      smtp_port: String(port),
+      smtp_secure: body.smtp_secure ? '1' : '0',
+      smtp_user: user,
+      smtp_from: from,
+      smtp_to: recipient || ''
+    },
+    password: String(body.smtp_password || ''),
+    clearPassword: Boolean(body.smtp_clear_password)
+  };
+}
+
+function saveSiteSettings(body) {
   const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','catalogue_hero_eyebrow','catalogue_hero_title','catalogue_hero_text','catalogue_hero_image','catalogue_hero_image_style','footer_text','company_location','facebook_url','instagram_url','linkedin_url'];
   const socialKeys = new Set(['facebook_url','instagram_url','linkedin_url']);
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
-  const tx = db.transaction(() => allowed.forEach(k => {
-    const value = socialKeys.has(k)
-      ? cleanExternalUrl(req.body[k])
-      : String(req.body[k] || '').slice(0,2000);
-    upsert.run(k, value);
+  const tx = db.transaction(() => allowed.forEach(key => {
+    const value = socialKeys.has(key)
+      ? cleanExternalUrl(body[key])
+      : String(body[key] || '').slice(0,2000);
+    upsert.run(key, value);
   }));
   tx();
+}
+
+function saveSmtpSettings(body) {
+  const parsed = smtpSettingsFromBody(body);
+  if (parsed.error) return parsed.error;
+
+  const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+  const tx = db.transaction(() => Object.entries(parsed.values).forEach(([key,value]) => upsert.run(key,value)));
+  tx();
+
+  if (parsed.clearPassword) setStoredSecret('smtp_password', '');
+  else if (parsed.password) setStoredSecret('smtp_password', parsed.password);
+
+  return null;
+}
+
+app.get('/admin/settings', (req,res) => {
+  res.render('admin/settings', {
+    values: settingsObject(),
+    smtp: smtpConfiguration(),
+    reqQuery: req.query,
+    meta: { title: 'Site Settings | WatAir CMS' }
+  });
+});
+
+app.post('/admin/settings', requireCsrf, (req,res) => {
+  saveSiteSettings(req.body);
+  const smtpError = saveSmtpSettings(req.body);
+  if (smtpError) return res.redirect('/admin/settings?smtp_error=' + encodeURIComponent(smtpError));
   res.redirect('/admin/settings?saved=1');
+});
+
+app.post('/admin/settings/smtp/test', requireCsrf, async (req,res) => {
+  saveSiteSettings(req.body);
+  const smtpError = saveSmtpSettings(req.body);
+  if (smtpError) return res.redirect('/admin/settings?smtp_error=' + encodeURIComponent(smtpError));
+
+  const config = smtpConfiguration();
+  if (!config.canSend) {
+    return res.redirect('/admin/settings?smtp_error=' + encodeURIComponent('SMTP is incomplete. Check the host, recipient and authentication details.'));
+  }
+
+  try {
+    const transport = createMailTransport(config);
+    await transport.verify();
+    await transport.sendMail({
+      from: config.from,
+      to: config.to,
+      subject: 'WatAir SMTP test',
+      text: `This is a test email from the WatAir website CMS.\n\nSMTP host: ${config.host}\nPort: ${config.port}\nSecure connection: ${config.secure ? 'yes' : 'no'}\n\nIf you received this message, website email delivery is working.`
+    });
+    res.redirect('/admin/settings?smtp_test=sent');
+  } catch (err) {
+    console.error('SMTP test failed:', err.message);
+    res.redirect('/admin/settings?smtp_error=' + encodeURIComponent(String(err.message || 'SMTP test failed.').slice(0, 220)));
+  }
 });
 
 app.get('/admin/commerce', (req,res) => {
