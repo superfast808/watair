@@ -231,7 +231,7 @@ function seed() {
     catalogue_hero_text: 'From compact hot-and-cold dispensers to industrial systems rated at up to 10,000 litres per day.',
     catalogue_hero_image: '/uploads/imported/legacy/images/home/products.jpg',
     catalogue_hero_image_style: 'graphic',
-    footer_text: 'Atmospheric Water Generation solutions for the UK and Overseas.',
+    footer_text: 'Atmospheric Water Generation solutions.',
     company_location: 'Glasgow, United Kingdom',
     facebook_url: '',
     instagram_url: '',
@@ -375,8 +375,20 @@ function seed() {
     tx();
   }
 
-  // Remove incidental UK-only wording from editable core pages while
-  // preserving the approved "UK and Overseas" positioning line.
+  // Remove the previous UK/Overseas positioning from existing installs without
+  // overwriting a footer description that has since been edited in the CMS.
+  const genericPositioningKey = 'owner_generic_positioning_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(genericPositioningKey)) {
+    db.prepare(`
+      UPDATE settings
+      SET value='Atmospheric Water Generation solutions.'
+      WHERE key='footer_text'
+        AND value='Atmospheric Water Generation solutions for the UK and Overseas.'
+    `).run();
+    db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(genericPositioningKey, new Date().toISOString());
+  }
+
+  // Remove incidental UK-only wording from editable core pages.
   const globalCopyRefreshKey = 'owner_global_copy_refresh_2026_10_v1';
   if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(globalCopyRefreshKey)) {
     const tx = db.transaction(() => {
