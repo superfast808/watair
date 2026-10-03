@@ -31,6 +31,24 @@
 
   // Navigation manager: keep the menu overview compact and reveal editing
   // controls only for the item being worked on.
+  function setNavigationEditor(card, open, focus = false) {
+    if (!card) return;
+    const panel = card.querySelector('[data-navigation-panel]');
+    const button = card.querySelector('[data-navigation-edit]');
+    if (!panel || !button) return;
+
+    panel.hidden = !open;
+    card.classList.toggle('is-open', open);
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const label = button.querySelector('span:first-child');
+    if (label) label.textContent = open ? 'Close editor' : 'Edit item';
+
+    if (open && focus) {
+      const firstField = panel.querySelector('input:not([type="checkbox"]):not(:disabled), select:not(:disabled)');
+      firstField?.focus({ preventScroll: true });
+    }
+  }
+
   document.querySelectorAll('[data-navigation-edit]').forEach(button => {
     button.addEventListener('click', () => {
       const card = button.closest('[data-navigation-card]');
@@ -39,25 +57,20 @@
 
       const opening = panel.hidden;
       document.querySelectorAll('[data-navigation-card].is-open').forEach(openCard => {
-        if (openCard === card) return;
-        const openPanel = openCard.querySelector('[data-navigation-panel]');
-        const openButton = openCard.querySelector('[data-navigation-edit]');
-        if (openPanel) openPanel.hidden = true;
-        openCard.classList.remove('is-open');
-        openButton?.setAttribute('aria-expanded', 'false');
+        if (openCard !== card) setNavigationEditor(openCard, false);
       });
-
-      panel.hidden = !opening;
-      card.classList.toggle('is-open', opening);
-      button.setAttribute('aria-expanded', opening ? 'true' : 'false');
-      button.querySelector('span:first-child').textContent = opening ? 'Close editor' : 'Edit item';
-
-      if (opening) {
-        const firstField = panel.querySelector('input:not([type="checkbox"]):not(:disabled), select:not(:disabled)');
-        firstField?.focus({ preventScroll: true });
-      }
+      setNavigationEditor(card, opening, opening);
     });
   });
+
+  const navigationContextId = params.get('saved') || params.get('created');
+  if (navigationContextId && /^\d+$/.test(navigationContextId)) {
+    const card = document.querySelector(`[data-navigation-card][data-navigation-id="${navigationContextId}"]`);
+    if (card) {
+      setNavigationEditor(card, true);
+      requestAnimationFrame(() => card.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+    }
+  }
 
   // Product deletion requires typing the exact product name before submit.
   document.querySelectorAll('[data-delete-product]').forEach(button => {
