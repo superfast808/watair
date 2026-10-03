@@ -4,7 +4,7 @@
   <div>
     <p>Website structure</p>
     <h1>Navigation</h1>
-    <span class="page-help">Rename, reorder and hide the main navigation. Add custom internal or external links without changing code.</span>
+    <span class="page-help">Arrange the main menu, rename built-in sections and add your own links without changing code.</span>
   </div>
   <a class="secondary-button button-link" href="/" target="_blank" rel="noopener">Preview website ↗</a>
 </header>
@@ -12,104 +12,204 @@
 <% if(reqQuery?.created){ %><div class="alert admin-alert navigation-success"><strong>Custom link added.</strong></div><% } %>
 <% if(reqQuery?.saved){ %><div class="alert admin-alert navigation-success"><strong>Navigation updated.</strong></div><% } %>
 <% if(reqQuery?.deleted){ %><div class="alert admin-alert navigation-success"><strong>Custom link deleted.</strong></div><% } %>
+<% if(reqQuery?.moved){ %><div class="alert admin-alert navigation-success"><strong>Menu order updated.</strong></div><% } %>
 
-<div class="navigation-admin-layout">
-  <section class="admin-card navigation-manager">
-    <div class="card-head">
+<div class="navigation-admin-layout navigation-admin-layout-polished">
+  <section class="admin-card navigation-manager navigation-manager-polished">
+    <div class="navigation-manager-head">
       <div>
         <p class="admin-kicker">Primary navigation</p>
-        <h2>Menu items</h2>
-        <p>The four built-in dropdowns keep their existing menu contents. Their labels, visibility and position can be changed here. Custom links and the contact button can also have their destination and style changed.</p>
+        <h2>Menu structure</h2>
+        <p>Use the arrows to change the order. Open an item only when you need to rename it or change its behaviour.</p>
       </div>
+      <div class="navigation-count"><strong><%= items.length %></strong><span>items</span></div>
     </div>
 
-    <div class="navigation-list">
-      <% items.forEach((item,index) => { 
+    <div class="navigation-list navigation-card-list">
+      <% items.forEach((item,index) => {
         const simpleItem = item.item_type === 'custom' || item.builtin_key === 'contact';
+        const itemType = item.item_type === 'custom'
+          ? (item.style === 'cta' ? 'Custom CTA' : 'Custom link')
+          : item.builtin_key === 'contact'
+            ? 'Contact CTA'
+            : 'Built-in dropdown';
+        const destinationText = simpleItem
+          ? item.url
+          : item.builtin_key === 'products'
+            ? 'Product catalogue menu'
+            : item.builtin_key === 'how-it-works'
+              ? 'How it works menu'
+              : item.builtin_key === 'environment'
+                ? 'Environment menu'
+                : 'About menu';
       %>
-        <form class="navigation-row" method="post" action="/admin/navigation/<%= item.id %>">
+        <form
+          class="navigation-item-card <%= item.active ? '' : 'is-hidden' %>"
+          method="post"
+          action="/admin/navigation/<%= item.id %>"
+          data-navigation-card
+        >
           <input type="hidden" name="_csrf" value="<%= csrf %>">
 
-          <div class="navigation-row-order">
-            <span><%= index + 1 %></span>
-            <div>
-              <button type="submit" formaction="/admin/navigation/<%= item.id %>/move" name="direction" value="up" class="nav-order-button" aria-label="Move <%= item.label %> up" <%= index === 0 ? 'disabled' : '' %>>↑</button>
-              <button type="submit" formaction="/admin/navigation/<%= item.id %>/move" name="direction" value="down" class="nav-order-button" aria-label="Move <%= item.label %> down" <%= index === items.length - 1 ? 'disabled' : '' %>>↓</button>
+          <div class="navigation-item-summary">
+            <div class="navigation-position" aria-label="Menu position <%= index + 1 %>">
+              <span><%= index + 1 %></span>
             </div>
+
+            <div class="navigation-item-main">
+              <div class="navigation-item-title-row">
+                <strong><%= item.label %></strong>
+                <span class="navigation-type-badge <%= item.item_type === 'custom' ? 'is-custom' : '' %>"><%= itemType %></span>
+                <span class="navigation-status-badge <%= item.active ? 'is-live' : 'is-off' %>"><%= item.active ? 'Visible' : 'Hidden' %></span>
+              </div>
+              <span class="navigation-item-destination"><%= destinationText %></span>
+            </div>
+
+            <div class="navigation-move-controls" aria-label="Reorder <%= item.label %>">
+              <button
+                type="submit"
+                formaction="/admin/navigation/<%= item.id %>/move"
+                name="direction"
+                value="up"
+                class="nav-order-button nav-order-button-large"
+                aria-label="Move <%= item.label %> up"
+                title="Move up"
+                <%= index === 0 ? 'disabled' : '' %>
+              >↑</button>
+              <button
+                type="submit"
+                formaction="/admin/navigation/<%= item.id %>/move"
+                name="direction"
+                value="down"
+                class="nav-order-button nav-order-button-large"
+                aria-label="Move <%= item.label %> down"
+                title="Move down"
+                <%= index === items.length - 1 ? 'disabled' : '' %>
+              >↓</button>
+            </div>
+
+            <button
+              class="navigation-edit-toggle"
+              type="button"
+              data-navigation-edit
+              aria-expanded="false"
+              aria-controls="navigation-edit-<%= item.id %>"
+            >
+              <span>Edit item</span>
+              <span class="navigation-edit-chevron" aria-hidden="true">⌄</span>
+            </button>
           </div>
 
-          <label class="navigation-label-field">Label
-            <input name="label" maxlength="100" value="<%= item.label %>" required>
-            <small><%= item.item_type === 'builtin' ? (item.builtin_key === 'contact' ? 'Built-in contact item' : 'Built-in dropdown') : 'Custom link' %></small>
-          </label>
+          <div class="navigation-item-editor" id="navigation-edit-<%= item.id %>" data-navigation-panel hidden>
+            <div class="navigation-editor-grid">
+              <label class="navigation-label-field">Menu label
+                <input name="label" maxlength="100" value="<%= item.label %>" required>
+                <small>This is the text visitors see in the main menu.</small>
+              </label>
 
-          <label class="navigation-url-field">Destination
-            <% if(simpleItem){ %>
-              <input name="url" maxlength="500" value="<%= item.url %>" required placeholder="/page or https://example.com">
-            <% } else { %>
-              <input value="Managed built-in dropdown" disabled>
-            <% } %>
-          </label>
+              <label class="navigation-url-field">Destination
+                <% if(simpleItem){ %>
+                  <input name="url" maxlength="500" value="<%= item.url %>" required placeholder="/page or https://example.com">
+                  <small>Internal path, external URL, anchor, email or telephone link.</small>
+                <% } else { %>
+                  <input value="<%= destinationText %>" disabled>
+                  <small>The dropdown destination is managed by the built-in site structure.</small>
+                <% } %>
+              </label>
 
-          <label>Style
-            <% if(simpleItem){ %>
-              <select name="style">
-                <option value="link" <%= item.style === 'link' ? 'selected' : '' %>>Standard link</option>
-                <option value="cta" <%= item.style === 'cta' ? 'selected' : '' %>>CTA button</option>
-              </select>
-            <% } else { %>
-              <select disabled><option>Dropdown</option></select>
-            <% } %>
-          </label>
+              <label>Presentation
+                <% if(simpleItem){ %>
+                  <select name="style">
+                    <option value="link" <%= item.style === 'link' ? 'selected' : '' %>>Standard menu link</option>
+                    <option value="cta" <%= item.style === 'cta' ? 'selected' : '' %>>CTA button</option>
+                  </select>
+                <% } else { %>
+                  <select disabled><option>Dropdown menu</option></select>
+                <% } %>
+              </label>
 
-          <label class="navigation-order-field">Order
-            <input type="number" name="sort_order" value="<%= item.sort_order %>" min="-9999" max="99999">
-          </label>
+              <label>Position
+                <input type="number" name="sort_order" value="<%= item.sort_order %>" min="-9999" max="99999">
+                <small>Usually easier to use the arrows above.</small>
+              </label>
+            </div>
 
-          <div class="navigation-switches">
-            <label class="rule-active"><input type="checkbox" name="active" <%= item.active ? 'checked' : '' %>><span>Visible</span></label>
-            <% if(simpleItem){ %><label class="rule-active"><input type="checkbox" name="new_window" <%= item.new_window ? 'checked' : '' %>><span>New tab</span></label><% } %>
-          </div>
+            <div class="navigation-editor-footer">
+              <div class="navigation-option-pills">
+                <label class="navigation-option-pill">
+                  <input type="checkbox" name="active" <%= item.active ? 'checked' : '' %>>
+                  <span>Show in menu</span>
+                </label>
+                <% if(simpleItem){ %>
+                  <label class="navigation-option-pill">
+                    <input type="checkbox" name="new_window" <%= item.new_window ? 'checked' : '' %>>
+                    <span>Open in new tab</span>
+                  </label>
+                <% } %>
+              </div>
 
-          <div class="navigation-row-actions">
-            <button class="secondary-button" type="submit">Save</button>
-            <% if(item.item_type === 'custom'){ %>
-              <button class="danger-button" type="submit" formaction="/admin/navigation/<%= item.id %>/delete" formnovalidate data-confirm-action="Delete this custom navigation link?">Delete</button>
-            <% } %>
+              <div class="navigation-row-actions">
+                <% if(item.item_type === 'custom'){ %>
+                  <button
+                    class="danger-button"
+                    type="submit"
+                    formaction="/admin/navigation/<%= item.id %>/delete"
+                    formnovalidate
+                    data-confirm-action="Delete this custom navigation link?"
+                  >Delete</button>
+                <% } %>
+                <button class="admin-button" type="submit">Save item</button>
+              </div>
+            </div>
           </div>
         </form>
       <% }) %>
     </div>
   </section>
 
-  <aside>
-    <form class="admin-card editor-section navigation-add" method="post" action="/admin/navigation/new">
+  <aside class="navigation-side-column">
+    <form class="admin-card navigation-add navigation-add-polished" method="post" action="/admin/navigation/new">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <div class="section-heading compact">
-        <div><h2>Add custom link</h2><p>Add another top-level navigation item. It will initially appear at the end and can then be moved wherever you want it.</p></div>
+
+      <div class="navigation-add-icon" aria-hidden="true">+</div>
+      <div>
+        <p class="admin-kicker">Add to menu</p>
+        <h2>Custom link</h2>
+        <p class="navigation-add-intro">Add another top-level item for a page, campaign, external site or call to action.</p>
       </div>
 
       <label>Link label
         <input name="label" maxlength="100" required placeholder="e.g. Case studies">
       </label>
+
       <label>Destination
         <input name="url" maxlength="500" required placeholder="/case-studies or https://…">
-        <small>Internal paths, full HTTPS links, anchors, mailto: and tel: links are supported.</small>
+        <small>Internal paths, HTTPS links, anchors, mailto: and tel: links are supported.</small>
       </label>
-      <label>Style
-        <select name="style">
-          <option value="link">Standard link</option>
-          <option value="cta">CTA button</option>
-        </select>
-      </label>
-      <label class="rule-active"><input type="checkbox" name="new_window"><span>Open in a new tab</span></label>
-      <button class="admin-button wide-button" type="submit">Add custom link</button>
+
+      <div class="navigation-add-options">
+        <label>Presentation
+          <select name="style">
+            <option value="link">Standard menu link</option>
+            <option value="cta">CTA button</option>
+          </select>
+        </label>
+        <label class="navigation-option-pill">
+          <input type="checkbox" name="new_window">
+          <span>Open in new tab</span>
+        </label>
+      </div>
+
+      <button class="admin-button wide-button" type="submit">Add to navigation</button>
     </form>
 
-    <section class="admin-card navigation-guidance">
-      <p class="admin-kicker">Built-in menus</p>
-      <h2>Safe to reorganise</h2>
-      <p>Products, How it works, Environment and About are protected because they contain structured dropdowns. Hide or rename them here rather than deleting them. Their internal dropdown links continue to follow the WatAir site structure.</p>
+    <section class="admin-card navigation-guidance navigation-guidance-polished">
+      <div class="navigation-guidance-icon" aria-hidden="true">i</div>
+      <div>
+        <p class="admin-kicker">Built-in menus</p>
+        <h2>Protected where it matters</h2>
+        <p>Products, How it works, Environment and About contain structured dropdowns. You can rename, hide and move them, but they cannot be deleted accidentally.</p>
+      </div>
     </section>
   </aside>
 </div>
