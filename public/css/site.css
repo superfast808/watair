@@ -100,6 +100,8 @@
 
 .prose-shell{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:70px;align-items:start}
 .prose-shell .prose{max-width:none}
+.prose-shell-single{grid-template-columns:minmax(0,1fr)}
+.prose-shell-single .prose{max-width:1000px}
 .page-side-card{position:sticky;top:105px;background:var(--mist);border:1px solid var(--line);border-radius:18px;padding:25px}
 .page-side-card h3{font-size:23px;line-height:1.08;letter-spacing:-.035em;margin:0 0 22px}
 .page-side-card>a{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:13px;font-weight:750}
