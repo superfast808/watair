@@ -112,7 +112,7 @@ Product prices are currently treated as the final customer-facing product amount
 
 For Stripe, configure the live webhook endpoint as:
 
-`POST https://watair.co.uk/payments/stripe/webhook`
+`POST https://watairuk.co.uk/payments/stripe/webhook`
 
 and subscribe at minimum to Checkout Session completion/expiry and asynchronous payment success/failure events.
 
@@ -128,7 +128,7 @@ The privacy notice describes enquiry and order information retained by the websi
 
 Before DNS cutover:
 
-1. Set `BASE_URL=https://watair.co.uk`.
+1. Set `BASE_URL=https://watairuk.co.uk`.
 2. Set a unique `SESSION_SECRET` of at least 32 characters and confirm production starts without configuration warnings.
 3. Set `TRUST_PROXY=1` when Plesk/nginx is the single reverse proxy so rate limiting sees the real client IP.
 4. Confirm the real administrator accounts and remove unused access.
