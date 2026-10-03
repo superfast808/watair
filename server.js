@@ -315,7 +315,8 @@ function createMailTransport(config = smtpConfiguration()) {
 }
 
 async function notifyOrderIfNeeded(publicId) {
-  if (!process.env.SMTP_HOST || !process.env.CONTACT_TO) return;
+  const mailConfig = smtpConfiguration();
+  if (!mailConfig.ready) return;
   const order = orderByPublicId(publicId);
   if (!order || !['paid','awaiting_payment'].includes(order.status)) return;
 
@@ -326,12 +327,7 @@ async function notifyOrderIfNeeded(publicId) {
   if (!claim.changes) return;
 
   try {
-    const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
-      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
-    });
+    const transport = createMailTransport(mailConfig);
     const orderRef = order.public_id.slice(0,8).toUpperCase();
     const paid = order.status === 'paid';
     const subject = paid
@@ -353,15 +349,15 @@ async function notifyOrderIfNeeded(publicId) {
     ].join('\n');
 
     await transport.sendMail({
-      from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
-      to: process.env.CONTACT_TO,
+      from: mailConfig.from,
+      to: mailConfig.to,
       replyTo: order.customer_email,
       subject,
       text: summary
     });
 
     await transport.sendMail({
-      from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
+      from: mailConfig.from,
       to: order.customer_email,
       subject: paid ? `WatAir order ${orderRef} confirmed` : `WatAir order ${orderRef} received`,
       text: `Hello ${order.customer_name},\n\n${paid ? 'We have received payment for your WatAir order.' : 'We have received your WatAir order. The team will contact you about the manual payment arrangement.'}\n\n${order.product_name} x ${order.quantity}\nDelivery: ${formatMoney(order.delivery_minor, order.currency)}\nTotal: ${formatMoney(order.total_minor, order.currency)}\n\nOrder status: ${baseUrl}/order/${order.public_id}\nRefunds and returns: ${baseUrl}/refunds\nOperation & water-quality guidance: ${baseUrl}/water-quality-maintenance\n\nWatAir`
@@ -924,17 +920,13 @@ app.post('/contact', contactLimiter, async (req, res) => {
   db.prepare(`INSERT INTO enquiries(name,company,email,phone,interest,message,ip) VALUES(?,?,?,?,?,?,?)`)
     .run(name, company, email, phone, interest, message, String(req.ip || '').slice(0, 120));
 
-  if (process.env.SMTP_HOST && process.env.CONTACT_TO) {
+  const mailConfig = smtpConfiguration();
+  if (mailConfig.ready) {
     try {
-      const transport = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
-        auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
-      });
+      const transport = createMailTransport(mailConfig);
       await transport.sendMail({
-        from: process.env.SMTP_FROM || 'WatAir Website <website@watair.co.uk>',
-        to: process.env.CONTACT_TO,
+        from: mailConfig.from,
+        to: mailConfig.to,
         replyTo: email,
         subject: `WatAir website enquiry: ${interest || 'General'}`,
         text: `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\nInterest: ${interest || 'General'}\n\n${message}`
@@ -1221,6 +1213,7 @@ app.get('/admin', (req,res) => {
     String(process.env.SESSION_SECRET || '').length >= 32 &&
     process.env.SESSION_SECRET !== 'replace-with-at-least-32-random-characters';
   const trustProxyReady = Boolean(process.env.TRUST_PROXY);
+  const mailConfig = smtpConfiguration();
 
   const releaseChecks = [
     {
@@ -1240,8 +1233,10 @@ app.get('/admin', (req,res) => {
     },
     {
       label: 'Enquiry email notifications',
-      ok: Boolean(process.env.SMTP_HOST && process.env.CONTACT_TO),
-      detail: process.env.SMTP_HOST && process.env.CONTACT_TO ? 'SMTP is configured' : 'Configure SMTP_HOST and CONTACT_TO before launch'
+      ok: mailConfig.ready,
+      detail: mailConfig.ready
+        ? `SMTP is ready via ${mailConfig.source === 'cms' ? 'CMS settings' : 'environment configuration'}`
+        : 'Configure and test SMTP under Site settings'
     },
     {
       label: 'Privacy notice',
