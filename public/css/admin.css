@@ -261,6 +261,81 @@ input:focus,textarea:focus,select:focus{border-color:#55b9ca;box-shadow:0 0 0 3p
 .media-field-actions .text-button{margin-left:auto}
 .field-stack{margin-top:14px}
 
+/* About page: overseas project showcase editor */
+.about-project-editor-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;
+  margin-top:18px;
+}
+.about-project-editor-card{
+  min-width:0;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:#f8fbfb;
+}
+.about-project-editor-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:11px;
+}
+.about-project-editor-card-head strong{
+  color:var(--ink);
+  font-size:11px;
+}
+.about-project-editor-card-head span{
+  color:var(--muted);
+  font-size:8px;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.about-project-editor-card .media-preview{
+  height:165px;
+  background:#edf4f5;
+}
+.about-project-editor-card .media-preview img{
+  padding:0;
+  object-fit:cover;
+}
+.about-project-editor-card .media-field-actions{
+  gap:5px;
+}
+.about-project-editor-card .media-field-actions .secondary-button{
+  flex:1;
+  justify-content:center;
+  padding:0 7px;
+  font-size:9px;
+}
+.about-project-editor-card .media-field-actions .text-button{
+  width:100%;
+  margin:0;
+  text-align:center;
+}
+.about-project-editor-card .field-stack{
+  margin-top:12px;
+}
+@media(max-width:1180px){
+  .about-project-editor-grid{
+    grid-template-columns:1fr 1fr;
+  }
+  .about-project-editor-card:first-child{
+    grid-column:1/-1;
+  }
+}
+@media(max-width:760px){
+  .about-project-editor-grid{
+    grid-template-columns:1fr;
+  }
+  .about-project-editor-card:first-child{
+    grid-column:auto;
+  }
+}
+
+
 /* Specs */
 .spec-preset-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:15px}
 .spec-preset-bar>span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-right:3px}
