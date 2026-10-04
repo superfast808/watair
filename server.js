@@ -577,37 +577,69 @@ app.get('/products/:slug/datasheet.pdf', (req, res) => {
   doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text(categoryLabel.toUpperCase(), 48, 154);
   doc.fillColor(muted).fontSize(11).font('Helvetica').text(product.summary, 48, 174, { width: 500, lineGap: 3 });
 
+  const performanceNote = 'Rated water production depends on ambient temperature and relative humidity. Actual site output may differ from the stated rating. Confirm site conditions, electrical requirements, storage and intended use with WatAir before final specification.';
+  const footerSafetyNote = 'Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watairuk.co.uk/water-quality-maintenance';
+  const specRowHeight = 27;
+
+  function datasheetPageLimits() {
+    doc.font('Helvetica').fontSize(7.5);
+    const safetyHeight = doc.heightOfString(footerSafetyNote, { width: 499, lineGap: 1 });
+    const safeBottom = doc.page.height - doc.page.margins.bottom - 6;
+    const safetyY = safeBottom - safetyHeight;
+    const contactY = safetyY - 15;
+    const brandY = contactY - 15;
+    const ruleY = brandY - 12;
+    return {
+      safetyY,
+      contactY,
+      brandY,
+      ruleY,
+      bodyBottom: ruleY - 18
+    };
+  }
+
+  let limits = datasheetPageLimits();
   let y = Math.max(224, doc.y + 22);
   doc.fillColor(navy).fontSize(16).font('Helvetica-Bold').text('Technical specification', 48, y);
   y += 30;
 
   Object.entries(product.specs).forEach(([key, value], index) => {
-    if (y > 720) {
+    if (y + specRowHeight > limits.bodyBottom) {
       doc.addPage();
+      limits = datasheetPageLimits();
       y = 55;
     }
-    if (index % 2 === 0) doc.rect(48, y - 6, 499, 27).fill('#f3f8f9');
+    if (index % 2 === 0) doc.rect(48, y - 6, 499, specRowHeight).fill('#f3f8f9');
     doc.fillColor(muted).fontSize(9.5).font('Helvetica').text(key, 58, y, { width: 205 });
     doc.fillColor(navy).fontSize(9.5).font('Helvetica-Bold').text(String(value), 270, y, { width: 265 });
-    y += 27;
+    y += specRowHeight;
   });
 
   y += 22;
-  if (y > 675) { doc.addPage(); y = 55; }
+  doc.font('Helvetica').fontSize(9.5);
+  const performanceNoteHeight = 23 + doc.heightOfString(performanceNote, { width: 499, lineGap: 2 });
+  if (y + performanceNoteHeight > limits.bodyBottom) {
+    doc.addPage();
+    limits = datasheetPageLimits();
+    y = 55;
+  }
+
   doc.fillColor(navy).fontSize(14).font('Helvetica-Bold').text('Important performance note', 48, y);
   doc.fillColor(muted).fontSize(9.5).font('Helvetica').text(
-    'Rated water production depends on ambient temperature and relative humidity. Actual site output may differ from the stated rating. Confirm site conditions, electrical requirements, storage and intended use with WatAir before final specification.',
+    performanceNote,
     48, y + 23, { width: 499, lineGap: 2 }
   );
 
-  const footerY = doc.page.height - 66;
-  doc.moveTo(48, footerY - 12).lineTo(547, footerY - 12).strokeColor('#d5e3e6').stroke();
-  doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text('WatAir UK', 48, footerY);
+  doc.moveTo(48, limits.ruleY).lineTo(547, limits.ruleY).strokeColor('#d5e3e6').stroke();
+  doc.fillColor(navy).fontSize(9).font('Helvetica-Bold').text('WatAir UK', 48, limits.brandY);
   doc.fillColor(muted).fontSize(8.5).font('Helvetica').text(
     `${settingsObject().email}  ·  ${settingsObject().phone}  ·  watairuk.co.uk`,
-    48, footerY + 15
+    48, limits.contactY
   );
-  doc.fillColor('#829aa1').fontSize(7.5).text('Safe drinking-water operation requires cleaning, sanitisation and treatment-component maintenance in accordance with the model-specific operator manual. Guidance: watairuk.co.uk/water-quality-maintenance', 48, footerY + 28, { width: 499, lineGap: 1 });
+  doc.fillColor('#829aa1').fontSize(7.5).font('Helvetica').text(
+    footerSafetyNote,
+    48, limits.safetyY, { width: 499, lineGap: 1 }
+  );
 
   doc.end();
 });
