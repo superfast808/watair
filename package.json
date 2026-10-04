@@ -1,6 +1,6 @@
 {
   "name": "watair-next",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "private": true,
   "description": "Modern WatAir website and lightweight CMS",
   "main": "server.js",
