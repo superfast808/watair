@@ -82,6 +82,7 @@ CMS features include:
 - homepage/global settings
 - SMTP mail configuration and test delivery from Site settings
 - primary navigation management: rename, hide, reorder and add custom links/CTAs
+- editable About-page overseas project showcase with three media slots and captions
 - water-quality, hygiene and maintenance guidance linked from products, checkout and legal terms
 - SEO titles and descriptions
 - production-readiness checks on the dashboard
