@@ -42,6 +42,10 @@ jobs:
           upsert.run('catalogue_hero_text','Catalogue hero content managed from Site Settings.');
           upsert.run('catalogue_hero_image','/uploads/imported/legacy/media/1070/10000l-pro.png');
           upsert.run('catalogue_hero_image_style','graphic');
+          upsert.run('about_projects_heading','CI overseas projects');
+          upsert.run('about_projects_intro','Editable overseas project showcase.');
+          upsert.run('about_projects_image_1','/uploads/imported/legacy/media/1027/contact-banner.jpg');
+          upsert.run('about_projects_caption_1','CI project installation in Thailand');
           db.prepare("UPDATE products SET sellable=1,price_minor=129900,delivery_class='standard',max_order_qty=2 WHERE slug='pw-hr-20l'").run();
           db.prepare("INSERT INTO delivery_rules(name,delivery_class,country_code,postcode_prefixes,price_minor,priority,active) VALUES('CI UK delivery','standard','GB','',2500,100,1)").run();
           db.close();
