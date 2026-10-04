@@ -171,6 +171,9 @@ jobs:
           grep -q 'Legionella and microbiological risk' /tmp/maintenance.html
           grep -q 'hse.gov.uk/legionnaires/' /tmp/maintenance.html
           grep -q 'Safe drinking water depends on correct operation and maintenance.' /tmp/product.html
+          ! grep -q 'Read the maintenance guidance' /tmp/product.html
+          ! grep -q 'Terms of sale' /tmp/maintenance.html
+          grep -q 'Interested? Want to know more?' /tmp/about.html
           grep -q 'operation, water-quality and maintenance requirements' /tmp/checkout.html
           grep -q 'Operation, water hygiene and maintenance' /tmp/terms.html
           grep -q 'How WatAir handles information' /tmp/privacy.html
