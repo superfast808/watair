@@ -132,7 +132,7 @@ jobs:
           grep -q 'id="main-content"' /tmp/home.html
           grep -q '"@type":"Product"' /tmp/product.html
           grep -q '"@type":"Offer"' /tmp/product.html
-          test "$(strings /tmp/datasheet-20l.pdf | grep -c '^/Type /Page
+          test "$(strings /tmp/datasheet-20l.pdf | grep -c '/Type /Page')" -eq 2
           grep -q 'Buy now' /tmp/product.html
           grep -q '£1,299.00' /tmp/product.html
           grep -q '20 Litres/day at 30°C &amp; 80% RH' /tmp/product.html
