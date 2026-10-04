@@ -8,6 +8,8 @@
     'resellers':'/resellers'
   };
   const publicPath = publicPaths[page.slug] || '/' + page.slug;
+  const hasProjectShowcase = page.slug === 'about' && aboutProjects;
+  const seoSectionNumber = hasProjectShowcase ? 4 : 3;
 %>
 
 <form class="admin-form admin-editor" method="post" action="/admin/pages/<%= page.id %>">
@@ -72,9 +74,64 @@
         </div>
       </section>
 
-      <section class="admin-card editor-section">
+      <% if(hasProjectShowcase){ %>
+      <section class="admin-card editor-section about-project-editor">
         <div class="section-heading">
           <span class="section-number">3</span>
+          <div>
+            <h2>Overseas projects</h2>
+            <p>Add real-world project photography to the About page. The public section stays hidden until at least one image is selected.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="full">Section heading
+            <input name="about_projects_heading" value="<%= aboutProjects.heading %>" maxlength="180">
+          </label>
+          <label class="full">Introduction
+            <textarea name="about_projects_intro" rows="3"><%= aboutProjects.intro %></textarea>
+          </label>
+        </div>
+
+        <div class="about-project-editor-grid">
+          <% aboutProjects.images.forEach((project,index) => { const slot=index+1; %>
+            <div class="about-project-editor-card">
+              <div class="about-project-editor-card-head">
+                <strong><%= slot === 1 ? 'Lead image' : 'Supporting image ' + (slot - 1) %></strong>
+                <span>Project image <%= slot %></span>
+              </div>
+
+              <div class="media-field <%= project.image ? 'has-image' : '' %>" data-media-field>
+                <div class="media-preview">
+                  <img src="<%= project.image || '' %>" alt="" data-media-preview <%= project.image ? '' : 'hidden' %>>
+                  <div class="media-empty" data-media-empty <%= project.image ? 'hidden' : '' %>>
+                    <strong>No project image selected</strong>
+                    <span>Upload or choose from the library</span>
+                  </div>
+                </div>
+                <input type="hidden" name="about_projects_image_<%= slot %>" value="<%= project.image || '' %>" data-media-url>
+                <div class="media-field-actions">
+                  <label class="secondary-button upload-label">Upload
+                    <input type="file" accept="image/jpeg,image/png,image/webp" data-media-direct-upload hidden>
+                  </label>
+                  <button class="secondary-button" type="button" data-media-choose>Choose library</button>
+                  <button class="text-button" type="button" data-media-clear>Clear</button>
+                </div>
+              </div>
+
+              <label class="field-stack">Caption
+                <input name="about_projects_caption_<%= slot %>" value="<%= project.caption %>" maxlength="300">
+                <small>Also used as descriptive image text where appropriate.</small>
+              </label>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <section class="admin-card editor-section">
+        <div class="section-heading">
+          <span class="section-number"><%= seoSectionNumber %></span>
           <div><h2>Search engine information</h2><p>Optional. Leave blank to use the page title and introduction automatically.</p></div>
         </div>
         <div class="form-grid">
