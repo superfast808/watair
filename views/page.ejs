@@ -17,7 +17,14 @@
   const isEnvironment = page.slug === 'plastic-bottles' || page.slug === 'mains-water';
   const isMaintenance = page.slug === 'water-quality-maintenance';
   const isPrivacy = page.slug === 'privacy';
+  const isAbout = page.slug === 'about';
   const isLegal = ['privacy','terms','refunds','cookies'].includes(page.slug);
+  const aboutProjectImages = isAbout ? [1,2,3]
+    .map(index => ({
+      image: settings[`about_projects_image_${index}`] || '',
+      caption: settings[`about_projects_caption_${index}`] || ''
+    }))
+    .filter(project => project.image) : [];
   const crumbs = [
     { label: 'Home', href: '/' },
     ...(isEnvironment ? [{ label: 'Environment', href: '/environment/plastic-bottles' }] : []),
@@ -70,6 +77,36 @@
     </aside>
   <% } %>
 </section>
+
+<% if(isAbout && aboutProjectImages.length){ %>
+<section class="about-projects-section section-tight">
+  <div class="about-projects-heading">
+    <div>
+      <p class="eyebrow">Real-world installations</p>
+      <h2><%= settings.about_projects_heading || 'Overseas projects' %></h2>
+    </div>
+    <% if(settings.about_projects_intro){ %>
+      <p><%= settings.about_projects_intro %></p>
+    <% } %>
+  </div>
+
+  <div class="about-projects-grid about-projects-count-<%= aboutProjectImages.length %>">
+    <% aboutProjectImages.forEach((project,index) => { %>
+      <figure class="about-project-card <%= index === 0 ? 'about-project-card-lead' : '' %>">
+        <div class="about-project-image">
+          <img
+            src="<%= project.image %>"
+            alt="<%= project.caption || 'WatAir Atmospheric Water Generator overseas project' %>"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <% if(project.caption){ %><figcaption><%= project.caption %></figcaption><% } %>
+      </figure>
+    <% }) %>
+  </div>
+</section>
+<% } %>
 
 <% if(isPrivacy){ %>
 <section class="cta-panel cta-dark">
