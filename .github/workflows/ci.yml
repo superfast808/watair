@@ -168,6 +168,10 @@ jobs:
           grep -q '/uploads/imported/legacy/media/1070/10000l-pro.png' /tmp/faqs.html
           grep -q '"@type":"FAQPage"' /tmp/faqs.html
           grep -q '"@type":"BreadcrumbList"' /tmp/about.html
+          grep -q 'CI overseas projects' /tmp/about.html
+          grep -q 'Editable overseas project showcase.' /tmp/about.html
+          grep -q 'CI project installation in Thailand' /tmp/about.html
+          grep -q 'about-projects-section' /tmp/about.html
           grep -q 'Good water quality depends on correct operation and maintenance' /tmp/maintenance.html
           grep -q 'hero-has-photo' /tmp/maintenance.html
           grep -q '/uploads/imported/legacy/media/1027/contact-banner.jpg' /tmp/maintenance.html
