@@ -1446,7 +1446,20 @@ app.get('/admin/pages', (req,res) => {
 app.get('/admin/pages/:id', (req,res) => {
   const page = db.prepare('SELECT * FROM pages WHERE id=?').get(req.params.id);
   if (!page) return res.status(404).send('Page not found');
-  res.render('admin/page-edit', { page, meta: { title: `Edit ${page.title} | WatAir CMS` } });
+  const values = settingsObject();
+  const aboutProjects = page.slug === 'about' ? {
+    heading: values.about_projects_heading || 'Overseas projects',
+    intro: values.about_projects_intro || '',
+    images: [1,2,3].map(index => ({
+      image: values[`about_projects_image_${index}`] || '',
+      caption: values[`about_projects_caption_${index}`] || ''
+    }))
+  } : null;
+  res.render('admin/page-edit', {
+    page,
+    aboutProjects,
+    meta: { title: `Edit ${page.title} | WatAir CMS` }
+  });
 });
 app.post('/admin/pages/:id', requireCsrf, (req,res) => {
   const body = cleanPageBody(req.body.body_html);
@@ -1464,6 +1477,26 @@ app.post('/admin/pages/:id', requireCsrf, (req,res) => {
       req.body.published ? 1 : 0,
       req.params.id
     );
+
+  const updatedPage = db.prepare('SELECT slug FROM pages WHERE id=?').get(req.params.id);
+  if (updatedPage?.slug === 'about') {
+    const upsertSetting = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+    const projectSettings = {
+      about_projects_heading: String(req.body.about_projects_heading || '').trim().slice(0,180),
+      about_projects_intro: String(req.body.about_projects_intro || '').trim().slice(0,1200),
+      about_projects_image_1: String(req.body.about_projects_image_1 || '').trim().slice(0,1200),
+      about_projects_caption_1: String(req.body.about_projects_caption_1 || '').trim().slice(0,300),
+      about_projects_image_2: String(req.body.about_projects_image_2 || '').trim().slice(0,1200),
+      about_projects_caption_2: String(req.body.about_projects_caption_2 || '').trim().slice(0,300),
+      about_projects_image_3: String(req.body.about_projects_image_3 || '').trim().slice(0,1200),
+      about_projects_caption_3: String(req.body.about_projects_caption_3 || '').trim().slice(0,300)
+    };
+    const saveProjects = db.transaction(() => {
+      Object.entries(projectSettings).forEach(([key,value]) => upsertSetting.run(key,value));
+    });
+    saveProjects();
+  }
+
   res.redirect(`/admin/pages/${req.params.id}?saved=1`);
 });
 
