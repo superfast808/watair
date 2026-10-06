@@ -44,6 +44,7 @@
       <% if(selectedProduct){ %><div class="selected-product"><span>Selected model</span><strong><%= selectedProduct.name %><%= selectedProduct.subtitle ? ' – ' + selectedProduct.subtitle : '' %></strong><small><%= selectedProduct.capacity_lpd.toLocaleString('en-GB') %> litres/day rated output</small></div><% } %>
       <% if(error){ %><div class="error-box" role="alert"><%= error %></div><% } %>
       <form method="post" action="/contact" class="contact-form">
+        <input type="hidden" name="form_token" value="<%= contactFormToken %>">
         <% if(selectedProduct){ %><input type="hidden" name="product" value="<%= selectedProduct.slug %>"><% } %>
         <div class="two-col">
           <label>Name<input name="name" required maxlength="150" autocomplete="name" value="<%= formValues?.name || '' %>"></label>
