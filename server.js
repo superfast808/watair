@@ -1079,6 +1079,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
   if (website) return res.redirect(303, '/contact?sent=1');
 
   const tokenState = inspectContactFormToken(formToken);
+  let tokenSpamPenalty = 0;
   if (!tokenState.valid) {
     if (tokenState.reason === 'expired') {
       return renderContactError(res, {
@@ -1087,7 +1088,11 @@ app.post('/contact', contactLimiter, async (req, res) => {
         formValues
       });
     }
-    return res.redirect(303, '/contact?sent=1');
+    if (tokenState.reason === 'missing') {
+      tokenSpamPenalty = 1;
+    } else {
+      return res.redirect(303, '/contact?sent=1');
+    }
   }
 
   if (!name || !validEmail(email) || !message) {
@@ -1100,7 +1105,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
 
   // Conservative content scoring catches obvious outreach/spam campaigns while
   // leaving normal project enquiries untouched.
-  if (contactSpamScore({ name, company, email, phone, message }) >= 2) {
+  if (contactSpamScore({ name, company, email, phone, message }) + tokenSpamPenalty >= 2) {
     return res.redirect(303, '/contact?sent=1');
   }
 
