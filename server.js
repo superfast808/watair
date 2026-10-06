@@ -953,6 +953,7 @@ app.get('/contact', (req, res) => {
     error: null,
     selectedProduct,
     formValues: {},
+    contactFormToken: createContactFormToken(),
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
@@ -1057,6 +1058,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
   const phone = cleanFormValue(req.body.phone, 80);
   const message = cleanFormValue(req.body.message, 5000);
   const website = cleanFormValue(req.body.website, 500);
+  const formToken = cleanFormValue(req.body.form_token, 500);
   const productSlug = cleanFormValue(req.body.product, 160);
   const selectedProduct = productSlug
     ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(productSlug))
@@ -1070,18 +1072,42 @@ app.post('/contact', contactLimiter, async (req, res) => {
   ]);
   const requestedInterest = cleanFormValue(req.body.interest, 120);
   const interest = allowedInterests.has(requestedInterest) ? requestedInterest : '';
+  const formValues = { name, company, email, phone, interest, message };
 
+  // Honeypot: acknowledge silently so automated submitters do not learn which
+  // field caused rejection.
   if (website) return res.redirect(303, '/contact?sent=1');
 
-  const formValues = { name, company, email, phone, interest, message };
+  const tokenState = inspectContactFormToken(formToken);
+  if (!tokenState.valid) {
+    if (tokenState.reason === 'expired') {
+      return renderContactError(res, {
+        error: 'This contact form has expired. Please submit it again.',
+        selectedProduct,
+        formValues
+      });
+    }
+    return res.redirect(303, '/contact?sent=1');
+  }
+
   if (!name || !validEmail(email) || !message) {
-    return res.status(400).render('contact', {
-      sent: false,
+    return renderContactError(res, {
       error: !validEmail(email) ? 'Please enter a valid email address.' : 'Please complete your name, email and message.',
       selectedProduct,
-      formValues,
-      meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
+      formValues
     });
+  }
+
+  // Conservative content scoring catches obvious outreach/spam campaigns while
+  // leaving normal project enquiries untouched.
+  if (contactSpamScore({ name, company, email, phone, message }) >= 2) {
+    return res.redirect(303, '/contact?sent=1');
+  }
+
+  // Do not let browser retries or repeated bot posts create duplicate inbox
+  // entries and duplicate SMTP notifications.
+  if (isDuplicateContactEnquiry(email, message)) {
+    return res.redirect(303, '/contact?sent=1');
   }
 
   db.prepare(`INSERT INTO enquiries(name,company,email,phone,interest,message,ip) VALUES(?,?,?,?,?,?,?)`)
