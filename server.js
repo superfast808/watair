@@ -953,7 +953,7 @@ app.get('/contact', (req, res) => {
     error: null,
     selectedProduct,
     formValues: {},
-    contactFormToken: createContactFormToken(),
+    contactFormToken: createContactFormToken(Date.now() - CONTACT_FORM_MIN_AGE_MS - 250),
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
@@ -1010,7 +1010,7 @@ function contactSpamScore({ name, company, email, phone, message }) {
   const combined = `${name}\n${company}\n${email}\n${phone}\n${message}`.toLowerCase();
   let score = 0;
 
-  const urls = combined.match(/(?:https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|top|site|online)\b)/gi) || [];
+  const urls = combined.match(/(?:https?:\/\/|www\.|(?<!@)\b[a-z0-9-]+\.(?:com|net|org|io|xyz|top|site|online)\b)/gi) || [];
   if (urls.length >= 3) score += 2;
   else if (urls.length === 2) score += 1;
 
