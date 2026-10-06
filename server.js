@@ -179,7 +179,13 @@ app.use((req, res, next) => {
   next();
 });
 
-const contactLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 6, standardHeaders: true, legacyHeaders: false });
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many enquiries have been submitted from this connection. Please wait a few minutes and try again.'
+});
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
 const checkoutLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
 
@@ -957,6 +963,91 @@ function cleanFormValue(value, maxLength) {
 
 function validEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+const CONTACT_FORM_MIN_AGE_MS = 3000;
+const CONTACT_FORM_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const CONTACT_DUPLICATE_WINDOW_MINUTES = 30;
+
+function contactFormSecret() {
+  return String(process.env.SESSION_SECRET || 'development-contact-form-secret');
+}
+
+function createContactFormToken(now = Date.now()) {
+  const timestamp = String(now);
+  const nonce = crypto.randomBytes(12).toString('base64url');
+  const payload = `${timestamp}.${nonce}`;
+  const signature = crypto.createHmac('sha256', contactFormSecret()).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function inspectContactFormToken(token, now = Date.now()) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return { valid: false, reason: 'missing' };
+
+  const [timestampText, nonce, signature] = parts;
+  if (!/^\d{10,16}$/.test(timestampText) || !/^[A-Za-z0-9_-]{8,64}$/.test(nonce) || !signature) {
+    return { valid: false, reason: 'malformed' };
+  }
+
+  const payload = `${timestampText}.${nonce}`;
+  const expected = crypto.createHmac('sha256', contactFormSecret()).update(payload).digest('base64url');
+  const suppliedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+    return { valid: false, reason: 'signature' };
+  }
+
+  const age = now - Number(timestampText);
+  if (!Number.isFinite(age) || age < CONTACT_FORM_MIN_AGE_MS) return { valid: false, reason: 'too-fast' };
+  if (age > CONTACT_FORM_MAX_AGE_MS) return { valid: false, reason: 'expired' };
+
+  return { valid: true, age };
+}
+
+function contactSpamScore({ name, company, email, phone, message }) {
+  const combined = `${name}\n${company}\n${email}\n${phone}\n${message}`.toLowerCase();
+  let score = 0;
+
+  const urls = combined.match(/(?:https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|top|site|online)\b)/gi) || [];
+  if (urls.length >= 3) score += 2;
+  else if (urls.length === 2) score += 1;
+
+  const strongSpamPatterns = [
+    /\b(?:seo|backlink|guest post|link building) services?\b/i,
+    /\b(?:casino|crypto investment|forex trading|binary options)\b/i,
+    /\b(?:increase|boost|guarantee) (?:your )?(?:website )?(?:traffic|ranking|rankings)\b/i,
+    /\b(?:web design|digital marketing) services? (?:offer|proposal|package)\b/i
+  ];
+  if (strongSpamPatterns.some(pattern => pattern.test(combined))) score += 2;
+
+  if (/https?:\/\/|www\./i.test(name) || /https?:\/\/|www\./i.test(company)) score += 2;
+  if (/(.)\1{8,}/.test(message)) score += 1;
+
+  return score;
+}
+
+function isDuplicateContactEnquiry(email, message) {
+  const row = db.prepare(`
+    SELECT id
+    FROM enquiries
+    WHERE lower(email)=lower(?)
+      AND message=?
+      AND datetime(created_at) >= datetime('now', ?)
+    LIMIT 1
+  `).get(email, message, `-${CONTACT_DUPLICATE_WINDOW_MINUTES} minutes`);
+  return Boolean(row);
+}
+
+function renderContactError(res, { error, selectedProduct, formValues, status = 400 }) {
+  return res.status(status).render('contact', {
+    sent: false,
+    error,
+    selectedProduct,
+    formValues,
+    contactFormToken: createContactFormToken(),
+    meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
+  });
 }
 
 app.post('/contact', contactLimiter, async (req, res) => {
