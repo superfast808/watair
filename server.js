@@ -945,6 +945,7 @@ app.get('/faqs', (req, res) => res.render('faqs', {
 }));
 
 app.get('/contact', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   const selectedProduct = req.query.product
     ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(String(req.query.product)))
     : null;
@@ -1058,6 +1059,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
   const phone = cleanFormValue(req.body.phone, 80);
   const message = cleanFormValue(req.body.message, 5000);
   const website = cleanFormValue(req.body.website, 500);
+  const fax = cleanFormValue(req.body.fax, 200);
   const formToken = cleanFormValue(req.body.form_token, 500);
   const productSlug = cleanFormValue(req.body.product, 160);
   const selectedProduct = productSlug
@@ -1076,7 +1078,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
 
   // Honeypot: acknowledge silently so automated submitters do not learn which
   // field caused rejection.
-  if (website) return res.redirect(303, '/contact?sent=1');
+  if (website || fax) return res.redirect(303, '/contact?sent=1');
 
   const tokenState = inspectContactFormToken(formToken);
   let tokenSpamPenalty = 0;
