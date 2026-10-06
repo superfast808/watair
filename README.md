@@ -121,6 +121,8 @@ PayPal uses sandbox unless `PAYPAL_ENV=live`.
 
 ## Contact enquiries
 
+Contact submissions use layered anti-spam protection: rate limiting, two honeypot fields, a signed time-limited browser token, conservative junk-pattern scoring and 30-minute duplicate suppression. Genuine visitors do not see a CAPTCHA.
+
 Every successful contact submission is stored in SQLite. SMTP can be configured under **CMS → Site settings → Email delivery**; the `.env` SMTP values remain the fallback until CMS mail settings are saved. A temporary SMTP failure therefore does not discard the enquiry. The SMTP password is kept outside normal site settings, encrypted at rest using `SESSION_SECRET`, and is never displayed back in the CMS. If `SESSION_SECRET` is intentionally changed, re-enter the CMS SMTP password afterwards.
 
 The privacy notice describes enquiry and order information retained by the website. The cookie-preference control keeps optional analytics and marketing categories off unless the visitor opts in; no optional analytics or advertising integration is currently loaded by the application itself.
