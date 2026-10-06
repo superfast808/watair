@@ -953,7 +953,7 @@ app.get('/contact', (req, res) => {
     error: null,
     selectedProduct,
     formValues: {},
-    contactFormToken: createContactFormToken(Date.now() - CONTACT_FORM_MIN_AGE_MS - 250),
+    contactFormToken: createContactFormToken(),
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
@@ -1046,7 +1046,7 @@ function renderContactError(res, { error, selectedProduct, formValues, status = 
     error,
     selectedProduct,
     formValues,
-    contactFormToken: createContactFormToken(),
+    contactFormToken: createContactFormToken(Date.now() - CONTACT_FORM_MIN_AGE_MS - 250),
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
   });
 }
