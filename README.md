@@ -121,11 +121,21 @@ PayPal uses sandbox unless `PAYPAL_ENV=live`.
 
 ## Contact enquiries
 
-Contact submissions use layered anti-spam protection: rate limiting, two honeypot fields, a signed time-limited browser token, conservative junk-pattern scoring and 30-minute duplicate suppression. Genuine visitors do not see a CAPTCHA.
+Contact submissions use layered anti-spam protection: rate limiting, two honeypot fields, a signed time-limited browser token, conservative junk-pattern scoring, 30-minute duplicate suppression and optional Cloudflare Turnstile verification.
+
+For production Turnstile protection, create a **Managed** widget in Cloudflare, add the production/staging hostnames to that widget, then configure:
+
+```env
+TURNSTILE_SITE_KEY=your-public-site-key
+TURNSTILE_SECRET_KEY=your-private-secret-key
+TURNSTILE_EXPECTED_HOSTNAME=watairuk.co.uk
+```
+
+The site key is intentionally sent to the browser; the secret key is used only by the server-side Siteverify call. If both keys are absent, the existing layered anti-spam controls remain active and the CMS launch checklist reports Turnstile as incomplete. If only one key is supplied, contact submissions fail closed until the configuration is corrected.
 
 Every successful contact submission is stored in SQLite. SMTP can be configured under **CMS → Site settings → Email delivery**; the `.env` SMTP values remain the fallback until CMS mail settings are saved. A temporary SMTP failure therefore does not discard the enquiry. The SMTP password is kept outside normal site settings, encrypted at rest using `SESSION_SECRET`, and is never displayed back in the CMS. If `SESSION_SECRET` is intentionally changed, re-enter the CMS SMTP password afterwards.
 
-The privacy notice describes enquiry and order information retained by the website. The cookie-preference control keeps optional analytics and marketing categories off unless the visitor opts in; no optional analytics or advertising integration is currently loaded by the application itself.
+The privacy notice describes enquiry and order information retained by the website, including the Turnstile security service. The cookie-preference control keeps optional analytics and marketing categories off unless the visitor opts in; no optional analytics or advertising integration is currently loaded by the application itself.
 
 ## Release checks
 
