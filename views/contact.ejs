@@ -65,11 +65,28 @@
         <label>Tell us about the requirement<textarea name="message" required maxlength="5000" rows="7" placeholder="For example: location, litres per day, number of users, intended use, or the model you are considering."><%= formValues?.message || (selectedProduct ? 'I am interested in the ' + selectedProduct.name + (selectedProduct.subtitle ? ' (' + selectedProduct.subtitle + ')' : '') + '.\n\n' : '') %></textarea></label>
         <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
         <label class="hp" aria-hidden="true">Fax<input name="fax" tabindex="-1" autocomplete="off"></label>
-        <p class="form-privacy">We use the details you provide to respond to your enquiry. See our <a href="/privacy">privacy notice</a>.</p>
+        <% if(turnstileSiteKey){ %>
+          <div class="turnstile-block">
+            <div
+              class="cf-turnstile"
+              data-sitekey="<%= turnstileSiteKey %>"
+              data-theme="light"
+              data-size="flexible"
+              data-action="contact"
+              data-refresh-expired="auto"
+              data-refresh-timeout="auto"
+            ></div>
+            <small>Security check powered by Cloudflare Turnstile.</small>
+          </div>
+        <% } %>
+        <p class="form-privacy">We use the details you provide to respond to your enquiry and protect this form from automated abuse. See our <a href="/privacy">privacy notice</a>.</p>
         <button class="button button-aqua" type="submit">Send enquiry</button>
       </form>
     <% } %>
   </div>
 </section>
 </main>
+<% if(turnstileSiteKey){ %>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<% } %>
 <%- include('partials/footer') %>
