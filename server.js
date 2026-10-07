@@ -92,8 +92,9 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", 'data:'],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
+      connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
+      frameSrc: ['https://challenges.cloudflare.com'],
       fontSrc: ["'self'", 'data:'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"]
@@ -944,8 +945,69 @@ app.get('/faqs', (req, res) => res.render('faqs', {
   meta: { title: 'Atmospheric Water Generator FAQs | WatAir UK', description: 'Answers to common questions about water-from-air technology, installation and operation.', image: '/uploads/imported/legacy/images/home/products.jpg' }
 }));
 
+function turnstileConfiguration() {
+  const siteKey = String(process.env.TURNSTILE_SITE_KEY || process.env.TURNSTILE_SITEKEY || '').trim();
+  const secretKey = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+  const expectedHostname = String(process.env.TURNSTILE_EXPECTED_HOSTNAME || '').trim().toLowerCase();
+  return {
+    siteKey,
+    secretKey,
+    expectedHostname,
+    enabled: Boolean(siteKey && secretKey),
+    partial: Boolean(siteKey || secretKey) && !(siteKey && secretKey)
+  };
+}
+
+async function verifyTurnstileToken(token, remoteIp) {
+  const config = turnstileConfiguration();
+  if (!config.enabled) {
+    return { success: !config.partial, skipped: !config.partial, reason: config.partial ? 'misconfigured' : 'disabled' };
+  }
+  if (!token) return { success: false, reason: 'missing' };
+
+  const body = new URLSearchParams({
+    secret: config.secretKey,
+    response: token
+  });
+  if (remoteIp) body.set('remoteip', remoteIp);
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      console.error('Turnstile Siteverify HTTP error:', response.status);
+      return { success: false, reason: 'unavailable' };
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      console.warn('Turnstile validation failed:', Array.isArray(result['error-codes']) ? result['error-codes'].join(', ') : 'unknown');
+      return { success: false, reason: 'rejected' };
+    }
+    if (result.action && result.action !== 'contact') {
+      console.warn('Turnstile validation rejected unexpected action:', result.action);
+      return { success: false, reason: 'action' };
+    }
+    if (config.expectedHostname && String(result.hostname || '').toLowerCase() !== config.expectedHostname) {
+      console.warn('Turnstile validation rejected unexpected hostname:', result.hostname || '(missing)');
+      return { success: false, reason: 'hostname' };
+    }
+
+    return { success: true, hostname: result.hostname || '', action: result.action || '' };
+  } catch (err) {
+    console.error('Turnstile Siteverify request failed:', err.message);
+    return { success: false, reason: 'unavailable' };
+  }
+}
+
 app.get('/contact', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  const turnstile = turnstileConfiguration();
   const selectedProduct = req.query.product
     ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(String(req.query.product)))
     : null;
@@ -955,6 +1017,7 @@ app.get('/contact', (req, res) => {
     selectedProduct,
     formValues: {},
     contactFormToken: createContactFormToken(),
+    turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : '',
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.', image: '/uploads/imported/legacy/media/1027/contact-banner.jpg' }
   });
 });
@@ -1042,12 +1105,14 @@ function isDuplicateContactEnquiry(email, message) {
 }
 
 function renderContactError(res, { error, selectedProduct, formValues, status = 400 }) {
+  const turnstile = turnstileConfiguration();
   return res.status(status).render('contact', {
     sent: false,
     error,
     selectedProduct,
     formValues,
     contactFormToken: createContactFormToken(Date.now() - CONTACT_FORM_MIN_AGE_MS - 250),
+    turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : '',
     meta: { title: 'Contact WatAir UK', description: 'Talk to WatAir about atmospheric water generation for your home, workplace or industrial application.' }
   });
 }
@@ -1061,6 +1126,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
   const website = cleanFormValue(req.body.website, 500);
   const fax = cleanFormValue(req.body.fax, 200);
   const formToken = cleanFormValue(req.body.form_token, 500);
+  const turnstileToken = cleanFormValue(req.body['cf-turnstile-response'], 2048);
   const productSlug = cleanFormValue(req.body.product, 160);
   const selectedProduct = productSlug
     ? parseProduct(db.prepare('SELECT * FROM products WHERE slug=? AND published=1').get(productSlug))
@@ -1103,6 +1169,31 @@ app.post('/contact', contactLimiter, async (req, res) => {
       selectedProduct,
       formValues
     });
+  }
+
+  const turnstile = turnstileConfiguration();
+  if (turnstile.partial) {
+    console.error('Turnstile is partially configured. Both site and secret keys are required.');
+    return renderContactError(res, {
+      error: 'Security verification is temporarily unavailable. Please try again shortly or contact WatAir directly.',
+      selectedProduct,
+      formValues,
+      status: 503
+    });
+  }
+  if (turnstile.enabled) {
+    const verification = await verifyTurnstileToken(turnstileToken, req.ip);
+    if (!verification.success) {
+      const unavailable = verification.reason === 'unavailable';
+      return renderContactError(res, {
+        error: unavailable
+          ? 'Security verification is temporarily unavailable. Please try again shortly.'
+          : 'Please complete the security check and submit the form again.',
+        selectedProduct,
+        formValues,
+        status: unavailable ? 503 : 400
+      });
+    }
   }
 
   // Conservative content scoring catches obvious outreach/spam campaigns while
@@ -1417,6 +1508,7 @@ app.get('/admin', (req,res) => {
     process.env.SESSION_SECRET !== 'replace-with-at-least-32-random-characters';
   const trustProxyReady = Boolean(process.env.TRUST_PROXY);
   const mailConfig = smtpConfiguration();
+  const turnstile = turnstileConfiguration();
 
   const releaseChecks = [
     {
@@ -1440,6 +1532,15 @@ app.get('/admin', (req,res) => {
       detail: mailConfig.ready
         ? `SMTP is ready via ${mailConfig.source === 'cms' ? 'CMS settings' : 'environment configuration'}`
         : 'Configure and test SMTP under Site settings'
+    },
+    {
+      label: 'Contact form bot protection',
+      ok: turnstile.enabled,
+      detail: turnstile.enabled
+        ? `Cloudflare Turnstile is enabled${turnstile.expectedHostname ? ` for ${turnstile.expectedHostname}` : ''}`
+        : turnstile.partial
+          ? 'Turnstile is incomplete — configure both site and secret keys'
+          : 'Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY before launch'
     },
     {
       label: 'Privacy notice',
