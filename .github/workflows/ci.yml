@@ -26,6 +26,8 @@ jobs:
           SESSION_SECRET: ci-only-session-secret-12345678901234567890
           ADMIN_EMAIL: ci@example.com
           ADMIN_PASSWORD: CI-test-password-123456789
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
         run: |
           set -euo pipefail
           APP_VERSION=$(node -p "require('./package.json').version")
@@ -95,13 +97,22 @@ jobs:
             --data-urlencode 'message=Testing invalid email validation.' \
             > /tmp/contact-invalid-status.txt
 
+          curl -sS -o /tmp/contact-turnstile-failed.html -w '%{http_code}' \
+            -X POST http://127.0.0.1:8099/contact \
+            --data-urlencode 'name=CI Turnstile Failure' \
+            --data-urlencode 'email=turnstile-fail@example.com' \
+            --data-urlencode 'message=This should be rejected by Turnstile.' \
+            --data-urlencode 'cf-turnstile-response=invalid-token' \
+            > /tmp/contact-turnstile-failed-status.txt
+
           curl -sS -D /tmp/contact-valid-headers.txt -o /dev/null \
             -X POST http://127.0.0.1:8099/contact \
             --data-urlencode 'name=CI Contact' \
             --data-urlencode 'company=WatAir CI' \
             --data-urlencode 'email=ci-contact@example.com' \
             --data-urlencode 'interest=General enquiry' \
-            --data-urlencode 'message=Automated release smoke test enquiry.'
+            --data-urlencode 'message=Automated release smoke test enquiry.' \
+            --data-urlencode 'cf-turnstile-response=XXXX.DUMMY.TOKEN.XXXX'
 
           curl -sS -D /tmp/reseller-headers.txt -o /dev/null http://127.0.0.1:8099/reseller
           curl -sS -D /tmp/old-15-headers.txt -o /dev/null http://127.0.0.1:8099/products/pw-hr-15l
@@ -200,6 +211,10 @@ jobs:
           grep -qi '^cache-control: no-store' /tmp/order-headers.txt
           grep -q 'data-cookie-consent' /tmp/home.html
           grep -q 'privacy notice' /tmp/contact.html
+          grep -q 'cf-turnstile' /tmp/contact.html
+          grep -q '1x00000000000000000000AA' /tmp/contact.html
+          grep -q 'https://challenges.cloudflare.com/turnstile/v0/api.js' /tmp/contact.html
+          grep -q 'Cloudflare Turnstile' /tmp/privacy.html
           grep -q 'How many people?' /tmp/contact.html
           grep -q '<strong>Direct</strong> project support' /tmp/contact.html
           ! grep -q '<strong>UK</strong> project support' /tmp/contact.html
@@ -219,8 +234,281 @@ jobs:
           grep -q '<svg' /tmp/favicon.svg
           grep -q '^404$' /tmp/notfound-status.txt
           grep -q 'Page not found' /tmp/notfound.html
-          grep -q '^400$' /tmp/contact-invalid-status.txt
+          grep -q '^400
+          grep -q 'CI Invalid' /tmp/contact-invalid.html
+          grep -q '303' /tmp/contact-valid-headers.txt
+          grep -qi '^location: /contact?sent=1' /tmp/contact-valid-headers.txt
+          grep -q '301' /tmp/reseller-headers.txt
+          grep -qi '^location: /resellers' /tmp/reseller-headers.txt
+          grep -q '301' /tmp/old-15-headers.txt
+          grep -qi '^location: /products/pw-hr-20l' /tmp/old-15-headers.txt
+          grep -q '301' /tmp/leasing-headers.txt
+          grep -qi '^location: /contact' /tmp/leasing-headers.txt
+          grep -q '#00a9e1' /tmp/logo.svg
+          grep -qi '^content-type: image/webp' /tmp/product-image-headers.txt
+          ! grep -q 'Leasing Available' /tmp/home.html
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/admin-headers.txt
+          grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=(), payment=()' /tmp/home-headers.txt
+          grep -qi 'content-security-policy:.*https://challenges.cloudflare.com' /tmp/home-headers.txt
+
+          TOKEN=$(node -e "const jwt=require('jsonwebtoken'); process.stdout.write(jwt.sign({sub:1,email:'ci@example.com',role:'admin'}, process.env.SESSION_SECRET,{expiresIn:'1h'}))")
+          AUTH="Cookie: watair_admin=$TOKEN"
+
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin > /tmp/admin-dashboard.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/new > /tmp/admin-product-new.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/1 > /tmp/admin-product-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/pages/1 > /tmp/admin-page-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/enquiries > /tmp/admin-enquiries.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/commerce > /tmp/admin-commerce.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/orders > /tmp/admin-orders.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
+
+          grep -q 'Welcome back' /tmp/admin-dashboard.html
+          grep -q 'Launch checks' /tmp/admin-dashboard.html
+          grep -q 'Contact form bot protection' /tmp/admin-dashboard.html
+          grep -q 'Cloudflare Turnstile is enabled' /tmp/admin-dashboard.html
+          grep -q 'Water quality guidance' /tmp/admin-dashboard.html
+          grep -q 'Add product' /tmp/admin-product-new.html
+          grep -q 'Technical specifications' /tmp/admin-product-edit.html
+          grep -q 'Delete product permanently' /tmp/admin-product-edit.html
+          grep -q 'Sell online' /tmp/admin-product-edit.html
+          grep -q 'Customer price' /tmp/admin-product-edit.html
+          grep -q 'Delivery class' /tmp/admin-product-edit.html
+          grep -q 'Page content' /tmp/admin-page-edit.html
+          grep -q 'Upload an image' /tmp/admin-media.html
+          grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Catalogue hero' /tmp/admin-settings.html
+          grep -q 'Catalogue hero image' /tmp/admin-settings.html
+          grep -q 'Facebook URL' /tmp/admin-settings.html
+          grep -q 'Instagram URL' /tmp/admin-settings.html
+          grep -q 'LinkedIn URL' /tmp/admin-settings.html
+          grep -q 'Email delivery (SMTP)' /tmp/admin-settings.html
+          grep -q 'Save & send test email' /tmp/admin-settings.html
+          grep -q 'https://uk.linkedin.com/company/watair-uk' /tmp/home.html
+          grep -q 'Add an admin user' /tmp/admin-users.html
+          grep -q 'Generate secure password' /tmp/admin-users.html
+          grep -q 'CI Contact' /tmp/admin-enquiries.html
+          grep -q 'Delete enquiry' /tmp/admin-enquiries.html
+          grep -q 'Payment gateways' /tmp/admin-commerce.html
+          grep -q 'Delivery rules' /tmp/admin-commerce.html
+          grep -q 'CI Buyer' /tmp/admin-orders.html
+          grep -q '£1,324.00' /tmp/admin-orders.html
+          grep -q '"assets"' /tmp/admin-assets.json
+
+          ADMIN_CSRF=$(TOKEN="$TOKEN" node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHmac('sha256',process.env.SESSION_SECRET).update(process.env.TOKEN).digest('hex'))")
+          curl -sS -o /dev/null -D /tmp/smtp-save-headers.txt \
+            -H "$AUTH" \
+            -X POST http://127.0.0.1:8099/admin/settings \
+            --data-urlencode "_csrf=$ADMIN_CSRF" \
+            --data-urlencode 'site_name=WatAir UK' \
+            --data-urlencode 'company_location=Glasgow, United Kingdom' \
+            --data-urlencode 'email=info@watairuk.co.uk' \
+            --data-urlencode 'phone=0141 442 0201' \
+            --data-urlencode 'footer_text=Atmospheric Water Generation solutions.' \
+            --data-urlencode 'hero_title=Water from air. Wherever you need it.' \
+            --data-urlencode 'hero_text=Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.' \
+            --data-urlencode 'hero_image=/uploads/imported/legacy/media/1027/contact-banner.jpg' \
+            --data-urlencode 'hero_image_style=photo' \
+            --data-urlencode 'catalogue_hero_eyebrow=Atmospheric Water Generators' \
+            --data-urlencode 'catalogue_hero_title=Water generation at every scale' \
+            --data-urlencode 'catalogue_hero_text=From compact systems to industrial-scale generation.' \
+            --data-urlencode 'catalogue_hero_image=/uploads/imported/legacy/images/home/products.jpg' \
+            --data-urlencode 'catalogue_hero_image_style=graphic' \
+            --data-urlencode 'linkedin_url=https://uk.linkedin.com/company/watair-uk' \
+            --data-urlencode 'smtp_enabled=1' \
+            --data-urlencode 'smtp_host=smtp.example.test' \
+            --data-urlencode 'smtp_port=587' \
+            --data-urlencode 'smtp_user=ci-smtp-user' \
+            --data-urlencode 'smtp_password=CI-SMTP-secret-987654321' \
+            --data-urlencode 'smtp_from=WatAir CI <ci@example.com>' \
+            --data-urlencode 'smtp_to=ci@example.com'
+
+          grep -q '302' /tmp/smtp-save-headers.txt
+          node <<'NODE'
+          const Database = require('better-sqlite3');
+          const db = new Database('data/watair.db');
+          const secret = db.prepare("SELECT value FROM app_secrets WHERE key='smtp_password'").get();
+          if (!secret || !secret.value.startsWith('v1.') || secret.value.includes('CI-SMTP-secret-987654321')) {
+            throw new Error('SMTP password was not stored as encrypted secret data');
+          }
+          if (db.prepare("SELECT 1 FROM settings WHERE key='smtp_password'").get()) {
+            throw new Error('SMTP password leaked into ordinary settings');
+          }
+          const smtpHost = db.prepare("SELECT value FROM settings WHERE key='smtp_host'").get();
+          if (smtpHost?.value !== 'smtp.example.test') throw new Error('SMTP host was not saved');
+          db.close();
+          NODE
+
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings-smtp.html
+          grep -q 'Using CMS configuration' /tmp/admin-settings-smtp.html
+          grep -q 'encrypted CMS password is stored' /tmp/admin-settings-smtp.html
+          ! grep -q 'CI-SMTP-secret-987654321' /tmp/admin-settings-smtp.html
+
+      - name: Reject unsafe first-boot admin credentials
+        env:
+          NODE_ENV: production
+          PORT: 8100
+          BASE_URL: https://watairuk.co.uk
+          SESSION_SECRET: ci-only-session-secret-12345678901234567890
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: replace-with-a-long-unique-password
+        run: |
+          set -euo pipefail
+          rm -rf data
+          set +e
+          node server.js > /tmp/unsafe-bootstrap.log 2>&1
+          STATUS=$?
+          set -e
+          test "$STATUS" -ne 0
+          grep -q 'Refusing to create the first production admin with example credentials' /tmp/unsafe-bootstrap.log
+
+      - name: Validate production Docker configuration
+        run: |
+          cp .env.example .env
+          docker compose config > /dev/null
+          docker build -t watair-ci .
+ /tmp/contact-invalid-status.txt
           grep -q 'valid email address' /tmp/contact-invalid.html
+          grep -q '^400
+          grep -q 'CI Invalid' /tmp/contact-invalid.html
+          grep -q '303' /tmp/contact-valid-headers.txt
+          grep -qi '^location: /contact?sent=1' /tmp/contact-valid-headers.txt
+          grep -q '301' /tmp/reseller-headers.txt
+          grep -qi '^location: /resellers' /tmp/reseller-headers.txt
+          grep -q '301' /tmp/old-15-headers.txt
+          grep -qi '^location: /products/pw-hr-20l' /tmp/old-15-headers.txt
+          grep -q '301' /tmp/leasing-headers.txt
+          grep -qi '^location: /contact' /tmp/leasing-headers.txt
+          grep -q '#00a9e1' /tmp/logo.svg
+          grep -qi '^content-type: image/webp' /tmp/product-image-headers.txt
+          ! grep -q 'Leasing Available' /tmp/home.html
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/admin-headers.txt
+          grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=(), payment=()' /tmp/home-headers.txt
+
+          TOKEN=$(node -e "const jwt=require('jsonwebtoken'); process.stdout.write(jwt.sign({sub:1,email:'ci@example.com',role:'admin'}, process.env.SESSION_SECRET,{expiresIn:'1h'}))")
+          AUTH="Cookie: watair_admin=$TOKEN"
+
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin > /tmp/admin-dashboard.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products > /tmp/admin-products.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/new > /tmp/admin-product-new.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/products/1 > /tmp/admin-product-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/pages/1 > /tmp/admin-page-edit.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media > /tmp/admin-media.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/users > /tmp/admin-users.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/enquiries > /tmp/admin-enquiries.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/commerce > /tmp/admin-commerce.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/orders > /tmp/admin-orders.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/media/assets.json > /tmp/admin-assets.json
+
+          grep -q 'Welcome back' /tmp/admin-dashboard.html
+          grep -q 'Launch checks' /tmp/admin-dashboard.html
+          grep -q 'Water quality guidance' /tmp/admin-dashboard.html
+          grep -q 'Add product' /tmp/admin-product-new.html
+          grep -q 'Technical specifications' /tmp/admin-product-edit.html
+          grep -q 'Delete product permanently' /tmp/admin-product-edit.html
+          grep -q 'Sell online' /tmp/admin-product-edit.html
+          grep -q 'Customer price' /tmp/admin-product-edit.html
+          grep -q 'Delivery class' /tmp/admin-product-edit.html
+          grep -q 'Page content' /tmp/admin-page-edit.html
+          grep -q 'Upload an image' /tmp/admin-media.html
+          grep -q 'Homepage hero image' /tmp/admin-settings.html
+          grep -q 'Catalogue hero' /tmp/admin-settings.html
+          grep -q 'Catalogue hero image' /tmp/admin-settings.html
+          grep -q 'Facebook URL' /tmp/admin-settings.html
+          grep -q 'Instagram URL' /tmp/admin-settings.html
+          grep -q 'LinkedIn URL' /tmp/admin-settings.html
+          grep -q 'Email delivery (SMTP)' /tmp/admin-settings.html
+          grep -q 'Save & send test email' /tmp/admin-settings.html
+          grep -q 'https://uk.linkedin.com/company/watair-uk' /tmp/home.html
+          grep -q 'Add an admin user' /tmp/admin-users.html
+          grep -q 'Generate secure password' /tmp/admin-users.html
+          grep -q 'CI Contact' /tmp/admin-enquiries.html
+          grep -q 'Delete enquiry' /tmp/admin-enquiries.html
+          grep -q 'Payment gateways' /tmp/admin-commerce.html
+          grep -q 'Delivery rules' /tmp/admin-commerce.html
+          grep -q 'CI Buyer' /tmp/admin-orders.html
+          grep -q '£1,324.00' /tmp/admin-orders.html
+          grep -q '"assets"' /tmp/admin-assets.json
+
+          ADMIN_CSRF=$(TOKEN="$TOKEN" node -e "const crypto=require('crypto'); process.stdout.write(crypto.createHmac('sha256',process.env.SESSION_SECRET).update(process.env.TOKEN).digest('hex'))")
+          curl -sS -o /dev/null -D /tmp/smtp-save-headers.txt \
+            -H "$AUTH" \
+            -X POST http://127.0.0.1:8099/admin/settings \
+            --data-urlencode "_csrf=$ADMIN_CSRF" \
+            --data-urlencode 'site_name=WatAir UK' \
+            --data-urlencode 'company_location=Glasgow, United Kingdom' \
+            --data-urlencode 'email=info@watairuk.co.uk' \
+            --data-urlencode 'phone=0141 442 0201' \
+            --data-urlencode 'footer_text=Atmospheric Water Generation solutions.' \
+            --data-urlencode 'hero_title=Water from air. Wherever you need it.' \
+            --data-urlencode 'hero_text=Atmospheric Water Generation for homes, workplaces and industrial-scale applications, producing fresh water directly from ambient air.' \
+            --data-urlencode 'hero_image=/uploads/imported/legacy/media/1027/contact-banner.jpg' \
+            --data-urlencode 'hero_image_style=photo' \
+            --data-urlencode 'catalogue_hero_eyebrow=Atmospheric Water Generators' \
+            --data-urlencode 'catalogue_hero_title=Water generation at every scale' \
+            --data-urlencode 'catalogue_hero_text=From compact systems to industrial-scale generation.' \
+            --data-urlencode 'catalogue_hero_image=/uploads/imported/legacy/images/home/products.jpg' \
+            --data-urlencode 'catalogue_hero_image_style=graphic' \
+            --data-urlencode 'linkedin_url=https://uk.linkedin.com/company/watair-uk' \
+            --data-urlencode 'smtp_enabled=1' \
+            --data-urlencode 'smtp_host=smtp.example.test' \
+            --data-urlencode 'smtp_port=587' \
+            --data-urlencode 'smtp_user=ci-smtp-user' \
+            --data-urlencode 'smtp_password=CI-SMTP-secret-987654321' \
+            --data-urlencode 'smtp_from=WatAir CI <ci@example.com>' \
+            --data-urlencode 'smtp_to=ci@example.com'
+
+          grep -q '302' /tmp/smtp-save-headers.txt
+          node <<'NODE'
+          const Database = require('better-sqlite3');
+          const db = new Database('data/watair.db');
+          const secret = db.prepare("SELECT value FROM app_secrets WHERE key='smtp_password'").get();
+          if (!secret || !secret.value.startsWith('v1.') || secret.value.includes('CI-SMTP-secret-987654321')) {
+            throw new Error('SMTP password was not stored as encrypted secret data');
+          }
+          if (db.prepare("SELECT 1 FROM settings WHERE key='smtp_password'").get()) {
+            throw new Error('SMTP password leaked into ordinary settings');
+          }
+          const smtpHost = db.prepare("SELECT value FROM settings WHERE key='smtp_host'").get();
+          if (smtpHost?.value !== 'smtp.example.test') throw new Error('SMTP host was not saved');
+          db.close();
+          NODE
+
+          curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings-smtp.html
+          grep -q 'Using CMS configuration' /tmp/admin-settings-smtp.html
+          grep -q 'encrypted CMS password is stored' /tmp/admin-settings-smtp.html
+          ! grep -q 'CI-SMTP-secret-987654321' /tmp/admin-settings-smtp.html
+
+      - name: Reject unsafe first-boot admin credentials
+        env:
+          NODE_ENV: production
+          PORT: 8100
+          BASE_URL: https://watairuk.co.uk
+          SESSION_SECRET: ci-only-session-secret-12345678901234567890
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: replace-with-a-long-unique-password
+        run: |
+          set -euo pipefail
+          rm -rf data
+          set +e
+          node server.js > /tmp/unsafe-bootstrap.log 2>&1
+          STATUS=$?
+          set -e
+          test "$STATUS" -ne 0
+          grep -q 'Refusing to create the first production admin with example credentials' /tmp/unsafe-bootstrap.log
+
+      - name: Validate production Docker configuration
+        run: |
+          cp .env.example .env
+          docker compose config > /dev/null
+          docker build -t watair-ci .
+ /tmp/contact-turnstile-failed-status.txt
+          grep -q 'complete the security check' /tmp/contact-turnstile-failed.html
           grep -q 'CI Invalid' /tmp/contact-invalid.html
           grep -q '303' /tmp/contact-valid-headers.txt
           grep -qi '^location: /contact?sent=1' /tmp/contact-valid-headers.txt
