@@ -440,6 +440,18 @@ function seed() {
     db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(ecommercePrivacyKey, new Date().toISOString());
   }
 
+  // Turnstile privacy disclosure for existing databases. Append once without
+  // replacing any owner-edited privacy content.
+  const turnstilePrivacyKey = 'owner_turnstile_privacy_2026_10_v1';
+  if (!db.prepare('SELECT 1 FROM settings WHERE key=?').get(turnstilePrivacyKey)) {
+    const privacy = db.prepare("SELECT id,body_html FROM pages WHERE slug='privacy'").get();
+    if (privacy?.body_html && !privacy.body_html.includes('Contact-form security')) {
+      const turnstilePrivacy = '<h2>Contact-form security</h2><p>We use Cloudflare Turnstile on the contact form to distinguish legitimate visitors from automated abuse. Turnstile processes technical browser and network signals needed to provide this security function; Cloudflare states that Turnstile does not access, store or transmit the contents of your form entries as part of the challenge. See Cloudflare’s <a href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener">Turnstile Privacy Addendum</a> for more information.</p>';
+      db.prepare('UPDATE pages SET body_html=body_html || ?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(turnstilePrivacy, privacy.id);
+    }
+    db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run(turnstilePrivacyKey, new Date().toISOString());
+  }
+
   // Add the owner/operator water-quality responsibility clause to existing
   // Terms pages once, without replacing any other CMS-edited legal content.
   const waterQualityTermsKey = 'owner_water_quality_terms_2026_10_v1';
