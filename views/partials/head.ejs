@@ -218,7 +218,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= seoTitle %></title>
   <meta name="description" content="<%= seoDescription %>">
-  <meta name="robots" content="<%= meta?.noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %>">
+  <meta name="robots" content="<%= meta?.noindex || siteNoindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %>">
   <meta name="theme-color" content="#062632">
 
   <link rel="canonical" href="<%= canonicalUrl %>">
