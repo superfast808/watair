@@ -1,0 +1,61 @@
+name: WatAir public crawlability
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  crawler-headers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Verify production indexing despite rewritten Host headers
+        run: |
+          set -euo pipefail
+          export NODE_ENV=production PORT=8189 BASE_URL=https://watairuk.co.uk
+          export SESSION_SECRET="$(openssl rand -hex 32)"
+          export ADMIN_EMAIL=seo-ci@example.invalid
+          export ADMIN_PASSWORD="$(openssl rand -hex 18)"
+          node server.js >/tmp/watair-seo.log 2>&1 &
+          PID1=$!
+          trap 'kill ${PID1:-} ${PID2:-} 2>/dev/null || true' EXIT
+          for i in {1..25}; do
+            if curl -fsS http://127.0.0.1:8189/health >/tmp/live-health.json; then break; fi
+            sleep 1
+          done
+          grep -q '"indexingEnabled":true' /tmp/live-health.json
+          curl -fsS -D /tmp/live-headers -H 'Host: internal-plesk.local' http://127.0.0.1:8189/ >/tmp/live-home
+          curl -fsS -H 'Host: internal-plesk.local' http://127.0.0.1:8189/robots.txt >/tmp/live-robots
+          curl -fsS -H 'Host: www.watairuk.co.uk' http://127.0.0.1:8189/robots.txt >/tmp/live-www-robots
+          grep -q 'rel="canonical" href="https://watairuk.co.uk/"' /tmp/live-home
+          grep -q 'name="robots" content="index,follow' /tmp/live-home
+          ! grep -qi '^x-robots-tag:' /tmp/live-headers
+          grep -q '^Allow: /$' /tmp/live-robots
+          ! grep -q '^Disallow: /$' /tmp/live-robots
+          grep -q '^Sitemap: https://watairuk.co.uk/sitemap.xml$' /tmp/live-robots
+          diff -q /tmp/live-robots /tmp/live-www-robots
+          kill "$PID1"
+          wait "$PID1" || true
+          unset PID1
+
+          export SITE_NOINDEX=1 PORT=8190
+          node server.js >/tmp/watair-seo-preview.log 2>&1 &
+          PID2=$!
+          for i in {1..25}; do
+            if curl -fsS http://127.0.0.1:8190/health >/tmp/preview-health.json; then break; fi
+            sleep 1
+          done
+          grep -q '"indexingEnabled":false' /tmp/preview-health.json
+          curl -fsS -D /tmp/preview-headers -H 'Host: preview.example.test' http://127.0.0.1:8190/ >/tmp/preview-home
+          curl -fsS http://127.0.0.1:8190/robots.txt >/tmp/preview-robots
+          grep -q 'name="robots" content="noindex,nofollow"' /tmp/preview-home
+          grep -qi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/preview-headers
+          grep -q '^Allow: /$' /tmp/preview-robots
+          ! grep -q '^Disallow: /$' /tmp/preview-robots
+          ! grep -q '^Sitemap:' /tmp/preview-robots
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8190/sitemap.xml)" = 404
