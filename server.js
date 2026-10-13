@@ -36,6 +36,9 @@ const app = express();
 const PORT = Number(process.env.PORT || 8080);
 const isProd = process.env.NODE_ENV === 'production';
 const baseUrl = (process.env.BASE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
+// Only explicit preview/staging opt-outs can disable indexing. Plesk may
+// rewrite the Host header; never interpret that as a reason to block Google.
+const siteNoindex = /^(1|true|yes|on)$/i.test(String(process.env.SITE_NOINDEX || '').trim());
 
 function configuredCanonicalHostname() {
   try { return new URL(baseUrl).hostname.toLowerCase(); } catch { return ''; }
@@ -51,6 +54,8 @@ function isCanonicalRequest(req) {
 }
 
 function presentationBaseUrl(req) {
+  // Keep live canonicals stable even if a reverse proxy forwards an internal host.
+  if (isProd && !siteNoindex) return baseUrl;
   if (isCanonicalRequest(req)) return baseUrl;
 
   const rawHost = String(req.get('host') || '').trim();
@@ -167,7 +172,8 @@ app.use((req, res, next) => {
   res.locals.path = req.path;
   res.locals.baseUrl = presentationBaseUrl(req);
   res.locals.isCanonicalHost = isCanonicalRequest(req);
-  if (isProd && !res.locals.isCanonicalHost) {
+  res.locals.siteNoindex = siteNoindex;
+  if (siteNoindex) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
   res.locals.admin = readAdmin(req);
@@ -503,7 +509,7 @@ app.get('/health', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
     db.prepare('SELECT 1 AS ok').get();
-    res.json({ ok: true, service: 'watair-next', version: appVersion });
+    res.json({ ok: true, service: 'watair-next', version: appVersion, indexingEnabled: !siteNoindex });
   } catch (err) {
     console.error('Health check failed:', err.message);
     res.status(503).json({ ok: false, service: 'watair-next', version: appVersion });
@@ -1252,10 +1258,10 @@ app.get('/.well-known/security.txt', (req,res) => {
 });
 
 app.get('/robots.txt', (req,res) => {
-  if (isProd && !isCanonicalRequest(req)) {
-    return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
-  }
-  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /buy/\nDisallow: /checkout/\nDisallow: /order/\nDisallow: /payments/\nSitemap: ${baseUrl}/sitemap.xml\n`);
+  // Robots is independent of req.hostname: proxies may forward internal hosts.
+  // On staging, crawlers must be able to see the noindex on public pages.
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /buy/\nDisallow: /checkout/\nDisallow: /order/\nDisallow: /payments/\n${siteNoindex ? '' : `Sitemap: ${baseUrl}/sitemap.xml\n`}`);
 });
 
 function xmlEscape(value) {
@@ -1270,6 +1276,7 @@ function sitemapDate(value) {
 }
 
 app.get('/sitemap.xml', (req,res) => {
+  if (siteNoindex) return res.status(404).type('text/plain').send('No sitemap in preview mode.');
   const pageRows = db.prepare('SELECT slug,updated_at FROM pages WHERE published=1').all();
   const pageUpdated = Object.fromEntries(pageRows.map(row => [row.slug, sitemapDate(row.updated_at)]));
   const productRows = products();
