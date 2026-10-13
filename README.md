@@ -54,7 +54,9 @@ curl http://127.0.0.1:${HOST_PORT:-8093}/health
 
 The application binds to `127.0.0.1` on the host and is intended to sit behind Plesk/nginx, which terminates HTTPS.
 
-Before launch, `BASE_URL` must be the final canonical HTTPS domain. Requests made on that live hostname use it for canonical tags, Open Graph metadata, JSON-LD and the sitemap. Requests made on a different test/staging hostname self-reference that hostname instead and are marked noindex, so sharing a preview link does not advertise or redirect users toward the production domain.
+Before launch, `BASE_URL` must be the final canonical HTTPS domain. On the live site, canonical tags, Open Graph metadata, JSON-LD and the sitemap use this configured domain regardless of internal Host headers passed through by Plesk/nginx. The public robots file allows public crawling, avoiding accidental site-wide blocking when the proxy rewrites a hostname.
+
+For a test/staging deployment, explicitly set **`SITE_NOINDEX=1`** in its `.env` (leave `0` on the live site). This emits `noindex` in both HTML and the `X-Robots-Tag` response header, suppresses its sitemap, and uses the preview hostname in canonical tags. The preview robots file allows crawling so engines can read the noindex. Protect genuinely private staging with authentication rather than robots.txt alone.
 
 ## Persistent data
 
