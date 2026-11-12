@@ -20,6 +20,21 @@
   }
   product?.addEventListener('change',()=>useSelection(product,article));
   article?.addEventListener('change',()=>useSelection(article,product));
+  // Convert the editorial scheduling control to an unambiguous UTC instant.
+  const localSchedule=document.querySelector('[data-publish-local]');
+  const utcSchedule=document.querySelector('[data-publish-utc]');
+  if(localSchedule&&utcSchedule){
+    if(utcSchedule.value){
+      const initial=new Date(utcSchedule.value);
+      if(!Number.isNaN(initial.valueOf())){
+        const n=v=>String(v).padStart(2,'0');
+        localSchedule.value=initial.getFullYear()+'-'+n(initial.getMonth()+1)+'-'+n(initial.getDate())+'T'+n(initial.getHours())+':'+n(initial.getMinutes());
+      }
+    }
+    const convert=()=>{utcSchedule.value=localSchedule.value?new Date(localSchedule.value).toISOString():'';};
+    localSchedule.addEventListener('change',convert);
+    localSchedule.closest('form')?.addEventListener('submit',convert);
+  }
   // Enable quick bulk selection of every connected channel.
   const all=document.querySelector('[data-select-all-channels]');
   all?.addEventListener('change',()=>{
