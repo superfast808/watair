@@ -5,13 +5,14 @@ const fsp=require('node:fs/promises');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const sharp=require('sharp');
+const { publicSiteOrigin } = require('./site-url');
 
 const PUBLIC_ROOT=path.resolve(__dirname,'..','public');
 const SOCIAL_ROOT=path.join(PUBLIC_ROOT,'uploads','social');
 const MAX_SOURCE_SIZE=25*1024*1024;
 const MAX_RESULT_SIZE=8*1024*1024;
 const ACCEPTED_SOURCE=/\.(?:jpe?g|png|webp|gif|avif|heif|heic|svg)$/i;
-const baseUrl=()=>String(process.env.BASE_URL||'https://watairuk.co.uk').replace(/\/+$/,'');
+const baseUrl=publicSiteOrigin;
 const verifyEnabled=()=>!/^(0|false|off|no)$/i.test(String(process.env.SOCIAL_MEDIA_VERIFY_PUBLIC||'1').trim());
 
 function pathOfImage(input){
