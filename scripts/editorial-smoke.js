@@ -6,6 +6,7 @@ process.env.SESSION_SECRET='ci-editorial-tests-session-secret-123456789012345';
 process.env.BASE_URL='https://watairuk.co.uk';
 process.env.BUFFER_API_KEY='ci-buffer-test-key';
 process.env.OPENAI_API_KEY='ci-openai-test-key';
+process.env.SOCIAL_MEDIA_VERIFY_PUBLIC='0';
 const S=require('../src/editorial');
 (async()=>{
   const articles=S.articleList(100,true);
@@ -33,7 +34,13 @@ const S=require('../src/editorial');
     const input=payload.variables.input;
     assert.equal(input.mode,'shareNow');
     assert.ok(input.text.includes('https://watairuk.co.uk/news/'));
-    assert.equal(input.assets[0].image.url,'https://watairuk.co.uk/images/pw-hr-20l.webp');
+    assert.match(input.assets[0].image.url,/^https:\/\/watairuk\.co\.uk\/uploads\/social\/[a-f0-9]{32}\.jpg$/);
+    const sharp=require('sharp');
+    const filePath=require('node:path').join(__dirname,'../public',new URL(input.assets[0].image.url).pathname);
+    const data=await sharp(filePath).metadata();
+    assert.equal(data.format,'jpeg');
+    assert.equal(data.width,1200);
+    assert.equal(data.height,1200);
     if(input.channelId===facebookId) {
       fbSent++;
       assert.equal(input.metadata.facebook.type,'post');
@@ -57,6 +64,17 @@ const S=require('../src/editorial');
   await assert.rejects(()=>S.dispatchPost(id),/not ready/);
   assert.equal(fbSent,1);
   assert.equal(igSent,1);
+  const {prepareForBuffer}=require('../src/social-media');
+  await assert.rejects(()=>prepareForBuffer('/uploads/does-not-exist.jpg',{verify:false}),/does not exist/);
+  const failed=S.createPost({
+    topic:'technology',caption:ai.caption,image_url:'/uploads/does-not-exist.jpg',
+    link_path:'/how-it-works',source:'manual',status:'ready'
+  },[facebookId]);
+  const status=await S.dispatchPost(failed);
+  assert.equal(status[0].status,'error');
+  assert.match(status[0].error,/does not exist/);
+  assert.equal(fbSent,1,'Broken images must not be sent to Buffer');
+  assert.equal(S.getPost(failed).status,'failed');
   // Daily default must be off until explicitly enabled by an admin.
   assert.equal(S.setting('social_auto_enabled'),'0');
   S.db.close();
