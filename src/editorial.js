@@ -14,6 +14,7 @@ const setting = (key, fallback = '') => db.prepare('SELECT value FROM settings W
 const putSetting = (key, value) => db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value));
 const defaults = {social_auto_enabled:'0',social_auto_time:'09:30',social_auto_style:'balanced',social_ai_model:'gpt-5.4-mini'};
 for (const [k,v] of Object.entries(defaults)) db.prepare('INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)').run(k,v);
+require('./editorial-seed')(db);
 
 function keyMaterial() {
   const secret = String(process.env.SESSION_SECRET || '');
