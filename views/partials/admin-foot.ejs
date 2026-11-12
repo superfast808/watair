@@ -22,5 +22,6 @@
   </div>
 
   <script src="/js/admin.js?v=<%= assetVersion %>" defer></script>
+  <% if(path.startsWith('/admin/editorial')){ %><script src="/js/editorial-admin.js?v=<%= assetVersion %>" defer></script><% } %>
 </body>
 </html>
