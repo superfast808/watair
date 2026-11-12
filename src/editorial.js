@@ -136,7 +136,7 @@ async function aiGenerate(kind,input) {
   const system='You are WatAir UK editorial assistant. Write excellent British English for a company supplying atmospheric water generation solutions. Accurate, grounded, useful; engaging hooks and understated credibility, not generic advertising. Never invent performance, pricing, certifications, installations, client results or environmental savings. Distinguish rated capacities from actual output (humidity/temperature matters). Do not claim water is automatically drinkable without appropriate treatment and maintenance. No overly repetitive marketing copy. Output ONE valid JSON object without markdown.';
   const response=await jsonRequest('https://api.openai.com/v1/responses',token,{
     model,input:[{role:'system',content:system},{role:'user',content:JSON.stringify({kind,...input})}],
-    max_output_tokens:kind==='article'?1500:450,store:false
+    max_output_tokens:kind==='article'?2600:650,store:false
   },35000);
   return parseModelJson(response);
 }
@@ -188,8 +188,20 @@ async function dispatchPost(postId) {
     db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error="",updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
     const caption=post.caption.trim()+(link?'\n\n'+link:'');
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
+    const service=String(d.service||'').toLowerCase();
     const input={text:caption,channelId:d.channel_id,schedulingType:'automatic',mode:'shareNow',aiAssisted:post.source==='ai'||post.source==='automatic'};
-    if(post.image_url)input.assets=[{image:{url:absolute(post.image_url)}}];
+    if(post.image_url) input.assets=[{image:{url:absolute(post.image_url)}}];
+    // Network-specific fields are mandatory for several Buffer destinations.
+    // Link cards are used only on posts without a separate image asset.
+    const linkCard=link&&!post.image_url ? {url:link,title:post.headline||'WatAir UK insight'} : null;
+    if(service==='facebook') input.metadata={facebook:{type:'post',...(linkCard?{linkAttachment:linkCard}:{})}};
+    else if(service==='instagram') input.metadata={instagram:{type:'post',shouldShareToFeed:true,...(link?{link}:{})}};
+    else if(service==='google') input.metadata={google:{type:'whats_new',...(link?{detailsWhatsNew:{link}}:{})}};
+    else if(['linkedin','threads','bluesky'].includes(service)&&linkCard) input.metadata={[service]:{linkAttachment:linkCard}};
+    if(['pinterest','youtube'].includes(service)) {
+      db.prepare('UPDATE social_deliveries SET status=\'error\',error=? WHERE id=?').run('This channel requires a platform-specific board or video. Use Buffer directly for this format.',d.id);
+      continue;
+    }
     if(['instagram','tiktok','pinterest'].includes(String(d.service||'').toLowerCase())&&!post.image_url) {
       db.prepare('UPDATE social_deliveries SET status=\'error\',error=? WHERE id=?').run('This channel requires an image',d.id);continue;
     }
@@ -233,7 +245,7 @@ async function workerTick() {
     if(!claim.changes)return;
     try {
       const recent=allPosts(12);
-      const pattern=topics();
+      const pattern=setting('social_auto_style')==='educational' ? ['did-you-know','technology','applications','water-quality','resilience','technology','environment','industry'] : topics();
       let index=Math.floor(Date.parse(now.day+'T00:00:00Z')/86400000);
       let topic=pattern[index%pattern.length];
       if(recent[0]?.topic===topic)topic=pattern[(index+1)%pattern.length];
