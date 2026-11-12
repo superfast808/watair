@@ -128,5 +128,6 @@
         ><%= item.label %></a>
       <% } %>
     <% }) %>
+    <a href="/news" class="<%= path.startsWith('/news') ? 'active' : '' %>" <%= path.startsWith('/news') ? 'aria-current="page"' : '' %>>News & insights</a>
   </nav>
 </header>
