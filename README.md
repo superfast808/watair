@@ -195,3 +195,7 @@ In Editorial Studio → Social post, click **Test and prepare public image** to 
 The public URL must be reachable from Buffer's infrastructure too. If local preflight works but Buffer still cannot access the image, check Plesk/nginx routing, CDN bot challenges, hotlink protection and WAF rules for \`/uploads/social/*\` (without globally turning off website protection). The app sets \`Cross-Origin-Resource-Policy: cross-origin\` and \`Access-Control-Allow-Origin: *\` for generated social images.
 
 Set \`SOCIAL_MEDIA_VERIFY_PUBLIC=0\` **only** if the server cannot connect back to its own HTTPS hostname, after confirming the URL from an unrelated internet connection. Otherwise the publishing preflight deliberately blocks an invalid URL before Buffer.
+
+### Correct public domain for social posts
+
+The live WatAir domain is **https://watairuk.co.uk**, not `watair.co.uk`. Production code now pins all canonical SEO, article, sitemap and social-media image URLs to the correct hostname even if `BASE_URL` was accidentally misconfigured. Preview/staging environments that have `SITE_NOINDEX=1` retain their configured hostname. Still correct the deployed `/opt/watair/.env` to `BASE_URL=https://watairuk.co.uk` and recreate the Docker container after editing it, so configuration and code agree. Never create DNS for the typo merely to resolve image fetching.
