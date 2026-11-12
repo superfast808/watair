@@ -165,3 +165,22 @@ Before DNS cutover:
 - submit the sitemap in the relevant search-console account
 - monitor 404s and add redirects for any legacy URLs discovered after launch
 - take regular backups of the SQLite database and uploaded media
+
+## Editorial Studio, news and daily social publishing
+
+Navigate to **CMS → Editorial Studio** at /admin/editorial. The journal is at /news (RSS: /news/feed.xml). The first install seeds three original, factual evergreen articles about atmospheric water generation, humidity and system selection; the administrator can update or unpublish them. Published articles are included in /sitemap.xml and emit Article JSON-LD plus canonical and Open Graph metadata.
+
+This is a first-party content calendar connected to Buffer, using the same website-first approach as the KJIHC publishing setup:
+
+1. Connect the WatAir accounts to Buffer, then paste the personal API key under Editorial Studio → API configuration (or set BUFFER_API_KEY in the server environment).
+2. Paste an OpenAI API key (or set OPENAI_API_KEY). GPT-5.4 mini is the fixed model; keys are AES-256-GCM encrypted inside the existing app_secrets table when saved in the CMS. Rotate SESSION_SECRET only with an associated key re-entry.
+3. Click **Sync connected Buffer channels**, choose the default destination channels (Facebook, Instagram, LinkedIn and any others connected to this Buffer account), and save. Only checked channels are eligible for automatic publishing.
+4. Use the AI writing desk to generate social posts or educational article drafts. Generated articles remain drafts until manually published. Social posts can be revised, assigned an image from the CMS media library or products, linked to an article/product URL, saved as drafts, scheduled for a date or published immediately.
+5. **Daily autopilot is disabled by default.** Enable it after credentials and channels are ready. It creates one varied post every Europe/London calendar day at the selected time; draws facts from the published articles, product catalogue and existing guidance; and submits it to each selected channel. Publication happens through Buffer, whose status should be monitored there.
+6. The built-in worker wakes every minute and catches due content after a normal server restart. Each channel has its own persisted delivery record and Buffer remote ID. Uncertain network outcomes are marked needs_review and are not retried automatically, preventing duplicate publishing.
+
+Important: a personal Buffer API key reaches the channels in the connected Buffer account, so select the WatAir channels deliberately. A new channel is never selected for the daily automation until an administrator enables it. Buffer image publishing requires the image URL to be publicly accessible from outside the server; /public/uploads is backed by the existing persistent volume.
+
+Platform-specific notes: Facebook and Instagram use required platform post-type metadata, Facebook/LinkedIn and supported networks can use a page link preview when there is no separate image, and Instagram uses its image plus link metadata. Instagram captions do not provide clickable links for normal feed posts. Some other networks (especially Pinterest and YouTube) need board/video options and are flagged for manual attention rather than submitting an invalid generic post.
+
+Daily automation and schedules require the WatAir Node process running; do not enable a second independent scheduler using the same database. No service posts until keys, channels and the automatic publishing switch are explicitly configured.
