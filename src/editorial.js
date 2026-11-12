@@ -2,6 +2,7 @@
 // Keys are encrypted at rest; publishing is disabled until explicitly enabled in CMS.
 const crypto = require('crypto');
 const { db } = require('./db');
+const { publicSiteOrigin } = require('./site-url');
 const { prepareForBuffer } = require('./social-media');
 
 db.exec('CREATE TABLE IF NOT EXISTS news_articles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'Technology\', excerpt TEXT NOT NULL DEFAULT "", body_html TEXT NOT NULL DEFAULT "", image_url TEXT NOT NULL DEFAULT "", seo_title TEXT NOT NULL DEFAULT "", seo_description TEXT NOT NULL DEFAULT "", status TEXT NOT NULL DEFAULT \'draft\', published_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
@@ -51,7 +52,7 @@ function cleanLocalPath(value) {
   let s=String(value||'').trim();
   if (/^https?:\/\//i.test(s)) {
     try {
-      const u=new URL(s), host=new URL(process.env.BASE_URL||'https://watairuk.co.uk');
+      const u=new URL(s), host=new URL(publicSiteOrigin());
       if (u.hostname.replace(/^www\./,'')!==host.hostname.replace(/^www\./,'')) return '';
       s=u.pathname;
     } catch { return ''; }
@@ -59,7 +60,7 @@ function cleanLocalPath(value) {
   if (!s.startsWith('/')||s.startsWith('//')||/[<>"'\r\n]/.test(s)) return '';
   return s.slice(0,600);
 }
-function absolute(path) { return new URL(path, (process.env.BASE_URL||'https://watairuk.co.uk').replace(/\/?$/,'/')).href; }
+function absolute(path) { return new URL(path, publicSiteOrigin()+'/').href; }
 async function jsonRequest(url, token, data, timeout=18000) {
   const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(data),signal:AbortSignal.timeout(timeout)});
   const body=await response.json().catch(()=>({}));
