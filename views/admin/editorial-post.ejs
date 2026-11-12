@@ -1,0 +1,31 @@
+<%- include('../partials/admin-head') %>
+<header class="admin-page-head"><div><p><a href="/admin/editorial">← Editorial Studio</a></p><h1><%= post?'Social post #'+post.id:'New social post' %></h1><span class="page-help">Plan a useful post, attach WatAir photography and send it to your chosen channels.</span></div><div class="admin-head-actions"><a class="secondary-button" href="/admin/editorial">Back to studio</a></div></header>
+<% if(reqQuery.notice){ %><p class="ed-notice"><%= reqQuery.notice %></p><% } %><% if(reqQuery.error){ %><p class="ed-error"><%= reqQuery.error %></p><% } %>
+<% const editable=!post||['draft','scheduled'].includes(post.status); %>
+<div class="ed-two ed-post-columns">
+  <form class="admin-card ed-panel ed-form" method="post" action="<%= post?'/admin/editorial/posts/'+post.id:'/admin/editorial/posts' %>">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label>Content theme<select name="topic" <%= editable?'':'disabled' %>><% topics.forEach(t=>{ %><option value="<%= t %>" <%= post?.topic===t?'selected':'' %>><%= t.replace(/-/g,' ') %></option><% }) %></select></label>
+    <label>Internal working title<input name="headline" value="<%= post?.headline||'' %>" maxlength="120" <%= editable?'':'readonly' %>></label>
+    <label>Post copy<textarea name="caption" rows="10" required minlength="20" <%= editable?'':'readonly' %>><%= post?.caption||'' %></textarea></label>
+    <label>Link back to website page<input name="link_path" value="<%= post?.link_path||'' %>" placeholder="/products/pw-hr-20l or /news/article-slug" <%= editable?'':'readonly' %>></label>
+    <label>Product reference<select name="product_id" <%= editable?'':'disabled' %>><option value="">No linked product</option><% products.forEach(p=>{ %><option value="<%= p.id %>" <%= Number(post?.product_id)===p.id?'selected':'' %>><%= p.name %></option><% }) %></select></label>
+    <label>Article reference<select name="article_id" <%= editable?'':'disabled' %>><option value="">No linked article</option><% articles.forEach(a=>{ %><option value="<%= a.id %>" <%= Number(post?.article_id)===a.id?'selected':'' %>><%= a.title %></option><% }) %></select></label>
+    <div class="ed-media-field" data-media-field><label>Post image (publicly accessible)<input name="image_url" data-media-url value="<%= post?.image_url||'' %>" <%= editable?'':'readonly' %> placeholder="Select a WatAir product photo or media asset"></label><% if(editable){ %><button type="button" class="secondary-button" data-media-choose>Media library</button><button type="button" class="secondary-button" data-media-clear>Clear</button><% } %><div data-media-preview class="ed-image-preview"><% if(post?.image_url){ %><img src="<%= post.image_url %>" alt=""></div><% }else{ %></div><% } %><span data-media-empty <%= post?.image_url?'hidden':'' %>>No image selected</span></div>
+    <div class="ed-channels"><strong>Publishing destinations</strong><p>Choose one or multiple connected interfaces. Instagram and other image-first platforms require an image.</p><% channels.filter(c=>c.connected).forEach(c=>{ %><label class="ed-check"><input type="checkbox" name="channels" value="<%= c.id %>" <%= chosen.includes(c.id)?'checked':'' %> <%= editable?'':'disabled' %>><span><strong><%= c.name %></strong><small><%= c.service %></small></span></label><% }) %></div>
+    <% if(editable){ %><label>Optional time to deliver to Buffer (UTC, ISO format)<input name="due_at" type="text" placeholder="2026-12-01T10:00:00Z" value="<%= post?.due_at||'' %>"><small>Leave blank for drafts or immediate publishing. Use a future UTC timestamp to schedule.</small></label>
+      <div class="ed-actions"><button class="secondary-button" type="submit" name="action" value="draft">Save draft</button><button class="admin-button" type="submit" name="action" value="schedule">Save & schedule</button></div>
+    <% } %>
+  </form>
+  <aside class="admin-card ed-panel ed-sidepanel">
+    <h2>Publishing preview</h2>
+    <div class="ed-preview"><div class="ed-preview-brand"><img src="/favicon.svg" alt=""><span>WatAir UK<small>Social preview</small></span></div><p><%= post?.caption||'Your post content will appear here once saved.' %></p><% if(post?.image_url){ %><img class="ed-preview-img" src="<%= post.image_url %>" alt=""><% } %><% if(post?.link_path){ %><div class="ed-preview-link"><%= baseUrl+post.link_path %></div><% } %></div>
+    <% if(post){ %><p class="ed-state">Status: <strong><%= post.status %></strong></p>
+      <% if(['draft','scheduled','ready'].includes(post.status)){ %><form method="post" action="/admin/editorial/posts/<%= post.id %>/send"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="admin-button" type="submit" onclick="return confirm('Submit this post to Buffer now for all selected channels?')">Publish now →</button></form><% } %>
+      <% if(['failed','partial'].includes(post.status)&&deliveries.some(d=>d.status==='error')){ %><form method="post" action="/admin/editorial/posts/<%= post.id %>/retry"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="secondary-button" type="submit">Retry definite errors</button></form><% } %>
+      <h3>Per-channel delivery audit</h3><div class="ed-table"><% deliveries.forEach(d=>{ %><div class="ed-table-row"><span><strong><%= d.channel_name %></strong><small><%= d.status %> · <%= d.attempts %> attempt(s)</small><% if(d.error){ %><small class="ed-failure"><%= d.error %></small><% } %><% if(d.buffer_post_id){ %><small>Buffer ID: <%= d.buffer_post_id %></small><% } %></span></div><% }) %></div>
+      <p class="ed-hint">“Submitted” means Buffer accepted the post; final publication and any platform errors can be checked in Buffer. An uncertain network result is never automatically retried.</p>
+    <% } %>
+  </aside>
+</div>
+<%- include('../partials/admin-foot') %>
