@@ -1,0 +1,56 @@
+name: WatAir Editorial Studio
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  editorial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Static checks and template compilation
+        run: npm run check
+      - name: Exercise AI, Buffer, duplicate safety and article seeds without external network
+        run: node scripts/editorial-smoke.js
+      - name: Render public journal and authenticated editor
+        env:
+          NODE_ENV: production
+          BASE_URL: https://watairuk.co.uk
+          PORT: 8192
+          SESSION_SECRET: ci-editorial-tests-session-secret-123456789012345
+          ADMIN_EMAIL: ci-editorial@example.com
+          ADMIN_PASSWORD: CI-Editorial-Password12345
+        run: |
+          set -euo pipefail
+          node server.js >/tmp/editorial-server.log 2>&1 &
+          PID=$!
+          trap 'STATUS=$?; if [ "$STATUS" -ne 0 ]; then cat /tmp/editorial-server.log || true; fi; kill $PID 2>/dev/null || true; exit $STATUS' EXIT
+          for i in {1..25}; do
+            if curl -fsS http://127.0.0.1:8192/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8192/news > /tmp/news.html
+          curl -fsS http://127.0.0.1:8192/news/what-is-atmospheric-water-generation > /tmp/article.html
+          curl -fsS http://127.0.0.1:8192/sitemap.xml > /tmp/news-sitemap.xml
+          curl -fsS http://127.0.0.1:8192/news/feed.xml > /tmp/news-feed.xml
+          grep -q 'What is atmospheric water generation?' /tmp/news.html
+          grep -q '"@type":"Article"' /tmp/article.html
+          grep -q '/news/what-is-atmospheric-water-generation' /tmp/news-sitemap.xml
+          grep -q 'WatAir UK News' /tmp/news-feed.xml
+
+          TOKEN="$(node -e "process.stdout.write(require('jsonwebtoken').sign({sub:1,email:'ci-editorial@example.com',role:'admin'},process.env.SESSION_SECRET,{expiresIn:'1h'}))")"
+          AUTH="Cookie: watair_admin=$TOKEN"
+          curl -fsS -H "$AUTH" http://127.0.0.1:8192/admin/editorial > /tmp/editorial-admin.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8192/admin/editorial/posts/new > /tmp/editorial-compose.html
+          curl -fsS -H "$AUTH" http://127.0.0.1:8192/admin/editorial/articles/new > /tmp/editorial-article.html
+          grep -q 'Connected channels' /tmp/editorial-admin.html
+          grep -q 'Smart social drafts' /tmp/editorial-admin.html
+          grep -q 'Daily publisher' /tmp/editorial-admin.html
+          grep -q 'Post copy' /tmp/editorial-compose.html
+          grep -q 'SEO title' /tmp/editorial-article.html
