@@ -3,13 +3,13 @@
 const crypto = require('crypto');
 const { db } = require('./db');
 
-db.exec('CREATE TABLE IF NOT EXISTS news_articles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, category TEXT NOT NULL DEFAULT "Technology", excerpt TEXT NOT NULL DEFAULT "", body_html TEXT NOT NULL DEFAULT "", image_url TEXT NOT NULL DEFAULT "", seo_title TEXT NOT NULL DEFAULT "", seo_description TEXT NOT NULL DEFAULT "", status TEXT NOT NULL DEFAULT "draft", published_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+db.exec('CREATE TABLE IF NOT EXISTS news_articles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'Technology\', excerpt TEXT NOT NULL DEFAULT "", body_html TEXT NOT NULL DEFAULT "", image_url TEXT NOT NULL DEFAULT "", seo_title TEXT NOT NULL DEFAULT "", seo_description TEXT NOT NULL DEFAULT "", status TEXT NOT NULL DEFAULT \'draft\', published_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 db.exec('CREATE INDEX IF NOT EXISTS news_published ON news_articles(status,published_at DESC)');
 db.exec('CREATE TABLE IF NOT EXISTS social_channels (id TEXT PRIMARY KEY, name TEXT NOT NULL, service TEXT NOT NULL, organization_id TEXT NOT NULL DEFAULT "", enabled INTEGER NOT NULL DEFAULT 0, connected INTEGER NOT NULL DEFAULT 1, synced_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
-db.exec('CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, topic TEXT NOT NULL DEFAULT "technology", headline TEXT NOT NULL DEFAULT "", caption TEXT NOT NULL, image_url TEXT NOT NULL DEFAULT "", link_path TEXT NOT NULL DEFAULT "", article_id INTEGER, product_id INTEGER, status TEXT NOT NULL DEFAULT "draft", due_at TEXT, source TEXT NOT NULL DEFAULT "manual", created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(article_id) REFERENCES news_articles(id) ON DELETE SET NULL, FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL)');
+db.exec('CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, topic TEXT NOT NULL DEFAULT "technology", headline TEXT NOT NULL DEFAULT "", caption TEXT NOT NULL, image_url TEXT NOT NULL DEFAULT "", link_path TEXT NOT NULL DEFAULT "", article_id INTEGER, product_id INTEGER, status TEXT NOT NULL DEFAULT \'draft\', due_at TEXT, source TEXT NOT NULL DEFAULT "manual", created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(article_id) REFERENCES news_articles(id) ON DELETE SET NULL, FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL)');
 db.exec('CREATE INDEX IF NOT EXISTS social_posts_due ON social_posts(status,due_at)');
-db.exec('CREATE TABLE IF NOT EXISTS social_deliveries (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, channel_id TEXT NOT NULL, channel_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT "pending", buffer_post_id TEXT NOT NULL DEFAULT "", error TEXT NOT NULL DEFAULT "", attempts INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id,channel_id), FOREIGN KEY(post_id) REFERENCES social_posts(id) ON DELETE CASCADE)');
-db.exec('CREATE TABLE IF NOT EXISTS social_daily_runs (day TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT "working", error TEXT NOT NULL DEFAULT "", post_id INTEGER, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+db.exec('CREATE TABLE IF NOT EXISTS social_deliveries (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, channel_id TEXT NOT NULL, channel_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', buffer_post_id TEXT NOT NULL DEFAULT "", error TEXT NOT NULL DEFAULT "", attempts INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id,channel_id), FOREIGN KEY(post_id) REFERENCES social_posts(id) ON DELETE CASCADE)');
+db.exec('CREATE TABLE IF NOT EXISTS social_daily_runs (day TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT \'working\', error TEXT NOT NULL DEFAULT "", post_id INTEGER, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 const setting = (key, fallback = '') => db.prepare('SELECT value FROM settings WHERE key=?').get(key)?.value ?? fallback;
 const putSetting = (key, value) => db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value));
 const defaults = {social_auto_enabled:'0',social_auto_time:'09:30',social_auto_style:'balanced',social_ai_model:'gpt-5.4-mini'};
@@ -96,7 +96,7 @@ function saveChannels(ids) {
 }
 function topics(){ return ['did-you-know','technology','product','applications','water-quality','resilience','industry','environment']; }
 function articleList(limit=100, publishedOnly=false) {
-  const sql='SELECT * FROM news_articles '+(publishedOnly?'WHERE status="published" AND published_at <= CURRENT_TIMESTAMP ':'')+'ORDER BY COALESCE(published_at,created_at) DESC,id DESC LIMIT ?';
+  const sql='SELECT * FROM news_articles '+(publishedOnly?'WHERE status=\'published\' AND published_at <= CURRENT_TIMESTAMP ':'')+'ORDER BY COALESCE(published_at,created_at) DESC,id DESC LIMIT ?';
   return db.prepare(sql).all(limit);
 }
 function productList() { return db.prepare('SELECT id,name,slug,summary,image_url,capacity_lpd,specs_json FROM products WHERE published=1 ORDER BY capacity_lpd,id').all(); }
@@ -182,28 +182,28 @@ async function dispatchPost(postId) {
   if(!targets.length)throw new Error('No pending deliveries; review remote posts before retrying.');
   const link=post.link_path?absolute(post.link_path):'';
   for(const d of targets) {
-    if(!d.connected) {db.prepare('UPDATE social_deliveries SET status="error",error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run('Channel is no longer connected',d.id);continue;}
+    if(!d.connected) {db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run('Channel is no longer connected',d.id);continue;}
     // Persist a non-retryable intermediate state before the network call. If the
     // response is lost, an operator must check Buffer rather than duplicate it.
-    db.prepare('UPDATE social_deliveries SET status="submitting",attempts=attempts+1,error="",updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ("pending","error")').run(d.id);
+    db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error="",updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
     const caption=post.caption.trim()+(link?'\n\n'+link:'');
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
     const input={text:caption,channelId:d.channel_id,schedulingType:'automatic',mode:'shareNow',aiAssisted:post.source==='ai'||post.source==='automatic'};
     if(post.image_url)input.assets=[{image:{url:absolute(post.image_url)}}];
     if(['instagram','tiktok','pinterest'].includes(String(d.service||'').toLowerCase())&&!post.image_url) {
-      db.prepare('UPDATE social_deliveries SET status="error",error=? WHERE id=?').run('This channel requires an image',d.id);continue;
+      db.prepare('UPDATE social_deliveries SET status=\'error\',error=? WHERE id=?').run('This channel requires an image',d.id);continue;
     }
     try {
       const response=await bufferQuery(query,{input});
       const result=response.createPost;
       if(!result?.post?.id) {
-        db.prepare('UPDATE social_deliveries SET status="error",error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(result?.message||'Buffer did not accept the post').slice(0,500),d.id);
+        db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(result?.message||'Buffer did not accept the post').slice(0,500),d.id);
       } else {
-        db.prepare('UPDATE social_deliveries SET status="submitted",buffer_post_id=?,error="",updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
+        db.prepare('UPDATE social_deliveries SET status=\'submitted\',buffer_post_id=?,error="",updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
       }
     } catch(e) {
       // Timeout, network failure or ambiguous GraphQL response: no blind retry.
-      db.prepare('UPDATE social_deliveries SET status="needs_review",error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(e.message).slice(0,500),d.id);
+      db.prepare('UPDATE social_deliveries SET status=\'needs_review\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(e.message).slice(0,500),d.id);
     }
   }
   const status=deliveries(postId);
@@ -222,7 +222,7 @@ async function workerTick() {
   workerBusy=true;
   try {
     // Manual scheduled content: each post is handled once; sent targets cannot be resent.
-    const due=db.prepare('SELECT id FROM social_posts WHERE status="scheduled" AND due_at<=? ORDER BY due_at LIMIT 5').all(new Date().toISOString());
+    const due=db.prepare('SELECT id FROM social_posts WHERE status=\'scheduled\' AND due_at<=? ORDER BY due_at LIMIT 5').all(new Date().toISOString());
     for(const item of due)await dispatchPost(item.id);
     const now=londonNow();
     if(setting('social_auto_enabled')!=='1'||now.time<setting('social_auto_time','09:30'))return;
@@ -240,11 +240,11 @@ async function workerTick() {
       const target=targetFor(topic,index);
       const caption=await makeCaption(topic,target,recent.map(x=>x.caption));
       const id=createPost({...caption,topic,...target,source:'automatic',status:'ready'},channels.map(c=>c.id));
-      db.prepare('UPDATE social_daily_runs SET status="created",post_id=? WHERE day=?').run(id,now.day);
+      db.prepare('UPDATE social_daily_runs SET status=\'created\',post_id=? WHERE day=?').run(id,now.day);
       await dispatchPost(id);
-      db.prepare('UPDATE social_daily_runs SET status="sent_to_buffer" WHERE day=?').run(now.day);
+      db.prepare('UPDATE social_daily_runs SET status=\'sent_to_buffer\' WHERE day=?').run(now.day);
     }catch(e) {
-      db.prepare('UPDATE social_daily_runs SET status="error",error=? WHERE day=?').run(String(e.message).slice(0,500),now.day);
+      db.prepare('UPDATE social_daily_runs SET status=\'error\',error=? WHERE day=?').run(String(e.message).slice(0,500),now.day);
       console.error('WatAir daily social automation:',e.message);
     }
   } catch(e) {console.error('WatAir editorial worker:',e.message);}
