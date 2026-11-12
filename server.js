@@ -15,6 +15,8 @@ const PDFDocument = require('pdfkit');
 const { version: appVersion } = require('./package.json');
 const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
+const editorial = require('./src/editorial');
+const editorialRoutes = require('./src/editorial-routes');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
 const { startLegacyMediaImport, getMediaImportState, getMediaSummary, loadManifest, localAssetForLegacyUrl } = require('./src/media-import');
 const {
@@ -505,6 +507,9 @@ function renderPage(res, page, extra = {}) {
   });
 }
 
+// Public news routes, including RSS, share the existing canonical SEO middleware.
+app.use('/', editorialRoutes.publicRouter);
+
 app.get('/health', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -522,6 +527,7 @@ app.get('/', (req, res) => {
   res.render('home', {
     featured,
     allProducts,
+    latestNews: editorial.articleList(3, true),
     meta: {
       title: 'WatAir UK | Atmospheric Water Generators',
       description: 'Atmospheric Water Generation systems from 20 to 10,000 litres per day for homes, workplaces and industrial applications.',
@@ -1309,6 +1315,12 @@ app.get('/sitemap.xml', (req,res) => {
     }))
   ];
 
+  // Add only publicly published articles to the XML sitemap.
+  for (const article of editorial.articleList(500, true)) {
+    entries.push({ path: '/news/' + article.slug, lastmod: sitemapDate(article.updated_at) });
+  }
+  entries.push({ path: '/news', lastmod: siteLastmod });
+
   const body = entries.map(entry => {
     const loc = xmlEscape(baseUrl + entry.path);
     const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>` : '';
@@ -1486,6 +1498,9 @@ app.use('/admin', requireAdmin, (req,res,next) => {
   res.locals.csrf = csrfFor(req);
   next();
 });
+
+// Editorial Studio is protected by the existing admin authentication and CSRF policy.
+app.use('/admin', editorialRoutes.adminRouter);
 
 app.get('/admin', (req,res) => {
   const mediaSummary = getMediaSummary();
@@ -2251,6 +2266,7 @@ app.use((err,req,res,next) => {
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => console.log(`WatAir listening on ${PORT}`));
+editorial.startWorker();
 
 function shutdown(signal) {
   console.log(`${signal} received; shutting down WatAir cleanly.`);
