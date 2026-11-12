@@ -199,6 +199,20 @@
     });
   }
 
+  if (typeof article !== 'undefined' && article) {
+    schemaGraph.push({
+      '@type':'Article',
+      '@id':canonicalUrl+'#article',
+      headline:article.title,
+      description:article.excerpt,
+      image:[seoImage],
+      datePublished:article.published_at ? new Date(article.published_at.replace(' ','T')+'Z').toISOString() : undefined,
+      dateModified:article.updated_at ? new Date(article.updated_at.replace(' ','T')+'Z').toISOString() : undefined,
+      author:{'@id':orgId},publisher:{'@id':orgId},
+      mainEntityOfPage:{'@id':canonicalUrl},inLanguage:'en-GB'
+    });
+  }
+
   if (breadcrumbItems.length > 1) {
     schemaGraph.push({
       '@type': 'BreadcrumbList',
@@ -242,6 +256,7 @@
 
   <script type="application/ld+json"><%- jsonLd %></script>
   <link rel="stylesheet" href="/css/site.css?v=<%= assetVersion %>">
+  <% if(path === '/' || path.startsWith('/news')){ %><link rel="stylesheet" href="/css/editorial.css?v=<%= assetVersion %>"><% } %>
 </head>
 <body id="top">
 <a class="skip-link" href="#main-content">Skip to main content</a>
