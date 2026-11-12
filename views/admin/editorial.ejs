@@ -2,6 +2,16 @@
 <header class="admin-page-head"><div><p>Marketing & content</p><h1>Editorial Studio</h1><span class="page-help">Plan, create and distribute WatAir content to selected social channels. The website remains your canonical home.</span></div><div class="admin-head-actions"><a class="secondary-button" href="/news" target="_blank">View journal ↗</a><a class="admin-button" href="/admin/editorial/posts/new">＋ New social post</a></div></header>
 <% if(reqQuery.notice){ %><p class="ed-notice"><%= reqQuery.notice %></p><% } %><% if(reqQuery.error){ %><p class="ed-error"><%= reqQuery.error %></p><% } %>
 <div class="ed-metrics"><div><strong><%= totals.published %></strong><span>Live articles</span></div><div><strong><%= totals.drafts %></strong><span>Article drafts</span></div><div><strong><%= totals.queued %></strong><span>Scheduled posts</span></div><div><strong><%= totals.submitted %></strong><span>Channel submissions</span></div></div>
+<section class="admin-card ed-panel ed-week-panel">
+  <div class="ed-panel-head"><div><p class="admin-kicker">Publishing calendar</p><h2>The next seven days</h2></div><span class="ed-chip"><%= autoEnabled?'Autopilot '+autoTime+' UK':'Manual scheduling' %></span></div>
+  <div class="ed-week">
+    <% calendarDays.forEach(day=>{ %><div class="ed-day"><strong><%= day.label %></strong><small><%= day.date %></small>
+      <% day.posts.forEach(post=>{ %><a class="ed-day-event" href="/admin/editorial/posts/<%= post.id %>"><%= post.headline || post.caption.slice(0,50) %><span><%= post.due_at.slice(11,16) %> UTC</span></a><% }) %>
+      <% if(autoEnabled){ %><span class="ed-day-auto">✧ Automatic post · <%= autoTime %> UK</span><% } %>
+      <% if(!day.posts.length&&!autoEnabled){ %><span class="ed-day-blank">No scheduled posts</span><% } %>
+    </div><% }) %>
+  </div>
+</section>
 <section class="ed-two">
   <div class="admin-card ed-panel">
     <div class="ed-panel-head"><div><p class="admin-kicker">AI writing desk</p><h2>Smart social drafts</h2></div><span class="ed-chip">GPT-5.4 mini</span></div>
