@@ -119,6 +119,14 @@ app.post('/payments/stripe/webhook', express.raw({ type: 'application/json', lim
 
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 app.use(express.json({ limit: '256kb' }));
+// Public, immutable JPEGs for social APIs. Never require admin cookies, authentication,
+// cookies or anti-bot checks on these assets.
+app.use('/uploads/social', (req,res,next)=>{
+  res.setHeader('Access-Control-Allow-Origin','*');
+  res.setHeader('Cross-Origin-Resource-Policy','cross-origin');
+  res.setHeader('Cache-Control','public, max-age=604800, immutable');
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public'), {
   // Public assets are not filename-fingerprinted, so keep cache lifetime modest
   // to ensure normal visitors receive CSS/JS updates without a hard refresh.
