@@ -34,7 +34,7 @@
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <% if(!channels.length){ %><p class="ed-hint">No channels synced yet. Set your Buffer API key below to get started.</p><% } %>
       <% channels.forEach(c=>{ %><label class="ed-check"><input type="checkbox" name="channels" value="<%= c.id %>" <%= c.enabled ? 'checked' : '' %> <%= !c.connected ? 'disabled' : '' %>><span><strong><%= c.name %></strong><small><%= c.service %> · <%= c.connected ? 'Connected' : 'Disconnected' %></small></span></label><% }) %>
-      <% if(channels.length){ %><button class="admin-button" type="submit">Save default destinations</button><% } %>
+      <% if(channels.length){ %><label class="ed-check"><input data-select-all-channels type="checkbox"><span><strong>Select all connected</strong><small>Quickly select every channel for the daily publishing mix</small></span></label><button class="admin-button" type="submit">Save default destinations</button><% } %>
     </form>
   </div>
   <div class="admin-card ed-panel">
