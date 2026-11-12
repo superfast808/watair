@@ -37,7 +37,11 @@ const {
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
 const isProd = process.env.NODE_ENV === 'production';
-const baseUrl = (process.env.BASE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
+const { publicSiteOrigin, CANONICAL_SITE_URL } = require('./src/site-url');
+const baseUrl = isProd ? publicSiteOrigin() : (process.env.BASE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
+if (isProd && !/^(1|true|yes|on)$/i.test(String(process.env.SITE_NOINDEX || '').trim()) && process.env.BASE_URL && process.env.BASE_URL.replace(/\/+$/, '') !== CANONICAL_SITE_URL) {
+  console.warn('BASE_URL is not the WatAir canonical hostname; using '+CANONICAL_SITE_URL+' for public SEO, social and sitemap URLs. Correct your .env file.');
+}
 // Only explicit preview/staging opt-outs can disable indexing. Plesk may
 // rewrite the Host header; never interpret that as a reason to block Google.
 const siteNoindex = /^(1|true|yes|on)$/i.test(String(process.env.SITE_NOINDEX || '').trim());
