@@ -185,7 +185,7 @@ async function dispatchPost(postId) {
     if(!d.connected) {db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run('Channel is no longer connected',d.id);continue;}
     // Persist a non-retryable intermediate state before the network call. If the
     // response is lost, an operator must check Buffer rather than duplicate it.
-    db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error="",updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
+    db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
     const caption=post.caption.trim()+(link?'\n\n'+link:'');
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
     const service=String(d.service||'').toLowerCase();
@@ -211,7 +211,7 @@ async function dispatchPost(postId) {
       if(!result?.post?.id) {
         db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(result?.message||'Buffer did not accept the post').slice(0,500),d.id);
       } else {
-        db.prepare('UPDATE social_deliveries SET status=\'submitted\',buffer_post_id=?,error="",updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
+        db.prepare('UPDATE social_deliveries SET status=\'submitted\',buffer_post_id=?,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
       }
     } catch(e) {
       // Timeout, network failure or ambiguous GraphQL response: no blind retry.
