@@ -44,6 +44,12 @@
     </div>
   </section>
 
+  <% if(latestNews.length){ %>
+  <section class="news-wrap news-listing"><div class="news-section-title"><span>From the WatAir journal</span><a href="/news">All insights →</a></div><div class="news-grid">
+    <% latestNews.forEach(a=>{ %><a class="news-card" href="/news/<%= a.slug %>"><div class="news-art"><img src="<%= a.image_url || '/uploads/imported/legacy/images/home/products.jpg' %>" alt="" loading="lazy"></div><div class="news-card-copy"><span class="news-eyebrow"><%= a.category %></span><h2><%= a.title %></h2><p><%= a.excerpt %></p><strong>Read insight ↗</strong></div></a><% }) %>
+  </div></section>
+  <% } %>
+
   <section class="dark-section process-section">
     <div class="section-inner">
       <div class="split-heading">
