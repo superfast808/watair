@@ -1,0 +1,33 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+<main id="main-content">
+  <section class="news-hero">
+    <div class="news-wrap">
+      <p class="eyebrow">WatAir journal</p>
+      <h1>Water from air. <em>Ideas worth exploring.</em></h1>
+      <p>Insights into atmospheric water generation, responsible operation, evolving technology and real-world applications.</p>
+      <div class="news-hero-links"><a href="/how-it-works">How it works →</a><a href="/products">Explore our systems →</a></div>
+    </div>
+  </section>
+  <section class="news-wrap news-listing">
+    <div class="news-section-title"><span>Latest from WatAir</span><span><%= articles.length %> insights</span></div>
+    <% if(!articles.length){ %>
+      <div class="news-empty"><h2>Our journal is coming together.</h2><p>In the meantime, explore how water-from-air technology works and browse the WatAir range.</p><a class="button button-aqua" href="/how-it-works">Explore the technology</a></div>
+    <% }else{ %>
+      <div class="news-grid">
+        <% articles.forEach((article,index)=>{ %>
+          <a href="/news/<%= article.slug %>" class="news-card <%= index === 0 ? 'news-card-featured' : '' %>">
+            <div class="news-art"><img src="<%= article.image_url || '/uploads/imported/legacy/images/home/products.jpg' %>" alt="" loading="lazy" decoding="async"></div>
+            <div class="news-card-copy">
+              <span class="news-eyebrow"><%= article.category %> · <%= formatUkDate(article.published_at) %></span>
+              <h2><%= article.title %></h2>
+              <p><%= article.excerpt %></p><strong>Read insight <span aria-hidden="true">↗</span></strong>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </section>
+  <section class="news-cta"><div class="news-wrap"><span class="eyebrow">Find the right fit</span><h2>From technical questions to system selection.</h2><p>We can discuss how atmospheric water generation might work for your application.</p><a class="button button-light" href="/contact">Speak with WatAir</a></div></section>
+</main>
+<%- include('partials/footer') %>
