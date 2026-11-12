@@ -52,9 +52,17 @@ publicRouter.get('/news/:slug',(req,res)=>{
 });
 
 adminRouter.get('/editorial',(req,res)=>{
+  const autoEnabled=S.setting('social_auto_enabled')==='1';
+  const posts=S.allPosts(120);
+  const origin=new Date(S.londonNow().day+'T12:00:00Z');
+  const calendarDays=Array.from({length:7},(_,i)=>{
+    const date=new Date(origin.getTime()+i*86400000);
+    const key=date.toISOString().slice(0,10);
+    return {date:key,label:date.toLocaleDateString('en-GB',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short'}),posts:posts.filter(p=>p.due_at&&p.due_at.slice(0,10)===key&&p.status==='scheduled')};
+  });
   res.render('admin/editorial',viewData(req,{
-    metaTitle:'Editorial Studio | WatAir CMS',articles:getArticles(),products:S.productList(),posts:S.allPosts(60),channels:S.allChannels(),
-    creds:S.credentials(),autoEnabled:S.setting('social_auto_enabled')==='1',autoTime:S.setting('social_auto_time','09:30'),
+    metaTitle:'Editorial Studio | WatAir CMS',articles:getArticles(),products:S.productList(),posts,calendarDays,channels:S.allChannels(),
+    creds:S.credentials(),autoEnabled,autoTime:S.setting('social_auto_time','09:30'),
     autoStyle:S.setting('social_auto_style','balanced'),model:S.setting('social_ai_model','gpt-5.4-mini'),
     dailyRuns:S.db.prepare('SELECT * FROM social_daily_runs ORDER BY day DESC LIMIT 7').all(),
     totals:{
