@@ -2,6 +2,7 @@ const express=require('express');
 const sanitizeHtml=require('sanitize-html');
 const {requireCsrf}=require('./auth');
 const S=require('./editorial');
+const { prepareForBuffer } = require('./social-media');
 const publicRouter=express.Router(), adminRouter=express.Router();
 const getArticles=()=>S.articleList(100,false);
 const articleById=id=>S.db.prepare('SELECT * FROM news_articles WHERE id=?').get(id);
@@ -190,6 +191,15 @@ adminRouter.post('/editorial/posts/:id',requireCsrf,(req,res)=>{
     })();
     res.redirect('/admin/editorial/posts/'+old.id+'?notice=Saved');
   }catch(e){safeRedirectError(res,'/admin/editorial/posts/'+req.params.id,e)}
+});
+// Diagnostic only: prepare and test image without posting anything to Buffer.
+adminRouter.get('/editorial/posts/:id/check-image',async(req,res)=>{
+  try{
+    const post=S.getPost(req.params.id);
+    if(!post)throw new Error('Social post was not found.');
+    const image=await prepareForBuffer(post.image_url);
+    return res.redirect('/admin/editorial/posts/'+post.id+'?notice='+encodeURIComponent('Image OK: '+image.url+' — '+image.preflight.detail));
+  }catch(e){return safeRedirectError(res,'/admin/editorial/posts/'+req.params.id,e);}
 });
 adminRouter.post('/editorial/posts/:id/send',requireCsrf,async(req,res)=>{
   try{
