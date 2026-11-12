@@ -53,7 +53,7 @@ publicRouter.get('/news/:slug',(req,res)=>{
 
 adminRouter.get('/editorial',(req,res)=>{
   res.render('admin/editorial',viewData(req,{
-    metaTitle:'Editorial Studio | WatAir CMS',articles:getArticles(),posts:S.allPosts(60),channels:S.allChannels(),
+    metaTitle:'Editorial Studio | WatAir CMS',articles:getArticles(),products:S.productList(),posts:S.allPosts(60),channels:S.allChannels(),
     creds:S.credentials(),autoEnabled:S.setting('social_auto_enabled')==='1',autoTime:S.setting('social_auto_time','09:30'),
     autoStyle:S.setting('social_auto_style','balanced'),model:S.setting('social_ai_model','gpt-5.4-mini'),
     dailyRuns:S.db.prepare('SELECT * FROM social_daily_runs ORDER BY day DESC LIMIT 7').all(),
@@ -159,6 +159,7 @@ function postPayload(req) {
 adminRouter.post('/editorial/posts',requireCsrf,(req,res)=>{
   try{
     const p=postPayload(req),action=req.body.action;
+    if(action==='schedule'&&!p.due_at)throw new Error('Enter a future UTC date and time before scheduling.');
     const id=S.createPost({...p,status:action==='schedule'?'scheduled':'draft'},p.ids);
     res.redirect('/admin/editorial/posts/'+id+'?notice=Saved');
   }catch(e){safeRedirectError(res,'/admin/editorial/posts/new',e)}
@@ -168,6 +169,7 @@ adminRouter.post('/editorial/posts/:id',requireCsrf,(req,res)=>{
     const old=S.getPost(req.params.id);if(!old)throw new Error('Post not found');
     if(!['draft','scheduled'].includes(old.status))throw new Error('Queued/submitted posts cannot be edited. Create a new draft instead.');
     const p=postPayload(req),state=req.body.action==='schedule'?'scheduled':'draft';
+    if(state==='scheduled'&&!p.due_at)throw new Error('Enter a future UTC date and time before scheduling.');
     const valid=new Set(S.allChannels().filter(c=>c.connected).map(c=>c.id));
     if(p.ids.some(id=>!valid.has(id)))throw new Error('One of the selected channels is no longer connected.');
     S.db.transaction(()=>{
