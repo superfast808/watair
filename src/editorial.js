@@ -2,6 +2,7 @@
 // Keys are encrypted at rest; publishing is disabled until explicitly enabled in CMS.
 const crypto = require('crypto');
 const { db } = require('./db');
+const { prepareForBuffer } = require('./social-media');
 
 db.exec('CREATE TABLE IF NOT EXISTS news_articles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'Technology\', excerpt TEXT NOT NULL DEFAULT "", body_html TEXT NOT NULL DEFAULT "", image_url TEXT NOT NULL DEFAULT "", seo_title TEXT NOT NULL DEFAULT "", seo_description TEXT NOT NULL DEFAULT "", status TEXT NOT NULL DEFAULT \'draft\', published_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 db.exec('CREATE INDEX IF NOT EXISTS news_published ON news_articles(status,published_at DESC)');
@@ -190,6 +191,20 @@ async function dispatchPost(postId) {
   const targets=deliveries(postId).filter(d=>d.status==='pending'||d.status==='error');
   if(!targets.length)throw new Error('No pending deliveries; review remote posts before retrying.');
   const link=post.link_path?absolute(post.link_path):'';
+  let preparedImage=null;
+  if(post.image_url){
+    try{
+      // Make a durable public JPEG instead of passing fragile original image URLs.
+      // Validate before any Buffer API call, avoiding posts with unreadable assets.
+      preparedImage=await prepareForBuffer(post.image_url);
+    }catch(e){
+      const description=String(e.message||e).slice(0,750);
+      db.prepare("UPDATE social_deliveries SET status='error',error=?,updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status IN ('pending','error')").run(description,postId);
+      const remaining=deliveries(postId);
+      db.prepare('UPDATE social_posts SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(remaining.some(d=>d.status==='submitted')?'partial':'failed',postId);
+      return remaining;
+    }
+  }
   for(const d of targets) {
     if(!d.connected) {db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run('Channel is no longer connected',d.id);continue;}
     // Persist a non-retryable intermediate state before the network call. If the
@@ -200,7 +215,7 @@ async function dispatchPost(postId) {
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
     const service=String(d.service||'').toLowerCase();
     const input={text:caption,channelId:d.channel_id,schedulingType:'automatic',mode:'shareNow',aiAssisted:post.source==='ai'||post.source==='automatic'};
-    if(post.image_url) input.assets=[{image:{url:absolute(post.image_url)}}];
+    if(preparedImage) input.assets=[{image:{url:preparedImage.url}}];
     // Network-specific fields are mandatory for several Buffer destinations.
     // Link cards are used only on posts without a separate image asset.
     const linkCard=link&&!post.image_url ? {url:link,title:post.headline||'WatAir UK insight'} : null;
@@ -219,7 +234,7 @@ async function dispatchPost(postId) {
       const response=await bufferQuery(query,{input});
       const result=response.createPost;
       if(!result?.post?.id) {
-        db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(result?.message||'Buffer did not accept the post').slice(0,500),d.id);
+        db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run((String(result?.message||'Buffer did not accept the post')+(preparedImage?' | JPEG: '+preparedImage.url:'')).slice(0,750),d.id);
       } else {
         db.prepare('UPDATE social_deliveries SET status=\'submitted\',buffer_post_id=?,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
       }
