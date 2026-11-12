@@ -62,14 +62,22 @@ function absolute(path) { return new URL(path, (process.env.BASE_URL||'https://w
 async function jsonRequest(url, token, data, timeout=18000) {
   const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(data),signal:AbortSignal.timeout(timeout)});
   const body=await response.json().catch(()=>({}));
-  if (!response.ok) throw new Error((body.error?.message||body.message||'Provider request failed')+' (HTTP '+response.status+')');
+  if (!response.ok) {
+    const error=new Error((body.error?.message||body.message||'Provider request failed')+' (HTTP '+response.status+')');
+    error.providerRejected=response.status>=400&&response.status<500;
+    throw error;
+  }
   return body;
 }
 async function bufferQuery(query,variables={}) {
   const token=getCredential('buffer_api_key');
   if (!token) throw new Error('Set the Buffer API key in Editorial Studio first.');
   const data=await jsonRequest('https://api.buffer.com',token,{query,variables},20000);
-  if (data.errors?.length) throw new Error(data.errors.map(x=>x.message).join('; ').slice(0,500));
+  if (data.errors?.length) {
+    const error=new Error(data.errors.map(x=>x.message).join('; ').slice(0,500));
+    error.providerRejected=true;
+    throw error;
+  }
   return data.data||{};
 }
 async function syncChannels() {
@@ -186,7 +194,8 @@ async function dispatchPost(postId) {
     if(!d.connected) {db.prepare('UPDATE social_deliveries SET status=\'error\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run('Channel is no longer connected',d.id);continue;}
     // Persist a non-retryable intermediate state before the network call. If the
     // response is lost, an operator must check Buffer rather than duplicate it.
-    db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
+    const claim=db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
+    if(!claim.changes)continue; // another worker/admin request already claimed it
     const caption=post.caption.trim()+(link?'\n\n'+link:'');
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
     const service=String(d.service||'').toLowerCase();
@@ -215,8 +224,9 @@ async function dispatchPost(postId) {
         db.prepare('UPDATE social_deliveries SET status=\'submitted\',buffer_post_id=?,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=?').run(result.post.id,d.id);
       }
     } catch(e) {
-      // Timeout, network failure or ambiguous GraphQL response: no blind retry.
-      db.prepare('UPDATE social_deliveries SET status=\'needs_review\',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(String(e.message).slice(0,500),d.id);
+      // Definite API rejections can be retried; ambiguous network/server outcomes
+      // cannot be retried blindly because the remote post may exist in Buffer.
+      db.prepare('UPDATE social_deliveries SET status=?,error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(e.providerRejected?'error':'needs_review',String(e.message).slice(0,500),d.id);
     }
   }
   const status=deliveries(postId);
