@@ -45,9 +45,9 @@ publicRouter.get('/news/feed.xml',(req,res)=>{
   res.type('application/rss+xml').send('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>WatAir UK News</title><link>'+base+'</link><description>Atmospheric Water Generation insights</description>'+articles.map(a=>'<item><title>'+escape(a.title)+'</title><link>'+escape(S.absolute('/news/'+a.slug))+'</link><guid>'+escape(S.absolute('/news/'+a.slug))+'</guid><description>'+escape(a.excerpt)+'</description><pubDate>'+new Date(a.published_at+'Z').toUTCString()+'</pubDate></item>').join('')+'</channel></rss>');
 });
 publicRouter.get('/news/:slug',(req,res)=>{
-  const article=S.db.prepare('SELECT * FROM news_articles WHERE slug=? AND status="published" AND published_at<=CURRENT_TIMESTAMP').get(req.params.slug);
+  const article=S.db.prepare('SELECT * FROM news_articles WHERE slug=? AND status=\'published\' AND published_at<=CURRENT_TIMESTAMP').get(req.params.slug);
   if(!article)return res.status(404).render('404',{meta:{title:'Article not found | WatAir UK',noindex:true}});
-  const related=S.db.prepare('SELECT id,slug,title,image_url,excerpt FROM news_articles WHERE status="published" AND published_at<=CURRENT_TIMESTAMP AND id<>? ORDER BY published_at DESC LIMIT 3').all(article.id);
+  const related=S.db.prepare('SELECT id,slug,title,image_url,excerpt FROM news_articles WHERE status=\'published\' AND published_at<=CURRENT_TIMESTAMP AND id<>? ORDER BY published_at DESC LIMIT 3').all(article.id);
   res.render('news-article',{article,related,meta:{title:article.seo_title||article.title+' | WatAir UK',description:article.seo_description||article.excerpt,image:article.image_url||'/uploads/imported/legacy/images/home/products.jpg'}});
 });
 
@@ -58,10 +58,10 @@ adminRouter.get('/editorial',(req,res)=>{
     autoStyle:S.setting('social_auto_style','balanced'),model:S.setting('social_ai_model','gpt-5.4-mini'),
     dailyRuns:S.db.prepare('SELECT * FROM social_daily_runs ORDER BY day DESC LIMIT 7').all(),
     totals:{
-      published:S.db.prepare('SELECT COUNT(*) n FROM news_articles WHERE status="published"').get().n,
-      drafts:S.db.prepare('SELECT COUNT(*) n FROM news_articles WHERE status="draft"').get().n,
-      queued:S.db.prepare('SELECT COUNT(*) n FROM social_posts WHERE status IN ("scheduled","ready")').get().n,
-      submitted:S.db.prepare('SELECT COUNT(*) n FROM social_deliveries WHERE status="submitted"').get().n
+      published:S.db.prepare('SELECT COUNT(*) n FROM news_articles WHERE status=\'published\'').get().n,
+      drafts:S.db.prepare('SELECT COUNT(*) n FROM news_articles WHERE status=\'draft\'').get().n,
+      queued:S.db.prepare('SELECT COUNT(*) n FROM social_posts WHERE status IN (\'scheduled\',\'ready\')').get().n,
+      submitted:S.db.prepare('SELECT COUNT(*) n FROM social_deliveries WHERE status=\'submitted\'').get().n
     }
   }));
 });
@@ -124,7 +124,7 @@ adminRouter.post('/editorial/ai/article',requireCsrf,async(req,res)=>{
     if(topic.length<8)throw new Error('Provide an article subject.');
     const data=await S.makeArticle(topic,req.body.facts);
     const title=String(data.title||topic).slice(0,180),slug=uniqueSlug(title);
-    const result=S.db.prepare('INSERT INTO news_articles(slug,title,category,excerpt,body_html,seo_title,seo_description,status) VALUES(?,?,?,?,?,?,?,"draft")').run(slug,title,'Technology',String(data.excerpt||'').slice(0,600),cleanArticle(data.body_html),String(data.seo_title||title).slice(0,170),String(data.seo_description||'').slice(0,230));
+    const result=S.db.prepare('INSERT INTO news_articles(slug,title,category,excerpt,body_html,seo_title,seo_description,status) VALUES(?,?,?,?,?,?,?,\'draft\')').run(slug,title,'Technology',String(data.excerpt||'').slice(0,600),cleanArticle(data.body_html),String(data.seo_title||title).slice(0,170),String(data.seo_description||'').slice(0,230));
     res.redirect('/admin/editorial/articles/'+result.lastInsertRowid+'?notice=AI+article+draft+ready+for+review');
   }catch(e){safeRedirectError(res,'/admin/editorial',e)}
 });
@@ -184,7 +184,7 @@ adminRouter.post('/editorial/posts/:id',requireCsrf,(req,res)=>{
 adminRouter.post('/editorial/posts/:id/send',requireCsrf,async(req,res)=>{
   try{
     const post=S.getPost(req.params.id);if(!post||!['draft','scheduled','ready'].includes(post.status))throw new Error('Only unsent posts can be dispatched');
-    S.db.prepare('UPDATE social_posts SET status="ready",due_at=NULL WHERE id=?').run(post.id);
+    S.db.prepare('UPDATE social_posts SET status=\'ready\',due_at=NULL WHERE id=?').run(post.id);
     await S.dispatchPost(post.id);
     res.redirect('/admin/editorial/posts/'+post.id+'?notice=Delivery+attempt+recorded');
   }catch(e){safeRedirectError(res,'/admin/editorial/posts/'+req.params.id,e)}
