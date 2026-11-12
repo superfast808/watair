@@ -1,0 +1,28 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+<main id="main-content">
+  <article>
+    <div class="news-wrap news-article-head">
+      <a class="news-back" href="/news">← All insights</a>
+      <p class="eyebrow"><%= article.category %> · <%= formatUkDate(article.published_at) %></p>
+      <h1><%= article.title %></h1>
+      <p class="news-article-summary"><%= article.excerpt %></p>
+    </div>
+    <% if(article.image_url){ %><div class="news-wrap news-article-image"><img src="<%= article.image_url %>" alt="" decoding="async"></div><% } %>
+    <div class="news-wrap news-article-layout">
+      <div class="news-article-body prose"><%- article.body_html %></div>
+      <aside class="news-article-aside">
+        <span class="eyebrow">WatAir UK</span><strong>Explore the possibilities of atmospheric water generation.</strong>
+        <p>System performance depends on ambient conditions and correct maintenance. We can help you understand the options.</p>
+        <a class="button button-aqua" href="/contact">Get in touch</a>
+        <a class="news-back" href="/products">View WatAir products →</a>
+      </aside>
+    </div>
+  </article>
+  <% if(related.length){ %>
+    <section class="news-wrap news-related"><div class="news-section-title"><span>Continue reading</span><a href="/news">All insights →</a></div><div class="news-grid">
+      <% related.forEach(a=>{ %><a class="news-card" href="/news/<%= a.slug %>"><div class="news-art"><img src="<%= a.image_url || '/uploads/imported/legacy/images/home/products.jpg' %>" alt="" loading="lazy"></div><div class="news-card-copy"><h2><%= a.title %></h2><p><%= a.excerpt %></p><strong>Read insight ↗</strong></div></a><% }) %>
+    </div></section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>
