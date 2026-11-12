@@ -2,6 +2,18 @@
 // Buffer/OpenAI calls are mocked; no third-party content is sent.
 const assert=require('node:assert/strict');
 process.env.NODE_ENV='test';
+const {publicSiteOrigin}=require('../src/site-url');
+const originalBaseUrl=process.env.BASE_URL;
+const originalNoindex=process.env.SITE_NOINDEX;
+process.env.BASE_URL='https://watair.co.uk';
+process.env.NODE_ENV='production';
+process.env.SITE_NOINDEX='0';
+assert.equal(publicSiteOrigin(),'https://watairuk.co.uk','Live URLs must ignore an incorrect .env hostname');
+process.env.SITE_NOINDEX='1';
+assert.equal(publicSiteOrigin(),'https://watair.co.uk','Preview URLs retain explicitly configured domain');
+process.env.NODE_ENV='test';
+process.env.SITE_NOINDEX=originalNoindex;
+process.env.BASE_URL=originalBaseUrl;
 process.env.SESSION_SECRET='ci-editorial-tests-session-secret-123456789012345';
 process.env.BASE_URL='https://watairuk.co.uk';
 process.env.BUFFER_API_KEY='ci-buffer-test-key';
