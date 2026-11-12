@@ -64,7 +64,22 @@ const S=require('../src/editorial');
   await assert.rejects(()=>S.dispatchPost(id),/not ready/);
   assert.equal(fbSent,1);
   assert.equal(igSent,1);
-  const {prepareForBuffer}=require('../src/social-media');
+  const {prepareForBuffer,checkPublicUrl}=require('../src/social-media');
+  const media=await prepareForBuffer('/images/pw-hr-20l.webp',{verify:false});
+  assert.match(media.url,/^https:\/\/watairuk\.co\.uk\/uploads\/social\/[a-f0-9]{32}\.jpg$/);
+  process.env.SOCIAL_MEDIA_VERIFY_PUBLIC='1';
+  const fetchPrevious=global.fetch;
+  global.fetch=async()=>({status:403,headers:{get:()=> 'text/html'},body:{cancel:async()=>{}}});
+  await assert.rejects(()=>checkPublicUrl(media),/HTTP 403/);
+  global.fetch=async()=>({status:200,headers:{get:()=> 'text\/html'},body:{cancel:async()=>{}}});
+  await assert.rejects(()=>checkPublicUrl(media),/rather than image\/jpeg/);
+  global.fetch=async()=>({status:200,headers:{get:()=> 'image\/jpeg'},body:{
+    getReader:()=>({read:async()=>({done:false,value:new Uint8Array([0xff,0xd8,0xff,0x00])}),cancel:async()=>{}})
+  }});
+  const good=await checkPublicUrl(media);
+  assert.equal(good.ok,true);
+  global.fetch=fetchPrevious;
+  process.env.SOCIAL_MEDIA_VERIFY_PUBLIC='0';
   await assert.rejects(()=>prepareForBuffer('/uploads/does-not-exist.jpg',{verify:false}),/does not exist/);
   const failed=S.createPost({
     topic:'technology',caption:ai.caption,image_url:'/uploads/does-not-exist.jpg',
