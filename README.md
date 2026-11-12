@@ -184,3 +184,14 @@ Important: a personal Buffer API key reaches the channels in the connected Buffe
 Platform-specific notes: Facebook and Instagram use required platform post-type metadata, Facebook/LinkedIn and supported networks can use a page link preview when there is no separate image, and Instagram uses its image plus link metadata. Instagram captions do not provide clickable links for normal feed posts. Some other networks (especially Pinterest and YouTube) need board/video options and are flagged for manual attention rather than submitting an invalid generic post.
 
 Daily automation and schedules require the WatAir Node process running; do not enable a second independent scheduler using the same database. No service posts until keys, channels and the automatic publishing switch are explicitly configured.
+
+
+### Social image errors ("image could not be read from its URL")
+
+Before Buffer submission, WatAir now reads the chosen local image directly from the public media directory, checks that it really is an image, and converts it to an sRGB 1200 × 1200 JPEG (under 8 MB). The transformed file is stored persistently in \`public/uploads/social\`, served anonymously over HTTPS, and used instead of linking Buffer to the original article thumbnail or a potentially unsupported WebP/transparent file.
+
+In Editorial Studio → Social post, click **Test and prepare public image** to check the actual remote URL with an unauthenticated HTTPS GET (HTTP 200, image/jpeg, JPEG signature). Failed posts with a definite "error" status can then be retried. Ambiguous \`needs_review\` results must first be checked in Buffer so you don't post twice.
+
+The public URL must be reachable from Buffer's infrastructure too. If local preflight works but Buffer still cannot access the image, check Plesk/nginx routing, CDN bot challenges, hotlink protection and WAF rules for \`/uploads/social/*\` (without globally turning off website protection). The app sets \`Cross-Origin-Resource-Policy: cross-origin\` and \`Access-Control-Allow-Origin: *\` for generated social images.
+
+Set \`SOCIAL_MEDIA_VERIFY_PUBLIC=0\` **only** if the server cannot connect back to its own HTTPS hostname, after confirming the URL from an unrelated internet connection. Otherwise the publishing preflight deliberately blocks an invalid URL before Buffer.
