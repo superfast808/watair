@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
+const { validateAdminPassword } = require('./auth');
 const { products, pages } = require('./content');
 
 const dataDir = path.join(__dirname, '..', 'data');
@@ -510,6 +511,30 @@ function seed() {
       const hash = bcrypt.hashSync('ChangeMe-Development-Only!', 12);
       db.prepare('INSERT INTO admins(email,password_hash) VALUES(?,?)').run('admin@localhost', hash);
       console.warn('DEV ONLY admin: admin@localhost / ChangeMe-Development-Only!');
+    }
+  }
+
+  // Emergency reset: set ADMIN_RESET_PASSWORD=1 with ADMIN_EMAIL/ADMIN_PASSWORD in
+  // .env and restart. That admin's password is set (or the account created).
+  // Remove the flag afterwards. A no-op once the stored password already matches.
+  if (/^(1|true|yes|on)$/i.test(String(process.env.ADMIN_RESET_PASSWORD || '').trim())) {
+    const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const password = String(process.env.ADMIN_PASSWORD || '');
+    const problem = !/^\S+@\S+\.\S+$/.test(email) ? 'ADMIN_EMAIL is not a valid email address'
+      : validateAdminPassword(password, email);
+    if (problem) {
+      console.error('ADMIN_RESET_PASSWORD ignored: ' + problem);
+    } else {
+      const existing = db.prepare('SELECT id,password_hash FROM admins WHERE email=?').get(email);
+      if (!existing) {
+        db.prepare('INSERT INTO admins(email,password_hash) VALUES(?,?)').run(email, bcrypt.hashSync(password, 12));
+        console.warn('ADMIN_RESET_PASSWORD: created admin ' + email + '. Remove ADMIN_RESET_PASSWORD from .env now.');
+      } else if (!bcrypt.compareSync(password, existing.password_hash)) {
+        db.prepare('UPDATE admins SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(bcrypt.hashSync(password, 12), existing.id);
+        console.warn('ADMIN_RESET_PASSWORD: password reset for ' + email + '. Remove ADMIN_RESET_PASSWORD from .env now.');
+      } else {
+        console.warn('ADMIN_RESET_PASSWORD is still set; password for ' + email + ' already matches. Remove it from .env.');
+      }
     }
   }
 }

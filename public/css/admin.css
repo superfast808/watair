@@ -432,6 +432,9 @@ body.media-picker-open{overflow:hidden}
 .login-card label{display:grid;gap:6px;font-size:11px;font-weight:750}
 .login-card>a{font-size:12px}
 .alert{background:#fff0f0;color:#882626;padding:10px 12px;border-radius:8px;font-size:11px}
+.alert-ok{background:#ebf8f1;color:#1d6a43;margin-bottom:8px}
+.login-forgot{font-size:12px;margin:-12px 0 18px}
+.login-forgot a{text-decoration:underline}
 
 /* Responsive */
 @media(max-width:1180px){
