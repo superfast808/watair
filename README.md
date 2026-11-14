@@ -166,6 +166,16 @@ Before DNS cutover:
 - monitor 404s and add redirects for any legacy URLs discovered after launch
 - take regular backups of the SQLite database and uploaded media
 
+## Resetting an admin password
+
+Three ways, easiest first:
+
+1. **Forgot password link** on `/admin/login`: emails a one-time link (valid 30 minutes) to the admin address. Needs SMTP set up (CMS settings or `SMTP_*` in `.env`).
+2. **`.env` switch**: set `ADMIN_EMAIL` to the admin's email, `ADMIN_PASSWORD` to the new password (14+ characters, a letter and a number) and `ADMIN_RESET_PASSWORD=1`, then `docker compose up -d`. The password is reset on startup (the account is created if it doesn't exist); `docker compose logs web | grep ADMIN_RESET` confirms it. Set `ADMIN_RESET_PASSWORD=0` afterwards.
+3. **Shell**: `docker compose exec web node scripts/reset-admin-password.js` lists admins; add the email to set a new password (typed hidden), or `--create` to add a new admin.
+
+All three sign out existing sessions for that account.
+
 ## Editorial Studio, news and daily social publishing
 
 Navigate to **CMS → Editorial Studio** at /admin/editorial. The journal is at /news (RSS: /news/feed.xml). The first install seeds three original, factual evergreen articles about atmospheric water generation, humidity and system selection; the administrator can update or unpublish them. Published articles are included in /sitemap.xml and emit Article JSON-LD plus canonical and Open Graph metadata.

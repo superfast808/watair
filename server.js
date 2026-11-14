@@ -17,7 +17,7 @@ const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
 const editorial = require('./src/editorial');
 const editorialRoutes = require('./src/editorial-routes');
-const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
+const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf, validateAdminPassword } = require('./src/auth');
 const { startLegacyMediaImport, getMediaImportState, getMediaSummary, loadManifest, localAssetForLegacyUrl } = require('./src/media-import');
 const {
   normaliseCurrency,
@@ -1475,19 +1475,90 @@ function cleanPageBody(value) {
 
 app.get('/admin/login', (req,res) => {
   if (readAdmin(req)) return res.redirect('/admin');
-  res.render('admin/login', { error: null, meta: { title: 'WatAir CMS Login' } });
+  res.render('admin/login', { error: null, notice: req.query.reset === '1' ? 'Password updated. Sign in with your new password.' : null, meta: { title: 'WatAir CMS Login' } });
 });
 app.post('/admin/login', loginLimiter, (req,res) => {
   const email = String(req.body.email || '').toLowerCase().trim();
   const password = String(req.body.password || '');
   const admin = db.prepare('SELECT * FROM admins WHERE email=?').get(email);
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
-    return res.status(401).render('admin/login', { error: 'Incorrect email or password.', meta: { title: 'WatAir CMS Login' } });
+    return res.status(401).render('admin/login', { error: 'Incorrect email or password.', notice: null, meta: { title: 'WatAir CMS Login' } });
   }
   db.prepare('UPDATE admins SET updated_at=CURRENT_TIMESTAMP WHERE id=?').run(admin.id);
   res.cookie('watair_admin', signAdmin(admin), { httpOnly: true, secure: isProd, sameSite: 'strict', maxAge: 8*60*60*1000, path: '/' });
   res.redirect('/admin');
 });
+// ---- Forgotten password: emailed one-time link, valid for 30 minutes ----------
+db.exec(`CREATE TABLE IF NOT EXISTS admin_password_resets (
+  token_hash TEXT PRIMARY KEY,
+  admin_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(admin_id) REFERENCES admins(id) ON DELETE CASCADE
+)`);
+const resetLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const resetTokenHash = token => crypto.createHash('sha256').update(String(token)).digest('hex');
+const RESET_TITLE = { title: 'Reset password | WatAir CMS' };
+function validResetRow(token) {
+  if (!/^[a-f0-9]{64}$/.test(String(token || ''))) return null;
+  return db.prepare(`SELECT r.*, a.email FROM admin_password_resets r JOIN admins a ON a.id=r.admin_id
+    WHERE r.token_hash=? AND r.used_at IS NULL AND r.expires_at > ?`).get(resetTokenHash(token), new Date().toISOString());
+}
+app.get('/admin/forgot-password', (req,res) => {
+  res.render('admin/password-reset', { stage: 'request', error: null, notice: null, meta: RESET_TITLE });
+});
+app.post('/admin/forgot-password', resetLimiter, async (req,res) => {
+  const email = String(req.body.email || '').toLowerCase().trim();
+  const mail = smtpConfiguration();
+  const mailReady = Boolean(mail.host && (!mail.user || mail.password));
+  if (!mailReady) {
+    return res.status(503).render('admin/password-reset', { stage: 'request', notice: null, meta: RESET_TITLE,
+      error: 'Email is not set up on this site, so a reset link cannot be sent. Use the server reset described in the README (ADMIN_RESET_PASSWORD=1).' });
+  }
+  const admin = db.prepare('SELECT id,email FROM admins WHERE email=?').get(email);
+  if (admin) {
+    const token = crypto.randomBytes(32).toString('hex');
+    db.prepare('DELETE FROM admin_password_resets WHERE admin_id=? OR expires_at < ?').run(admin.id, new Date().toISOString());
+    db.prepare('INSERT INTO admin_password_resets(token_hash,admin_id,expires_at) VALUES(?,?,?)')
+      .run(resetTokenHash(token), admin.id, new Date(Date.now() + 30 * 60 * 1000).toISOString());
+    try {
+      await createMailTransport(mail).sendMail({
+        from: mail.from,
+        to: admin.email,
+        subject: 'Reset your WatAir CMS password',
+        text: `Someone (hopefully you) asked to reset the password for ${admin.email} on the WatAir website CMS.\n\nSet a new password here (link valid for 30 minutes, works once):\n${baseUrl}/admin/reset-password/${token}\n\nIf you didn't ask for this, ignore this email; your password hasn't changed.`
+      });
+    } catch (err) {
+      console.error('Password reset email failed:', err.message);
+    }
+  }
+  // Same response either way, so the form can't be used to discover admin emails.
+  res.render('admin/password-reset', { stage: 'sent', error: null, meta: RESET_TITLE,
+    notice: 'If that email belongs to an admin account, a reset link is on its way. It expires in 30 minutes.' });
+});
+app.get('/admin/reset-password/:token', (req,res) => {
+  const row = validResetRow(req.params.token);
+  if (!row) return res.status(400).render('admin/password-reset', { stage: 'request', notice: null, meta: RESET_TITLE, error: 'That reset link has expired or already been used. Request a new one.' });
+  res.render('admin/password-reset', { stage: 'choose', token: req.params.token, email: row.email, error: null, notice: null, meta: RESET_TITLE });
+});
+app.post('/admin/reset-password/:token', resetLimiter, (req,res) => {
+  const row = validResetRow(req.params.token);
+  if (!row) return res.status(400).render('admin/password-reset', { stage: 'request', notice: null, meta: RESET_TITLE, error: 'That reset link has expired or already been used. Request a new one.' });
+  const password = String(req.body.password || '');
+  const again = (error) => res.status(400).render('admin/password-reset', { stage: 'choose', token: req.params.token, email: row.email, error, notice: null, meta: RESET_TITLE });
+  if (password !== String(req.body.confirm_password || '')) return again('The two passwords do not match.');
+  const problem = validateAdminPassword(password, row.email);
+  if (problem) return again(problem);
+  db.transaction(() => {
+    // updated_at bump also signs out any existing sessions for this account.
+    db.prepare('UPDATE admins SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(bcrypt.hashSync(password, 12), row.admin_id);
+    db.prepare('UPDATE admin_password_resets SET used_at=CURRENT_TIMESTAMP WHERE token_hash=?').run(row.token_hash);
+    db.prepare('DELETE FROM admin_password_resets WHERE admin_id=? AND used_at IS NULL').run(row.admin_id);
+  })();
+  res.redirect('/admin/login?reset=1');
+});
+
 app.post('/admin/logout', requireAdmin, requireCsrf, (req,res) => {
   res.clearCookie('watair_admin', { path: '/' });
   res.redirect('/admin/login');
@@ -1862,14 +1933,6 @@ app.post('/admin/products/:id/delete', requireCsrf, (req,res) => {
   db.prepare('DELETE FROM products WHERE id=?').run(product.id);
   res.redirect('/admin/products?product_deleted=1');
 });
-
-function validateAdminPassword(password, email = '') {
-  const value = String(password || '');
-  if (value.length < 14) return 'Password must be at least 14 characters long.';
-  if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return 'Password must contain at least one letter and one number.';
-  if (email && value.toLowerCase().includes(String(email).split('@')[0].toLowerCase())) return 'Password should not contain the email username.';
-  return null;
-}
 
 app.get('/admin/users', (req,res) => {
   const admins = db.prepare('SELECT id,email,display_name,created_at,updated_at FROM admins ORDER BY created_at,id').all();

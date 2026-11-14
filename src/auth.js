@@ -46,4 +46,12 @@ function requireCsrf(req, res, next) {
   next();
 }
 
-module.exports = { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf };
+function validateAdminPassword(password, email = '') {
+  const value = String(password || '');
+  if (value.length < 14) return 'Password must be at least 14 characters long.';
+  if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return 'Password must contain at least one letter and one number.';
+  if (email && value.toLowerCase().includes(String(email).split('@')[0].toLowerCase())) return 'Password should not contain the email username.';
+  return null;
+}
+
+module.exports = { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf, validateAdminPassword };
