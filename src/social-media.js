@@ -30,7 +30,119 @@ function pathOfImage(input){
   }
   return {source,originalPath:value};
 }
-async function makeSocialImage(input){
+// ---------------------------------------------------------------------------
+// Branded 1200×1200 social cards.
+// Photos are cropped to fill the frame (no letterboxing); product cut-outs and
+// white-background product shots sit on a clean white stage. When a headline is
+// supplied it is set in Inter on a navy band with the WatAir logo, so the post
+// reads at thumbnail size in a feed.
+// ---------------------------------------------------------------------------
+const SIZE=1200;
+const CARD_VERSION='social-card-v4';
+const FONT_DIR=path.resolve(__dirname,'..','assets','fonts');
+const HEADLINE_FONT={font:'Inter Display ExtraBold',fontfile:path.join(FONT_DIR,'InterDisplay-ExtraBold.ttf')};
+const LABEL_FONT={font:'Inter SemiBold',fontfile:path.join(FONT_DIR,'Inter-SemiBold.ttf')};
+const LOGO=path.join(PUBLIC_ROOT,'images','logo-header.svg');
+const NAVY='#062632', AQUA='#23c4dc';
+const escapeMarkup=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function cleanOverlayText(value,max){
+  let s=String(value||'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').replace(/#\w+/g,'').trim();
+  // Emoji render as tofu in the bundled font; keep overlays typographic.
+  s=s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'').trim();
+  if(s.length>max)s=s.slice(0,max).replace(/\s+\S*$/,'')+'…';
+  return s;
+}
+// Render text to a transparent PNG, auto-fitting inside the box but never
+// growing past maxPx (pango sizes are 12pt at the chosen dpi).
+async function renderText(text,{width,height,maxPx,font,colour='#ffffff',align='left',letterSpacing=0}){
+  const span=`<span foreground="${colour}"${letterSpacing?` letter_spacing="${letterSpacing}"`:''}>${escapeMarkup(text)}</span>`;
+  const base={text:span,...font,width,align,rgba:true,wrap:'word'};
+  const fitted=sharp({text:{...base,height}});
+  let {data,info}=await fitted.png().toBuffer({resolveWithObject:true});
+  const maxDpi=Math.round(maxPx*72/12);
+  if(!info.textAutofitDpi||info.textAutofitDpi>maxDpi){
+    ({data,info}=await sharp({text:{...base,dpi:maxDpi}}).png().toBuffer({resolveWithObject:true}));
+  }
+  return {input:data,width:info.width,height:info.height};
+}
+async function classify(file,meta){
+  // Product cut-outs (real transparency) and studio shots on white get the
+  // white stage; everything else is treated as a photograph and cropped to fill.
+  if(meta.hasAlpha){
+    const stats=await sharp(file).stats();
+    const alpha=stats.channels[3];
+    if(alpha&&alpha.min<200)return 'product';
+  }
+  const {data,info}=await sharp(file).flatten({background:'#ffffff'}).resize(24,24,{fit:'fill'}).raw().toBuffer({resolveWithObject:true});
+  const px=(x,y)=>{const i=(y*info.width+x)*info.channels;return [data[i],data[i+1],data[i+2]];};
+  const corners=[px(0,0),px(23,0),px(0,23),px(23,23),px(12,0),px(0,12),px(23,12)];
+  const light=corners.filter(c=>c.every(v=>v>=228)).length;
+  return light>=5?'product':'photo';
+}
+function gradientSvg(stops,{x1=0,y1=0,x2=0,y2=1,height=SIZE}={}){
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${height}"><defs><linearGradient id="g" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops.map(([o,c,a])=>`<stop offset="${o}" stop-color="${c}" stop-opacity="${a}"/>`).join('')}</linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`);
+}
+async function footerLayers(top){
+  const logo=await sharp(LOGO,{density:300}).resize({width:190}).png().toBuffer({resolveWithObject:true});
+  const domain=await renderText('watairuk.co.uk',{width:600,height:40,maxPx:30,font:LABEL_FONT,colour:'#bdeef6'});
+  return [
+    {input:logo.data,left:SIZE-72-logo.info.width,top:Math.round(top+(44-logo.info.height)/2)},
+    {input:domain.input,left:72,top:Math.round(top+(44-domain.height)/2)}
+  ];
+}
+async function textBlock({headline,kicker},{top,bottom,maxPx}){
+  // Lays out kicker + headline bottom-aligned within [top,bottom].
+  const layers=[];
+  const head=await renderText(headline,{width:SIZE-144,height:bottom-top-(kicker?64:0),maxPx,font:HEADLINE_FONT});
+  const headTop=bottom-head.height;
+  layers.push({input:head.input,left:72,top:headTop});
+  if(kicker){
+    const k=await renderText(kicker,{width:SIZE-144,height:34,maxPx:26,font:LABEL_FONT,colour:AQUA,letterSpacing:2400});
+    const kTop=headTop-22-k.height;
+    layers.push({input:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="56" height="6"><rect width="56" height="6" rx="3" fill="${AQUA}"/></svg>`),left:72,top:kTop-26});
+    layers.push({input:k.input,left:72,top:kTop});
+  }
+  return layers;
+}
+async function composeCard(file,{headline,kicker}){
+  const meta=await sharp(file).metadata();
+  const kind=await classify(file,meta);
+  const source=sharp(file,{limitInputPixels:60000000,failOn:'error'}).rotate();
+  if(kind==='photo'){
+    const photo=await source.resize(SIZE,SIZE,{fit:'cover',position:sharp.strategy.attention}).flatten({background:NAVY}).toBuffer();
+    if(!headline)return sharp(photo).png().toBuffer();
+    const layers=[
+      {input:gradientSvg([[0,NAVY,0],[0.38,NAVY,0.15],[0.68,NAVY,0.82],[1,NAVY,0.97]])},
+      ...(await textBlock({headline,kicker},{top:560,bottom:SIZE-150,maxPx:92})),
+      ...(await footerLayers(SIZE-104))
+    ];
+    return sharp(photo).composite(layers).png().toBuffer();
+  }
+  // Product: white stage, product centred with breathing room.
+  const stageHeight=headline?790:SIZE;
+  const boxW=headline?980:1000, boxH=headline?660:1000;
+  // Trim the padding baked into most product cut-outs so the unit fills the stage.
+  let trimmed=await source.png().toBuffer();
+  try{trimmed=await sharp(trimmed).trim({background:meta.hasAlpha?{r:0,g:0,b:0,alpha:0}:'#ffffff',threshold:18}).png().toBuffer();}catch{}
+  const product=await sharp(trimmed).resize(boxW,boxH,{fit:'inside',withoutEnlargement:false}).png().toBuffer({resolveWithObject:true});
+  const stage=sharp({create:{width:SIZE,height:SIZE,channels:4,background:'#ffffff'}});
+  const layers=[
+    {input:product.data,left:Math.round((SIZE-product.info.width)/2),top:Math.round((stageHeight-product.info.height)/2)+(headline?10:0)}
+  ];
+  if(headline){
+    layers.push({input:gradientSvg([[0,'#0a3a4b',1],[1,NAVY,1]],{x1:0,y1:0,x2:1,y2:1,height:SIZE-stageHeight}),left:0,top:stageHeight});
+    layers.push({input:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="6"><rect width="${SIZE}" height="6" fill="${AQUA}"/></svg>`),left:0,top:stageHeight});
+    layers.push(...(await textBlock({headline,kicker:''},{top:stageHeight+56,bottom:SIZE-134,maxPx:68})));
+    if(kicker){
+      const k=await renderText(kicker,{width:SIZE-144,height:34,maxPx:26,font:LABEL_FONT,colour:AQUA,letterSpacing:2400});
+      layers.push({input:k.input,left:72,top:stageHeight+44});
+    }
+    layers.push(...(await footerLayers(SIZE-100)));
+  }
+  return stage.composite(layers).flatten({background:'#ffffff'}).png().toBuffer();
+}
+
+async function makeSocialImage(input,card={}){
   const {source,originalPath}=pathOfImage(input);
   let real,stat;
   try{
@@ -49,17 +161,25 @@ async function makeSocialImage(input){
     data=await sharp(real,{limitInputPixels:60000000,failOn:'error'}).metadata();
   }catch(e){throw new Error('The source file is not a readable image: '+originalPath);}
   if(!data.width||!data.height)throw new Error('Image has no usable dimensions: '+originalPath);
-  const digest=crypto.createHash('sha256').update(real+'|'+stat.size+'|'+stat.mtimeMs+'|social-1200sq-v2').digest('hex').slice(0,32);
+  const headline=cleanOverlayText(card.headline,90);
+  const kicker=cleanOverlayText(card.kicker,32).toUpperCase();
+  const digest=crypto.createHash('sha256').update(real+'|'+stat.size+'|'+stat.mtimeMs+'|'+CARD_VERSION+'|'+headline+'|'+kicker).digest('hex').slice(0,32);
   const filename=digest+'.jpg';
   const destination=path.join(SOCIAL_ROOT,filename);
   await fsp.mkdir(SOCIAL_ROOT,{recursive:true});
   if(!fs.existsSync(destination)){
     const temporary=path.join(SOCIAL_ROOT,'.'+digest+'-'+crypto.randomBytes(6).toString('hex')+'.jpg');
     try{
-      await sharp(real,{limitInputPixels:60000000,failOn:'error'})
-        .rotate().resize(1200,1200,{fit:'contain',background:{r:238,g:247,b:249,alpha:1},withoutEnlargement:false})
-        .flatten({background:'#eef7f9'}).toColourspace('srgb')
-        .jpeg({quality:84,progressive:false,mozjpeg:true}).toFile(temporary);
+      let composed;
+      try{composed=await composeCard(real,{headline,kicker});}
+      catch(e){
+        if(!headline)throw e;
+        // Never let typography break publishing: send the cropped photo instead.
+        console.error('WatAir social card text failed; sending image without headline:',e.message);
+        composed=await composeCard(real,{headline:'',kicker:''});
+      }
+      await sharp(composed).toColourspace('srgb')
+        .jpeg({quality:86,progressive:false,mozjpeg:true}).toFile(temporary);
       const output=await fsp.stat(temporary);
       if(output.size>MAX_RESULT_SIZE)throw new Error('Converted social image exceeds 8 MB.');
       await fsp.rename(temporary,destination);
@@ -115,8 +235,8 @@ async function checkPublicUrl(media){
     throw new Error('Public image URL returned a response that is not valid JPEG data: '+media.url);
   return {ok:true,detail:'Public HTTPS GET returned 200, image/jpeg and valid JPEG bytes.'};
 }
-async function prepareForBuffer(input,{verify=true}={}){
-  const media=await makeSocialImage(input);
+async function prepareForBuffer(input,{verify=true,headline='',kicker=''}={}){
+  const media=await makeSocialImage(input,{headline,kicker});
   if(verify)media.preflight=await checkPublicUrl(media);
   return media;
 }

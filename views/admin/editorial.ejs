@@ -15,10 +15,11 @@
 <section class="ed-two">
   <div class="admin-card ed-panel">
     <div class="ed-panel-head"><div><p class="admin-kicker">AI writing desk</p><h2>Smart social drafts</h2></div><span class="ed-chip">GPT-5.4 mini</span></div>
-    <p>Varied, informative posts with a website link. AI drafts are saved for review; your daily autopilot is controlled separately.</p>
+    <p>Hook-first posts in rotating styles, with a short version for X/Bluesky/Threads and a branded image card. AI drafts are saved for review; your daily autopilot is controlled separately.</p>
     <form action="/admin/editorial/ai/post" method="post" class="ed-form">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <label>Content angle<select name="topic"><option value="did-you-know">Did you know?</option><option value="technology">How the technology works</option><option value="product">Product spotlight</option><option value="applications">Applications</option><option value="water-quality">Water quality & maintenance</option><option value="resilience">Water resilience</option><option value="industry">Industry & commercial</option><option value="environment">Environment & responsible operation</option></select></label>
+      <label>Post style<select name="angle"><option value="">Pick for me (rotates)</option><% angles.forEach(a=>{ %><option value="<%= a.id %>"><%= a.name %><%= a.productOnly?' (products)':'' %></option><% }) %></select></label>
       <label>Optional featured product<select name="product_id"><option value="">Automatically select</option><% products.forEach(p=>{ %><option value="<%= p.id %>"><%= p.name %></option><% }) %></select></label>
       <label>Or link to a live article<select name="article_id"><option value="">Automatically choose a relevant page</option><% articles.filter(a=>a.status==='published').forEach(a=>{ %><option value="<%= a.id %>"><%= a.title %></option><% }) %></select></label>
       <button class="admin-button" type="submit" <%= !creds.openai ? 'disabled' : '' %>>✧ Generate social draft</button>

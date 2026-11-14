@@ -3,6 +3,7 @@ const sanitizeHtml=require('sanitize-html');
 const {requireCsrf}=require('./auth');
 const S=require('./editorial');
 const { prepareForBuffer } = require('./social-media');
+const Copy=require('./social-copy');
 const publicRouter=express.Router(), adminRouter=express.Router();
 const getArticles=()=>S.articleList(100,false);
 const articleById=id=>S.db.prepare('SELECT * FROM news_articles WHERE id=?').get(id);
@@ -62,7 +63,7 @@ adminRouter.get('/editorial',(req,res)=>{
     return {date:key,label:date.toLocaleDateString('en-GB',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short'}),posts:posts.filter(p=>p.due_at&&p.due_at.slice(0,10)===key&&p.status==='scheduled')};
   });
   res.render('admin/editorial',viewData(req,{
-    metaTitle:'Editorial Studio | WatAir CMS',articles:getArticles(),products:S.productList(),posts,calendarDays,channels:S.allChannels(),
+    metaTitle:'Editorial Studio | WatAir CMS',angles:Copy.ANGLES,articles:getArticles(),products:S.productList(),posts,calendarDays,channels:S.allChannels(),
     creds:S.credentials(),autoEnabled,autoTime:S.setting('social_auto_time','09:30'),
     autoStyle:S.setting('social_auto_style','balanced'),model:S.setting('social_ai_model','gpt-5.4-mini'),
     dailyRuns:S.db.prepare('SELECT * FROM social_daily_runs ORDER BY day DESC LIMIT 7').all(),
@@ -139,7 +140,10 @@ adminRouter.post('/editorial/ai/article',requireCsrf,async(req,res)=>{
 });
 function postForm(req,post=null) {
   const channels=S.allChannels();const chosen=post?S.deliveries(post.id).map(x=>x.channel_id):S.enabledChannels().map(x=>x.id);
-  return viewData(req,{metaTitle:(post?'Edit':'New')+' social post | WatAir CMS',post,channels,chosen,products:S.productList(),articles:S.articleList(100,true),topics:S.topics(),deliveries:post?S.deliveries(post.id):[]});
+  const card=/^\/uploads\/social\/[a-f0-9]{32}\.jpg$/.test(String(req.query.card||''))?req.query.card:'';
+  const link=post?.link_path?S.absolute(post.link_path):'';
+  const platformPreview=post?{long:Copy.textForService(post,'linkedin',link),short:Copy.textForService(post,'twitter',link)}:null;
+  return viewData(req,{metaTitle:(post?'Edit':'New')+' social post | WatAir CMS',post,channels,chosen,products:S.productList(),articles:S.articleList(100,true),topics:S.topics(),deliveries:post?S.deliveries(post.id):[],card,platformPreview});
 }
 adminRouter.get('/editorial/posts/new',(req,res)=>res.render('admin/editorial-post',postForm(req)));
 adminRouter.get('/editorial/posts/:id',(req,res)=>{
@@ -162,7 +166,9 @@ function postPayload(req) {
     if(!Number.isFinite(parsed)||parsed<Date.now()+60000)throw new Error('Schedule must be at least one minute in the future (UTC).');
     dueAt=new Date(parsed).toISOString();
   }
-  return {topic,headline:String(req.body.headline||'').trim().slice(0,120),caption,image_url:image,link_path:link,
+  const caption_short=String(req.body.caption_short||'').trim().slice(0,500);
+  const image_text=String(req.body.image_text||'').replace(/\s+/g,' ').trim().slice(0,90);
+  return {topic,headline:String(req.body.headline||'').trim().slice(0,120),caption,caption_short,image_text,image_url:image,link_path:link,
     article_id:Number(req.body.article_id)||null,product_id:Number(req.body.product_id)||null,due_at:dueAt,ids};
 }
 adminRouter.post('/editorial/posts',requireCsrf,(req,res)=>{
@@ -182,7 +188,7 @@ adminRouter.post('/editorial/posts/:id',requireCsrf,(req,res)=>{
     const valid=new Set(S.allChannels().filter(c=>c.connected).map(c=>c.id));
     if(p.ids.some(id=>!valid.has(id)))throw new Error('One of the selected channels is no longer connected.');
     S.db.transaction(()=>{
-      S.db.prepare('UPDATE social_posts SET topic=?,headline=?,caption=?,image_url=?,link_path=?,article_id=?,product_id=?,due_at=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.topic,p.headline,p.caption,p.image_url,p.link_path,p.article_id,p.product_id,p.due_at,state,old.id);
+      S.db.prepare('UPDATE social_posts SET topic=?,headline=?,caption=?,caption_short=?,image_text=?,image_url=?,link_path=?,article_id=?,product_id=?,due_at=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.topic,p.headline,p.caption,p.caption_short,p.image_text,p.image_url,p.link_path,p.article_id,p.product_id,p.due_at,state,old.id);
       S.db.prepare('DELETE FROM social_deliveries WHERE post_id=?').run(old.id);
       for(const id of p.ids) {
         const c=S.db.prepare('SELECT name FROM social_channels WHERE id=?').get(id);
@@ -197,8 +203,8 @@ adminRouter.get('/editorial/posts/:id/check-image',async(req,res)=>{
   try{
     const post=S.getPost(req.params.id);
     if(!post)throw new Error('Social post was not found.');
-    const image=await prepareForBuffer(post.image_url);
-    return res.redirect('/admin/editorial/posts/'+post.id+'?notice='+encodeURIComponent('Image OK: '+image.url+' — '+image.preflight.detail));
+    const image=await prepareForBuffer(post.image_url,{headline:post.image_text,kicker:post.image_text?Copy.kickerFor(post):''});
+    return res.redirect('/admin/editorial/posts/'+post.id+'?card='+encodeURIComponent(image.path)+'&notice='+encodeURIComponent('Image OK: '+image.url+' — '+image.preflight.detail));
   }catch(e){return safeRedirectError(res,'/admin/editorial/posts/'+req.params.id,e);}
 });
 adminRouter.post('/editorial/posts/:id/send',requireCsrf,async(req,res)=>{
@@ -223,15 +229,15 @@ adminRouter.post('/editorial/ai/post',requireCsrf,async(req,res)=>{
     let target;
     if(req.body.article_id) {
       const a=articles.find(x=>x.id===Number(req.body.article_id));if(!a)throw new Error('Publish the selected article first.');
-      target={title:a.title,facts:a.excerpt,link_path:'/news/'+a.slug,image_url:S.cleanLocalPath(a.image_url),article_id:a.id};
+      target={title:a.title,facts:Copy.articleFacts(a),link_path:'/news/'+a.slug,image_url:S.cleanLocalPath(a.image_url),article_id:a.id};
     }else if(req.body.product_id) {
       const p=products.find(x=>x.id===Number(req.body.product_id));if(!p)throw new Error('Product unavailable');
-      target={title:p.name,facts:p.summary+'; specifications: '+p.specs_json,link_path:'/products/'+p.slug,image_url:S.cleanLocalPath(p.image_url),product_id:p.id};
+      target={title:p.name,facts:Copy.productFacts(p),link_path:'/products/'+p.slug,image_url:S.cleanLocalPath(p.image_url),product_id:p.id};
     }else target=S.targetFor(topic,Math.floor(Date.now()/86400000));
-    const caption=await S.makeCaption(topic,target,S.allPosts(8).map(x=>x.caption));
+    const caption=await S.makeCaption(req.body.product_id?'product':topic,target,S.allPosts(12),{angle:String(req.body.angle||'')});
     const channels=S.enabledChannels();
     if(!channels.length)throw new Error('Select default connected channels first.');
-    const id=S.createPost({...target,...caption,topic,source:'ai',status:'draft'},channels.map(c=>c.id));
+    const id=S.createPost({...target,...caption,topic:req.body.product_id?'product':topic,source:'ai',status:'draft'},channels.map(c=>c.id));
     res.redirect('/admin/editorial/posts/'+id+'?notice=AI+draft+ready+for+review');
   }catch(e){safeRedirectError(res,'/admin/editorial',e)}
 });

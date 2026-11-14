@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { db } = require('./db');
 const { publicSiteOrigin } = require('./site-url');
 const { prepareForBuffer } = require('./social-media');
+const Copy = require('./social-copy');
 
 db.exec('CREATE TABLE IF NOT EXISTS news_articles (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'Technology\', excerpt TEXT NOT NULL DEFAULT "", body_html TEXT NOT NULL DEFAULT "", image_url TEXT NOT NULL DEFAULT "", seo_title TEXT NOT NULL DEFAULT "", seo_description TEXT NOT NULL DEFAULT "", status TEXT NOT NULL DEFAULT \'draft\', published_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 db.exec('CREATE INDEX IF NOT EXISTS news_published ON news_articles(status,published_at DESC)');
@@ -11,6 +12,10 @@ db.exec('CREATE TABLE IF NOT EXISTS social_channels (id TEXT PRIMARY KEY, name T
 db.exec('CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, topic TEXT NOT NULL DEFAULT "technology", headline TEXT NOT NULL DEFAULT "", caption TEXT NOT NULL, image_url TEXT NOT NULL DEFAULT "", link_path TEXT NOT NULL DEFAULT "", article_id INTEGER, product_id INTEGER, status TEXT NOT NULL DEFAULT \'draft\', due_at TEXT, source TEXT NOT NULL DEFAULT "manual", created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(article_id) REFERENCES news_articles(id) ON DELETE SET NULL, FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL)');
 db.exec('CREATE INDEX IF NOT EXISTS social_posts_due ON social_posts(status,due_at)');
 db.exec('CREATE TABLE IF NOT EXISTS social_deliveries (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, channel_id TEXT NOT NULL, channel_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', buffer_post_id TEXT NOT NULL DEFAULT "", error TEXT NOT NULL DEFAULT "", attempts INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id,channel_id), FOREIGN KEY(post_id) REFERENCES social_posts(id) ON DELETE CASCADE)');
+// Columns added for platform-specific copy and branded image cards.
+for (const [column, definition] of [['caption_short','TEXT NOT NULL DEFAULT ""'],['image_text','TEXT NOT NULL DEFAULT ""'],['angle','TEXT NOT NULL DEFAULT ""']]) {
+  if (!db.prepare('PRAGMA table_info(social_posts)').all().some(c=>c.name===column)) db.exec('ALTER TABLE social_posts ADD COLUMN '+column+' '+definition);
+}
 db.exec('CREATE TABLE IF NOT EXISTS social_daily_runs (day TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT \'working\', error TEXT NOT NULL DEFAULT "", post_id INTEGER, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 const setting = (key, fallback = '') => db.prepare('SELECT value FROM settings WHERE key=?').get(key)?.value ?? fallback;
 const putSetting = (key, value) => db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value));
@@ -116,23 +121,19 @@ function targetFor(topic,number) {
   const products=productList();
   if (topic==='product'&&products.length) {
     const product=products[number%products.length];
-    return {title:product.name, facts:product.summary+'; rated daily output '+product.capacity_lpd+' litres (site conditions affect actual output); model specifications '+product.specs_json, link_path:'/products/'+product.slug, image_url:cleanLocalPath(product.image_url), product_id:product.id};
+    return {title:product.name, facts:Copy.productFacts(product), link_path:'/products/'+product.slug, image_url:cleanLocalPath(product.image_url), product_id:product.id};
   }
-  if ((topic==='did-you-know'||topic==='applications'||topic==='industry'||topic==='environment')&&articles.length) {
-    const a=articles[number%articles.length];
-    return {title:a.title,facts:a.excerpt,link_path:'/news/'+a.slug,image_url:cleanLocalPath(a.image_url),article_id:a.id};
+  if ((topic==='did-you-know'||topic==='applications'||topic==='industry'||topic==='environment')&&articles.length&&number%2===0) {
+    // Alternate between linking a journal article and a core page so a small
+    // article library doesn't make the feed repetitive.
+    const a=articles[Math.floor(number/2)%articles.length];
+    return {title:a.title,facts:[...Copy.articleFacts(a),...Copy.pickFacts(Copy.FACTS[topic]||Copy.FACTS.core,number,2)],link_path:'/news/'+a.slug,image_url:cleanLocalPath(a.image_url),article_id:a.id};
   }
   const paths={'did-you-know':'/how-it-works',technology:'/how-it-works',applications:'/products',resilience:'/products',environment:'/environment/plastic-bottles','water-quality':'/water-quality-maintenance',industry:'/products/commercial-industrial'};
-  const facts={
-    'did-you-know':'Atmospheric water generators extract moisture from ambient air. Output varies with humidity and temperature.',
-    technology:'Air intake, condensation, filtration/treatment and storage are stages in the process.',
-    applications:'Equipment ranges from compact home/office units to commercial and industrial systems.',
-    resilience:'On-site atmospheric water generation can form part of a wider water supply resilience plan, subject to site conditions.',
-    environment:'Water made at the point of use can offer different storage and transport choices; full sustainability depends on energy and operating conditions.',
-    'water-quality':'Safe drinking water requires model-specific filtration, sterilisation, maintenance and suitable water hygiene controls.',
-    industry:'WatAir lists units with rated outputs up to 10,000 litres a day; real performance depends on operating conditions.'
-  };
-  return {title:topic.replace(/-/g,' '),facts:facts[topic]||facts.technology,link_path:paths[topic]||'/how-it-works',image_url:'/uploads/imported/legacy/images/home/products.jpg'};
+  const titles={'did-you-know':'How water from air works',technology:'How it works',applications:'The WatAir range',resilience:'The WatAir range',environment:'Reducing reliance on bottled water','water-quality':'Water quality, hygiene & maintenance',industry:'Commercial & industrial systems'};
+  const images={'did-you-know':'/uploads/imported/legacy/media/1023/about-us-banner.jpg',technology:'/uploads/imported/legacy/media/1023/about-us-banner.jpg',environment:'/uploads/imported/legacy/media/1026/our-environment-banner.jpg',resilience:'/uploads/imported/legacy/media/1024/mains-water-banner.jpg',industry:'/uploads/imported/legacy/images/home/products.jpg'};
+  const facts=[...Copy.pickFacts(Copy.FACTS[topic]||Copy.FACTS.core,number,4),...Copy.pickFacts(Copy.FACTS.core,number+1,2)];
+  return {title:titles[topic]||'How it works',facts:[...new Set(facts)],link_path:paths[topic]||'/how-it-works',image_url:images[topic]||'/uploads/imported/legacy/images/home/products.jpg'};
 }
 function parseModelJson(body) {
   const raw=(body.output||[]).flatMap(o=>o.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n')||body.output_text||'';
@@ -144,22 +145,27 @@ async function aiGenerate(kind,input) {
   if (!token) throw new Error('Set the OpenAI API key in Editorial Studio first.');
   const model=setting('social_ai_model','gpt-5.4-mini');
   if (!/^gpt-5\.4-mini(?:-2026-03-17)?$/.test(model)) throw new Error('Only GPT-5.4 mini is approved for automatic content.');
-  const system='You are WatAir UK editorial assistant. Write excellent British English for a company supplying atmospheric water generation solutions. Accurate, grounded, useful; engaging hooks and understated credibility, not generic advertising. Never invent performance, pricing, certifications, installations, client results or environmental savings. Distinguish rated capacities from actual output (humidity/temperature matters). Do not claim water is automatically drinkable without appropriate treatment and maintenance. No overly repetitive marketing copy. Output ONE valid JSON object without markdown.';
+  const system=kind==='social_post'?Copy.SYSTEM:'You are WatAir UK editorial assistant. Write excellent British English for a company supplying atmospheric water generation solutions. Accurate, grounded, useful; engaging hooks and understated credibility, not generic advertising. Never invent performance, pricing, certifications, installations, client results or environmental savings. Distinguish rated capacities from actual output (humidity/temperature matters). Do not claim water is automatically drinkable without appropriate treatment and maintenance. No overly repetitive marketing copy. Output ONE valid JSON object without markdown.';
   const response=await jsonRequest('https://api.openai.com/v1/responses',token,{
     model,input:[{role:'system',content:system},{role:'user',content:JSON.stringify({kind,...input})}],
-    max_output_tokens:kind==='article'?2600:650,store:false
+    max_output_tokens:kind==='article'?2600:1600,store:false
   },35000);
   return parseModelJson(response);
 }
-async function makeCaption(topic,target,recent=[]) {
-  const data=await aiGenerate('social_post',{
-    task:'Produce JSON with headline (max 90 chars) and caption (80 to 140 words, 1-3 short paragraphs, useful hook, UK spelling, no markdown headings). Do not include a web link; the site URL will be attached verbatim later. 0-3 relevant hashtags. Avoid phrases found in recent samples.',
-    content_type:topic,facts_verified:target.facts,target_page_title:target.title,
-    url_to_link:absolute(target.link_path),recent_examples:recent.slice(0,8)
-  });
-  let caption=String(data.caption||'').trim().slice(0,1800);
+const firstLine=t=>String(t||'').trim().split('\n')[0].slice(0,140);
+// recent: recent social_posts rows (newest first) so hooks and angles don't repeat.
+async function makeCaption(topic,target,recent=[],{angle:requested='',day=Math.floor(Date.now()/86400000)}={}) {
+  const angle=Copy.chooseAngle({topic,day,recentAngles:recent.map(p=>p.angle).filter(Boolean),requested});
+  const facts=Array.isArray(target.facts)?target.facts:[String(target.facts||'')];
+  const data=await aiGenerate('social_post',Copy.buildRequest({
+    angle,topic,target,facts:facts.filter(Boolean),url:absolute(target.link_path),
+    recentHooks:recent.map(p=>firstLine(typeof p==='string'?p:p.caption)).filter(Boolean)
+  }));
+  const caption=Copy.stripUrls(String(data.caption||'')).slice(0,1800);
   if (caption.length<60) throw new Error('AI returned insufficient content.');
-  return {headline:String(data.headline||'WatAir insight').slice(0,90),caption};
+  const short=Copy.stripUrls(String(data.short||'')).slice(0,400);
+  const imageText=String(data.image_headline||data.hook||'').replace(/\s+/g,' ').trim().replace(/[.]$/,'').slice(0,70);
+  return {headline:String(data.headline||imageText||'WatAir insight').slice(0,90),caption,caption_short:short,image_text:imageText,angle:angle.id};
 }
 async function makeArticle(topic,facts) {
   const data=await aiGenerate('article',{
@@ -173,8 +179,9 @@ function createPost(post, channelIds) {
   const valid=new Set(allChannels().filter(c=>c.connected).map(c=>c.id));
   if (!ids.length || ids.some(id=>!valid.has(id))) throw new Error('Select at least one connected channel.');
   const tx=db.transaction(()=>{
-    const r=db.prepare('INSERT INTO social_posts(topic,headline,caption,image_url,link_path,article_id,product_id,source,status,due_at) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+    const r=db.prepare('INSERT INTO social_posts(topic,headline,caption,caption_short,image_text,angle,image_url,link_path,article_id,product_id,source,status,due_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
       post.topic||'technology',String(post.headline||'').slice(0,120),String(post.caption||'').slice(0,2500),
+      String(post.caption_short||'').slice(0,500),String(post.image_text||'').slice(0,90),String(post.angle||'').slice(0,40),
       cleanLocalPath(post.image_url),cleanLocalPath(post.link_path),post.article_id||null,post.product_id||null,
       post.source||'manual',post.status||'draft',post.due_at||null
     );
@@ -197,7 +204,7 @@ async function dispatchPost(postId) {
     try{
       // Make a durable public JPEG instead of passing fragile original image URLs.
       // Validate before any Buffer API call, avoiding posts with unreadable assets.
-      preparedImage=await prepareForBuffer(post.image_url);
+      preparedImage=await prepareForBuffer(post.image_url,{headline:post.image_text,kicker:post.image_text?Copy.kickerFor(post):''});
     }catch(e){
       const description=String(e.message||e).slice(0,750);
       db.prepare("UPDATE social_deliveries SET status='error',error=?,updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status IN ('pending','error')").run(description,postId);
@@ -212,9 +219,9 @@ async function dispatchPost(postId) {
     // response is lost, an operator must check Buffer rather than duplicate it.
     const claim=db.prepare('UPDATE social_deliveries SET status=\'submitting\',attempts=attempts+1,error=\'\',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'pending\',\'error\')').run(d.id);
     if(!claim.changes)continue; // another worker/admin request already claimed it
-    const caption=post.caption.trim()+(link?'\n\n'+link:'');
     const query='mutation CreatePost($input: CreatePostInput!) { createPost(input:$input) { ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }';
     const service=String(d.service||'').toLowerCase();
+    const caption=Copy.textForService(post,service,link);
     const input={text:caption,channelId:d.channel_id,schedulingType:'automatic',mode:'shareNow',aiAssisted:post.source==='ai'||post.source==='automatic'};
     if(preparedImage) input.assets=[{image:{url:preparedImage.url}}];
     // Network-specific fields are mandatory for several Buffer destinations.
@@ -272,12 +279,13 @@ async function workerTick() {
     if(!claim.changes)return;
     try {
       const recent=allPosts(12);
+      const day=Math.floor(Date.parse(now.day+'T00:00:00Z')/86400000);
       const pattern=setting('social_auto_style')==='educational' ? ['did-you-know','technology','applications','water-quality','resilience','technology','environment','industry'] : topics();
-      let index=Math.floor(Date.parse(now.day+'T00:00:00Z')/86400000);
+      let index=day;
       let topic=pattern[index%pattern.length];
       if(recent[0]?.topic===topic)topic=pattern[(index+1)%pattern.length];
       const target=targetFor(topic,index);
-      const caption=await makeCaption(topic,target,recent.map(x=>x.caption));
+      const caption=await makeCaption(topic,target,recent,{day});
       const id=createPost({...caption,topic,...target,source:'automatic',status:'ready'},channels.map(c=>c.id));
       db.prepare('UPDATE social_daily_runs SET status=\'created\',post_id=? WHERE day=?').run(id,now.day);
       await dispatchPost(id);

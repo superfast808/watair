@@ -29,23 +29,33 @@ const S=require('../src/editorial');
 
   const facebookId='aaaaaaaaaaaaaaaaaaaaaaaa';
   const instagramId='bbbbbbbbbbbbbbbbbbbbbbbb';
+  const twitterId='cccccccccccccccccccccccc';
   const insert=S.db.prepare('INSERT INTO social_channels(id,name,service,organization_id,enabled,connected) VALUES(?,?,?,?,1,1)');
   insert.run(facebookId,'WatAir Facebook','facebook','org-ci');
   insert.run(instagramId,'WatAir Instagram','instagram','org-ci');
-  assert.equal(S.enabledChannels().length,2);
-  let fbSent=0,igSent=0, aiSent=0;
+  insert.run(twitterId,'WatAir X','twitter','org-ci');
+  assert.equal(S.enabledChannels().length,3);
+  let fbSent=0,igSent=0,xSent=0, aiSent=0, lastPrompt=null;
+  const longCaption='Your office already has a water source. It is in the air.\n\nAn atmospheric water generator cools air to its dew point, collects the water that condenses, then filters and sterilises it before it reaches the tap.\n\nNo mains feed, no bottle deliveries, no empties to collect.\n\nSee how the process works, step by step.\n\n#WaterFromAir #AtmosphericWater';
   global.fetch=async(url,request)=>{
     const payload=JSON.parse(request.body);
     if(String(url).includes('openai.com')) {
       aiSent++;
       assert.equal(payload.model,'gpt-5.4-mini');
-      return {ok:true,status:200,json:async()=>({output:[{content:[{type:'output_text',text:JSON.stringify({headline:'Water from air',caption:'Did you know that ambient air contains water vapour? Actual daily water production depends on humidity and temperature, so a site assessment matters before selecting a model. Every system also requires the appropriate treatment and maintenance for the intended use. #AtmosphericWaterGeneration'})}]}]})};
+      lastPrompt=JSON.parse(payload.input[1].content);
+      assert.match(payload.input[0].content,/first line is everything/i,'social posts use the hook-first copy brief');
+      return {ok:true,status:200,json:async()=>({output:[{content:[{type:'output_text',text:JSON.stringify({
+        hooks:['Your office already has a water source.','Myth: water needs pipes.','40 bottles a day, from air.'],
+        hook:'Your office already has a water source. It is in the air.',
+        headline:'Water from the air in your office',caption:longCaption+'\nhttps://example.com/should-be-stripped',
+        short:'Your office already has a water source: the air. Cooled to dew point, filtered, sterilised. No deliveries. #WaterFromAir',
+        image_headline:'Your office already has a water source.'})}]}]})};
     }
     assert.equal(String(url),'https://api.buffer.com');
     assert.ok(payload.query.includes('createPost'));
     const input=payload.variables.input;
     assert.equal(input.mode,'shareNow');
-    assert.ok(input.text.includes('https://watairuk.co.uk/news/'));
+    assert.ok(!input.text.includes('example.com'),'model-supplied URLs are stripped');
     assert.match(input.assets[0].image.url,/^https:\/\/watairuk\.co\.uk\/uploads\/social\/[a-f0-9]{32}\.jpg$/);
     const sharp=require('sharp');
     const filePath=require('node:path').join(__dirname,'../public',new URL(input.assets[0].image.url).pathname);
@@ -56,23 +66,48 @@ const S=require('../src/editorial');
     if(input.channelId===facebookId) {
       fbSent++;
       assert.equal(input.metadata.facebook.type,'post');
+      assert.ok(input.text.startsWith('Your office already has a water source.'),'hook leads the post');
+      assert.match(input.text,/collect\.\n\nSee how[\s\S]*\n\nhttps:\/\/watairuk\.co\.uk\/news\/[a-z-]+\n\n#WaterFromAir #AtmosphericWater$/,'link sits above hashtags');
+    } else if(input.channelId===twitterId) {
+      xSent++;
+      assert.ok([...input.text].length<=280,'X text fits 280 characters: '+input.text.length);
+      assert.ok(input.text.includes('https://watairuk.co.uk/news/'));
+      assert.ok(input.text.startsWith('Your office already has a water source: the air.'));
     } else if(input.channelId===instagramId) {
       igSent++;
       assert.equal(input.metadata.instagram.type,'post');
       assert.equal(input.metadata.instagram.shouldShareToFeed,true);
+      assert.ok(!/https?:\/\//.test(input.text),'Instagram captions carry no unclickable URL');
+      assert.match(input.text,/More at watairuk\.co\.uk\n\n#WaterFromAir/);
     } else throw Error('Unexpected destination');
     return {ok:true,status:200,json:async()=>({data:{createPost:{post:{id:'buffer-'+input.channelId,status:'sent',dueAt:null}}}})};
   };
-  const ai=await S.makeCaption('did-you-know',target);
+  const ai=await S.makeCaption('did-you-know',target,[],{day:3});
   assert.ok(ai.caption.length>60);
+  assert.ok(!ai.caption.includes('example.com'));
+  assert.equal(ai.image_text,'Your office already has a water source');
+  assert.ok(ai.angle,'an angle is recorded');
+  assert.ok(Array.isArray(lastPrompt.verified_facts)&&lastPrompt.verified_facts.length>=3,'model receives a list of verified facts');
+  assert.ok(lastPrompt.angle.how_to_write_it.length>40,'model receives an angle brief');
   assert.equal(aiSent,1);
-  const id=S.createPost({topic:'did-you-know',headline:ai.headline,caption:ai.caption,image_url:'/images/pw-hr-20l.webp',link_path:'/news/what-is-atmospheric-water-generation',source:'ai',status:'ready'},[facebookId,instagramId]);
-  assert.equal(S.deliveries(id).length,2);
+  const Copy=require('../src/social-copy');
+  const productPrompt=Copy.productFacts(S.productList().find(p=>p.capacity_lpd===250));
+  assert.ok(productPrompt.some(l=>/500 half-litre bottles/.test(l)),'bottle equivalents are computed');
+  assert.ok(!productPrompt.some(l=>/kWh/.test(l)),'ambiguous power figures are excluded');
+  assert.equal(Copy.chooseAngle({topic:'product',day:0,requested:'spotlight'}).id,'spotlight');
+  assert.notEqual(Copy.chooseAngle({topic:'technology',day:0,requested:'spotlight'}).id,'spotlight');
+  const recentAngles=['did-you-know','myth-vs-fact','picture-this'];
+  for(let d=0;d<10;d++)assert.ok(!recentAngles.includes(Copy.chooseAngle({topic:'technology',day:d,recentAngles}).id),'recent angles are skipped');
+  const fitted=Copy.fitToLimit('One. '.repeat(120)+'\n\n#A #B','https://watairuk.co.uk/news/x',280);
+  assert.ok([...fitted].length<=280&&fitted.endsWith('https://watairuk.co.uk/news/x'));
+  const id=S.createPost({topic:'did-you-know',...ai,image_url:'/images/pw-hr-20l.webp',link_path:'/news/what-is-atmospheric-water-generation',source:'ai',status:'ready'},[facebookId,instagramId,twitterId]);
+  assert.equal(S.deliveries(id).length,3);
   const result=await S.dispatchPost(id);
   assert.ok(result.every(x=>x.status==='submitted'));
   assert.equal(S.getPost(id).status,'submitted');
   assert.equal(fbSent,1);
   assert.equal(igSent,1);
+  assert.equal(xSent,1);
   await assert.rejects(()=>S.dispatchPost(id),/not ready/);
   assert.equal(fbSent,1);
   assert.equal(igSent,1);
