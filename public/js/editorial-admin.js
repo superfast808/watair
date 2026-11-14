@@ -35,6 +35,13 @@
     localSchedule.addEventListener('change',convert);
     localSchedule.closest('form')?.addEventListener('submit',convert);
   }
+  // Live character count for the short (X/Bluesky/Threads) version.
+  document.querySelectorAll('[data-char-count]').forEach(field=>{
+    const out=document.createElement('small');
+    field.insertAdjacentElement('afterend',out);
+    const update=()=>{const n=[...field.value].length;out.textContent=n+' characters'+(n>200?' — will be trimmed to fit X with the link':'');};
+    field.addEventListener('input',update);update();
+  });
   // Enable quick bulk selection of every connected channel.
   const all=document.querySelector('[data-select-all-channels]');
   all?.addEventListener('change',()=>{
