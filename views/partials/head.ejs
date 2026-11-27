@@ -244,7 +244,12 @@
   <meta name="description" content="<%= seoDescription %>">
   <meta name="robots" content="<%= meta?.noindex || siteNoindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %>">
   <meta name="theme-color" content="#062632">
-  <% if(!siteNoindex && /^GTM-[A-Z0-9]{4,20}$/.test(settings.google_tag_manager_id || '')){ %><meta name="watair-gtm" content="<%= settings.google_tag_manager_id %>"<% if(/^\/(?:admin|order|buy|checkout|payments)(?:\/|$)/i.test(path)){ %> data-disabled="true"<% } %>><% } %>
+  <% if(!siteNoindex && /^GTM-[A-Z0-9]{4,20}$/.test(settings.google_tag_manager_id || '')){ %>
+    <meta name="watair-gtm" content="<%= settings.google_tag_manager_id %>"<% if(/^\/(?:admin|order|buy|checkout|payments)(?:\/|$)/i.test(path)){ %> data-disabled="true"<% } else { %> data-src="https://www.googletagmanager.com/gtm.js?id=<%= settings.google_tag_manager_id %>"<% } %>>
+    <% if(!/^\/(?:admin|order|buy|checkout|payments)(?:\/|$)/i.test(path)){ %>
+      <script src="/js/gtm-head.js?v=2"></script>
+    <% } %>
+  <% } %>
 
   <link rel="canonical" href="<%= canonicalUrl %>">
   <link rel="icon" href="/favicon.svg?v=<%= assetVersion %>" type="image/svg+xml">

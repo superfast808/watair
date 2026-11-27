@@ -334,7 +334,9 @@ jobs:
           grep -q 'GTM-CITEST1' /tmp/admin-settings-smtp.html
           curl -fsS http://127.0.0.1:8099/ > /tmp/home-gtm.html
           grep -q 'name="watair-gtm" content="GTM-CITEST1"' /tmp/home-gtm.html
-          ! grep -q 'src="https://www.googletagmanager.com/gtm.js' /tmp/home-gtm.html
+          grep -q 'data-src="https://www.googletagmanager.com/gtm.js?id=GTM-CITEST1"' /tmp/home-gtm.html
+          grep -q 'src="/js/gtm-head.js?v=2"' /tmp/home-gtm.html
+          ! grep -q '<script[^>]* src="https://www.googletagmanager.com/gtm.js' /tmp/home-gtm.html
           curl -fsS http://127.0.0.1:8099/cookies > /tmp/cookies-gtm.html
           grep -q 'Google Tag Manager and optional tracking' /tmp/cookies-gtm.html
           grep -q 'encrypted CMS password is stored' /tmp/admin-settings-smtp.html
