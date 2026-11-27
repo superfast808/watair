@@ -193,13 +193,14 @@ if (capacityButtons.length) {
 
 /* Cookie consent */
 (() => {
-  const gtmId = document.querySelector('meta[name="watair-gtm"]')?.content || '';
+  const gtmMeta = document.querySelector('meta[name="watair-gtm"]');
+  const gtmId = gtmMeta?.content || '';
   const validGtm = /^GTM-[A-Z0-9]{4,20}$/.test(gtmId);
   // Reconfirm consent for visitors whose choice predates the container installation.
   const storageKey = validGtm ? 'watair_cookie_consent_gtm_v1_' + gtmId : 'watair_cookie_consent_v1';
   let gtmLoaded = false;
   const applyGtm = choice => {
-    if (!validGtm) return;
+    if (!validGtm || gtmMeta?.dataset.disabled === 'true') return;
     const allowed = choice?.analytics === true && choice?.marketing === true;
     if (!allowed && gtmLoaded) {
       // Stop subsequent tags by reloading without the container after saving the new choice.
