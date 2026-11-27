@@ -15,6 +15,7 @@ const PDFDocument = require('pdfkit');
 const { version: appVersion } = require('./package.json');
 const { db, settingsObject } = require('./src/db');
 const { faqs } = require('./src/content');
+const { regions, regionBySlug } = require('./src/regions');
 const editorial = require('./src/editorial');
 const editorialRoutes = require('./src/editorial-routes');
 const { signAdmin, readAdmin, requireAdmin, csrfFor, requireCsrf } = require('./src/auth');
@@ -1128,6 +1129,28 @@ function isDuplicateContactEnquiry(email, message) {
   return Boolean(row);
 }
 
+function renderRegion(res, region, { sent = false, error = null, formValues = {}, status = 200, retry = false } = {}) {
+  res.setHeader('Cache-Control', 'no-store');
+  const turnstile = turnstileConfiguration();
+  return res.status(status).render('region', {
+    region, regions, sent, error, formValues,
+    contactFormToken: createContactFormToken(retry ? Date.now() - CONTACT_FORM_MIN_AGE_MS - 250 : Date.now()),
+    turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : '',
+    meta: { title: 'Atmospheric Water Generators in ' + region.name + ' | WatAir UK', description: region.description,
+      image: '/uploads/imported/legacy/images/home/products.jpg' }
+  });
+}
+
+app.get('/areas', (req, res) => res.render('regions', {
+  regions, meta: { title: 'Regional Water Resilience Solutions | WatAir UK', description: 'Explore water-from-air solutions for Cornwall, Devon, Dorset, Somerset, Kent, Sussex and East Anglia.' }
+}));
+app.get('/areas/:slug', (req, res) => {
+  const region = regionBySlug(req.params.slug);
+  if (!region) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
+  if (req.path.endsWith('/')) return res.redirect(301, '/areas/' + region.slug);
+  return renderRegion(res, region, { sent: req.query.sent === '1' });
+});
+
 function renderContactError(res, { error, selectedProduct, formValues, status = 400 }) {
   const turnstile = turnstileConfiguration();
   return res.status(status).render('contact', {
@@ -1141,12 +1164,19 @@ function renderContactError(res, { error, selectedProduct, formValues, status = 
   });
 }
 
-app.post('/contact', contactLimiter, async (req, res) => {
+app.post(['/contact', '/areas/:slug'], contactLimiter, async (req, res) => {
+  const region = req.params.slug ? regionBySlug(req.params.slug) : null;
+  if (req.params.slug && !region) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
+  if (region) res.setHeader('Cache-Control', 'no-store');
+  const successPath = region ? '/areas/' + region.slug + '?sent=1' : '/contact?sent=1';
+  const renderError = (response, opts) => region ? renderRegion(response, region, { ...opts, retry: true }) : renderContactError(response, opts);
   const name = cleanFormValue(req.body.name, 150);
   const company = cleanFormValue(req.body.company, 150);
   const email = cleanFormValue(req.body.email, 254).toLowerCase();
   const phone = cleanFormValue(req.body.phone, 80);
-  const message = cleanFormValue(req.body.message, 5000);
+  const notes = cleanFormValue(req.body.message, region ? 1500 : 5000);
+  const postcode = region ? cleanFormValue(req.body.postcode, 12).toUpperCase() : '';
+  let message = notes;
   const website = cleanFormValue(req.body.website, 500);
   const fax = cleanFormValue(req.body.fax, 200);
   const formToken = cleanFormValue(req.body.form_token, 500);
@@ -1164,18 +1194,19 @@ app.post('/contact', contactLimiter, async (req, res) => {
   ]);
   const requestedInterest = cleanFormValue(req.body.interest, 120);
   const interest = allowedInterests.has(requestedInterest) ? requestedInterest : '';
-  const formValues = { name, company, email, phone, interest, message };
+  const formValues = { name, company, email, phone, interest, message: notes, postcode };
+  if (region) message = `Regional enquiry: ${region.name}\nLanding page: /areas/${region.slug}\nPostcode: ${postcode || 'Not supplied'}\nInterest: ${interest || 'Not sure yet'}\n\n${notes || 'Please contact me to discuss a suitable system.'}`;
 
   // Honeypot: acknowledge silently so automated submitters do not learn which
   // field caused rejection.
-  if (website || fax) return res.redirect(303, '/contact?sent=1');
+  if (website || fax) return res.redirect(303, successPath);
 
   const tokenState = inspectContactFormToken(formToken);
   let tokenSpamPenalty = 0;
   if (!tokenState.valid) {
-    if (tokenState.reason === 'expired') {
-      return renderContactError(res, {
-        error: 'This contact form has expired. Please submit it again.',
+    if (region || tokenState.reason === 'expired') {
+      return renderError(res, {
+        error: region ? 'Please review your details and submit the form again.' : 'This contact form has expired. Please submit it again.',
         selectedProduct,
         formValues
       });
@@ -1183,13 +1214,13 @@ app.post('/contact', contactLimiter, async (req, res) => {
     if (tokenState.reason === 'missing') {
       tokenSpamPenalty = 1;
     } else {
-      return res.redirect(303, '/contact?sent=1');
+      return res.redirect(303, successPath);
     }
   }
 
-  if (!name || !validEmail(email) || !message) {
-    return renderContactError(res, {
-      error: !validEmail(email) ? 'Please enter a valid email address.' : 'Please complete your name, email and message.',
+  if (!name || !validEmail(email) || (!region && !message) || (region && !/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/.test(postcode))) {
+    return renderError(res, {
+      error: !validEmail(email) ? 'Please enter a valid email address.' : region ? 'Please enter your name and a valid UK postcode.' : 'Please complete your name, email and message.',
       selectedProduct,
       formValues
     });
@@ -1198,7 +1229,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
   const turnstile = turnstileConfiguration();
   if (turnstile.partial) {
     console.error('Turnstile is partially configured. Both site and secret keys are required.');
-    return renderContactError(res, {
+    return renderError(res, {
       error: 'Security verification is temporarily unavailable. Please try again shortly or contact WatAir directly.',
       selectedProduct,
       formValues,
@@ -1209,7 +1240,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
     const verification = await verifyTurnstileToken(turnstileToken, req.ip);
     if (!verification.success) {
       const unavailable = verification.reason === 'unavailable';
-      return renderContactError(res, {
+      return renderError(res, {
         error: unavailable
           ? 'Security verification is temporarily unavailable. Please try again shortly.'
           : 'Please complete the security check and submit the form again.',
@@ -1222,14 +1253,14 @@ app.post('/contact', contactLimiter, async (req, res) => {
 
   // Conservative content scoring catches obvious outreach/spam campaigns while
   // leaving normal project enquiries untouched.
-  if (contactSpamScore({ name, company, email, phone, message }) + tokenSpamPenalty >= 2) {
-    return res.redirect(303, '/contact?sent=1');
+  if (contactSpamScore({ name, company, email, phone, message: notes }) + tokenSpamPenalty >= 2) {
+    return res.redirect(303, successPath);
   }
 
   // Do not let browser retries or repeated bot posts create duplicate inbox
   // entries and duplicate SMTP notifications.
   if (isDuplicateContactEnquiry(email, message)) {
-    return res.redirect(303, '/contact?sent=1');
+    return res.redirect(303, successPath);
   }
 
   db.prepare(`INSERT INTO enquiries(name,company,email,phone,interest,message,ip) VALUES(?,?,?,?,?,?,?)`)
@@ -1243,7 +1274,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
         from: mailConfig.from,
         to: mailConfig.to,
         replyTo: email,
-        subject: `WatAir website enquiry: ${interest || 'General'}`,
+        subject: `WatAir website enquiry${region ? ' – ' + region.name : ''}: ${interest || 'General'}`,
         text: `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\nInterest: ${interest || 'General'}\n\n${message}`
       });
     } catch (err) {
@@ -1251,7 +1282,7 @@ app.post('/contact', contactLimiter, async (req, res) => {
     }
   }
 
-  res.redirect(303, '/contact?sent=1');
+  res.redirect(303, successPath);
 });
 
 // Legacy URL continuity / SEO redirects
@@ -1321,6 +1352,8 @@ app.get('/sitemap.xml', (req,res) => {
     { path: '/refunds', lastmod: pageUpdated.refunds },
     { path: '/cookies', lastmod: pageUpdated.cookies },
     { path: '/contact', lastmod: siteLastmod },
+    { path: '/areas' },
+    ...regions.map(region => ({ path: '/areas/' + region.slug })),
     ...productRows.map(product => ({
       path: '/products/' + product.slug,
       lastmod: sitemapDate(product.updated_at)

@@ -159,6 +159,16 @@
         }
       }))
     });
+  } else if (path === '/areas' || (typeof region !== 'undefined' && region)) {
+    breadcrumbItems.push({ name: 'Areas', url: baseUrl + '/areas' });
+    const regional = typeof region !== 'undefined' && region;
+    if (regional) breadcrumbItems.push({ name: region.name, url: canonicalUrl });
+    schemaGraph.push({
+      '@type': regional ? 'WebPage' : 'CollectionPage', '@id': canonicalUrl + '#webpage',
+      url: canonicalUrl, name: seoTitle, description: seoDescription, inLanguage: 'en-GB',
+      isPartOf: { '@id': websiteId }, about: { '@id': orgId },
+      ...(regional ? { spatialCoverage: { '@type': 'Place', name: region.name } } : {})
+    });
   } else if (typeof page !== 'undefined' && page) {
     breadcrumbItems.push({ name: page.title, url: canonicalUrl });
     schemaGraph.push({
@@ -256,6 +266,7 @@
 
   <script type="application/ld+json"><%- jsonLd %></script>
   <link rel="stylesheet" href="/css/site.css?v=<%= assetVersion %>">
+  <% if(path === '/areas' || path.startsWith('/areas/')){ %><link rel="stylesheet" href="/css/regions.css?v=<%= assetVersion %>"><% } %>
   <% if(path === '/' || path.startsWith('/news')){ %><link rel="stylesheet" href="/css/editorial.css?v=<%= assetVersion %>"><% } %>
 </head>
 <body id="top">

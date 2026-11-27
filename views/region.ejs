@@ -1,0 +1,66 @@
+<%- include('partials/head') %><%- include('partials/header') %>
+<main id="main-content" class="regional">
+<%- include('partials/breadcrumbs', { items: [{label:'Home',href:'/'},{label:'Areas',href:'/areas'},{label:region.name}] }) %>
+<section class="regional-hero">
+  <div class="regional-hero-copy">
+    <p class="eyebrow">Water from air · <%= region.name %></p>
+    <h1><%= region.title %></h1>
+    <p class="regional-intro"><%= region.intro %></p>
+    <div class="regional-highlights"><span>Home & office</span><span>Commercial & industrial</span><span>UK project advice</span></div>
+    <img class="regional-product" src="/uploads/imported/legacy/images/home/products.jpg" alt="WatAir atmospheric water generator range" width="560" height="240" decoding="async">
+    <p class="regional-note">Rated system range: 20–10,000 L/day. Actual output depends on temperature, humidity, power and system sizing.</p>
+    <a href="tel:<%= settings.phone.replace(/\s/g,'') %>">Prefer to speak? <%= settings.phone %> →</a>
+  </div>
+  <div class="regional-lead contact-form-wrap" id="enquire">
+    <% if(sent){ %>
+      <div class="success-box" role="status"><p class="eyebrow">Enquiry received</p><h2>Thank you for getting in touch.</h2><p>The WatAir team can follow up to discuss your requirements.</p><a class="button" href="/products">Explore the range</a></div>
+    <% } else { %>
+      <p class="eyebrow">Get advice for your site</p><h2>Find the right water solution.</h2><p>Tell us where you are and we can help explore the options. No technical specification needed.</p>
+      <% if(error){ %><div class="error-box" role="alert"><%= error %></div><% } %>
+      <form method="post" action="/areas/<%= region.slug %>#enquire" class="contact-form">
+        <input type="hidden" name="form_token" value="<%= contactFormToken %>">
+        <label>Name<input name="name" required maxlength="150" autocomplete="name" value="<%= formValues.name || '' %>"></label>
+        <label>Email<input type="email" name="email" required maxlength="254" autocomplete="email" value="<%= formValues.email || '' %>"></label>
+        <div class="two-col">
+          <label>UK postcode<input name="postcode" required maxlength="12" autocomplete="postal-code" placeholder="e.g. your site postcode" value="<%= formValues.postcode || '' %>"></label>
+          <label>Phone (optional)<input type="tel" name="phone" maxlength="80" autocomplete="tel" value="<%= formValues.phone || '' %>"></label>
+        </div>
+        <label>What are you looking for?
+          <select name="interest"><option value="">Not sure yet</option><% ['Home & Office','Commercial & Industrial','Reseller opportunity','General enquiry'].forEach(option=>{ %><option value="<%= option %>" <%= formValues.interest === option ? 'selected' : '' %>><%= option %></option><% }) %></select>
+        </label>
+        <details class="regional-details" <%= formValues.message ? 'open' : '' %>><summary>Add more detail (optional)</summary><label>What would you like to achieve?<textarea name="message" maxlength="1500" rows="3" placeholder="Site, daily requirements or supply concerns"><%= formValues.message || '' %></textarea></label></details>
+        <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <label class="hp" aria-hidden="true">Fax<input name="fax" tabindex="-1" autocomplete="off"></label>
+        <% if(turnstileSiteKey){ %><div class="turnstile-block"><div class="cf-turnstile" data-sitekey="<%= turnstileSiteKey %>" data-theme="light" data-size="flexible" data-action="contact" data-refresh-expired="auto" data-refresh-timeout="auto"></div><small>Security check powered by Cloudflare Turnstile.</small></div><% } %>
+        <button class="button button-aqua" type="submit">Get advice from WatAir →</button>
+        <p class="form-privacy">We use your details to respond to your enquiry. Read our <a href="/privacy">privacy notice</a>.</p>
+      </form>
+    <% } %>
+  </div>
+</section>
+<section class="regional-section">
+  <p class="eyebrow">The local picture</p><h2>Why water resilience matters in <%= region.name %>.</h2>
+  <p><%= region.context %></p>
+  <p class="regional-note">Background information, not a live outage or restriction alert. For current supply advice contact your water supplier.</p>
+  <div class="regional-sources"><strong>Official background:</strong><% region.sources.forEach(source=>{ %><a href="<%= source.url %>" target="_blank" rel="noopener noreferrer"><%= source.label %> ↗</a><% }) %></div>
+</section>
+<section class="regional-section regional-use-section"><p class="eyebrow">Where WatAir could help</p><h2>Match the system to the way you use water.</h2>
+  <div class="regional-grid"><% region.uses.forEach(([title,copy])=>{ %><article><h3><%= title %></h3><p><%= copy %></p></article><% }) %></div>
+  <p>Enquiries welcome from <%= region.places %>. Site suitability and delivery arrangements are assessed individually.</p>
+</section>
+<section class="regional-section">
+  <p class="eyebrow">How it works</p><h2>Generate water on site, directly from ambient air.</h2>
+  <p>Atmospheric water generators condense moisture from the air and use model-specific treatment and storage. They require electricity and appropriate conditions, installation, hygiene and ongoing maintenance. They are not a guaranteed replacement for mains supply or emergency water provision.</p>
+  <div class="regional-grid regional-two"><a href="/products/home-office"><strong>Home & office systems →</strong><span>20–60 L/day rated range</span></a><a href="/products/commercial-industrial"><strong>Commercial & industrial systems →</strong><span>80–10,000 L/day rated range</span></a></div>
+  <p><a href="/how-it-works">Understand the technology</a> · <a href="/water-quality-maintenance">Water quality and maintenance guidance</a></p>
+</section>
+<section class="regional-section"><h2>Common questions</h2>
+  <details><summary>Will a generator replace my mains water supply?</summary><p>Not necessarily. It may provide a supplementary source for specific uses. Keep appropriate mains, stored-water or other arrangements for the full requirement.</p></details>
+  <details><summary>Does it work during a power cut or dry weather?</summary><p>A generator needs suitable electrical power and enough ambient moisture. Actual output can be lower than rated production, particularly in cooler or drier conditions. Backup power and storage need separate assessment.</p></details>
+  <details><summary>How do I choose a model?</summary><p>Start with the postcode, intended use and number of people. WatAir can discuss daily water demand, climate, energy, hygiene and maintenance before recommending a system.</p></details>
+</section>
+<section class="regional-cta"><div><p class="eyebrow">Make a plan</p><h2>Talk to WatAir about your site in <%= region.name %>.</h2></div><a class="button button-aqua" href="#enquire">Request advice</a></section>
+<section class="regional-section"><h2>Explore other regions</h2><div class="regional-links"><% regions.filter(item=>item.slug!==region.slug).forEach(item=>{ %><a href="/areas/<%= item.slug %>"><%= item.name %> →</a><% }) %><a href="/areas">All areas →</a></div></section>
+</main>
+<% if(turnstileSiteKey && !sent){ %><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><% } %>
+<%- include('partials/footer') %>
