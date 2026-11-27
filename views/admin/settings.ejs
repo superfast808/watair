@@ -19,6 +19,7 @@
     <div class="alert admin-alert smtp-test-error"><strong>SMTP needs attention.</strong> <%= reqQuery.smtp_error %></div>
   <% } %>
 
+  <% if(reqQuery?.site_error){ %><div class="alert admin-alert" role="alert"><%= reqQuery.site_error %></div><% } %>
   <div class="editor-layout">
     <div class="editor-main">
       <section class="admin-card editor-section">
@@ -70,9 +71,16 @@
         </div>
       </section>
 
+      <section class="admin-card editor-section">
+        <div class="section-heading"><span class="section-number">5</span><div><h2>Google Tag Manager</h2><p>Connect your Google Tag Manager web container to the public website.</p></div></div>
+        <div class="form-grid"><label class="full">Google Tag Manager container ID
+          <input name="google_tag_manager_id" maxlength="24" pattern="GTM-[A-Za-z0-9]{4,20}" placeholder="GTM-ABC1234" value="<%= values.google_tag_manager_id || '' %>" autocomplete="off">
+          <small>Paste the GTM- ID only. Leave blank to disable. The container loads only when visitors accept both analytics and marketing cookies. Admin, checkout and order pages are excluded. Configure your tags and conversions in Google Tag Manager.</small>
+        </label></div>
+      </section>
       <section class="admin-card editor-section smtp-settings-card">
         <div class="section-heading">
-          <span class="section-number">5</span>
+          <span class="section-number">6</span>
           <div>
             <h2>Email delivery (SMTP)</h2>
             <p>Controls contact-form notifications, order emails and other website mail. Existing environment settings remain the fallback until these settings are saved.</p>

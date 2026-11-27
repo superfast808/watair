@@ -46,7 +46,12 @@
 </section>
 
 <section class="section-tight prose-shell <%= isPrivacy ? 'prose-shell-single' : '' %>">
-  <article class="prose"><%- page.body_html %></article>
+  <article class="prose"><%- page.body_html %>
+    <% if(settings.google_tag_manager_id && ['privacy','cookies'].includes(page.slug)){ %>
+      <h2>Google Tag Manager and optional tracking</h2>
+      <p>When you accept both analytics and marketing in Cookie settings, the website may load Google Tag Manager to manage website measurement and advertising tags. Google and configured providers may receive technical information such as page URLs, browser details, IP address and cookie identifiers. Optional tags are not loaded by this integration if either category is declined. You can withdraw permission using Cookie settings in the footer; previously stored cookies may remain until deleted or expired. For information about Google’s processing, see <a href="https://policies.google.com/technologies/partner-sites" rel="noopener noreferrer">how Google uses information from sites that use its services</a>.</p>
+    <% } %>
+  </article>
   <% if(isLegal && !isPrivacy){ %>
     <aside class="page-side-card">
       <p class="eyebrow">Legal & ordering</p>

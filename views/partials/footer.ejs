@@ -53,7 +53,7 @@
 <div class="cookie-consent" data-cookie-consent hidden>
   <div class="cookie-consent-copy">
     <strong>Cookie choices</strong>
-    <p>We use essential browser storage for core website functions. Optional analytics and marketing categories remain off unless you choose to allow them.</p>
+    <p>We use essential browser storage for core website functions. Optional analytics and marketing categories remain off unless you choose to allow them.<% if(settings.google_tag_manager_id){ %> Google Tag Manager requires both optional categories to be accepted.<% } %></p>
     <a href="/cookies">Read the cookie notice</a>
   </div>
   <div class="cookie-consent-actions">
@@ -72,8 +72,8 @@
     </header>
     <p>Essential storage is always enabled because it is required for security and requested website functions.</p>
     <label class="cookie-choice"><span><strong>Essential</strong><small>Security, administrator sign-in and checkout functionality.</small></span><input type="checkbox" checked disabled></label>
-    <label class="cookie-choice"><span><strong>Analytics</strong><small>Optional measurement tools if these are added to the site in future.</small></span><input type="checkbox" data-cookie-analytics></label>
-    <label class="cookie-choice"><span><strong>Marketing</strong><small>Optional advertising or remarketing tools if these are added in future.</small></span><input type="checkbox" data-cookie-marketing></label>
+    <label class="cookie-choice"><span><strong>Analytics</strong><small>Optional website measurement tools.</small></span><input type="checkbox" data-cookie-analytics></label>
+    <label class="cookie-choice"><span><strong>Marketing</strong><small>Optional advertising measurement and remarketing tools.</small></span><input type="checkbox" data-cookie-marketing></label>
     <div class="cookie-preferences-actions">
       <button type="button" class="button" data-cookie-save>Save choices</button>
       <button type="button" class="text-link" data-cookie-reject>Reject non-essential</button>
