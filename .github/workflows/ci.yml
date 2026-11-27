@@ -103,6 +103,8 @@ jobs:
             --data-urlencode 'interest=General enquiry' \
             --data-urlencode 'message=Automated release smoke test enquiry.'
 
+          node scripts/regional-smoke.js
+
           curl -sS -D /tmp/reseller-headers.txt -o /dev/null http://127.0.0.1:8099/reseller
           curl -sS -D /tmp/old-15-headers.txt -o /dev/null http://127.0.0.1:8099/products/pw-hr-15l
           curl -sS -D /tmp/leasing-headers.txt -o /dev/null http://127.0.0.1:8099/leasing

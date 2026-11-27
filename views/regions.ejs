@@ -1,0 +1,7 @@
+<%- include('partials/head') %><%- include('partials/header') %>
+<main id="main-content" class="regional">
+<%- include('partials/breadcrumbs', {items:[{label:'Home',href:'/'},{label:'Areas'}]}) %>
+<section class="regional-section regional-hub"><p class="eyebrow">WatAir UK · Regional solutions</p><h1>Local water challenges. A supplementary source.</h1><p>Explore how on-site atmospheric water generation could fit your home, workplace or commercial operation. Select your area to understand the local context and request advice.</p>
+<div class="regional-grid"><% regions.forEach(region=>{ %><article><h2><%= region.name %></h2><p><%= region.intro %></p><a href="/areas/<%= region.slug %>">Explore <%= region.name %> →</a></article><% }) %></div>
+<p>Not in one of these areas? <a href="/contact">Contact WatAir</a> to discuss your requirements anywhere in the UK.</p></section>
+</main><%- include('partials/footer') %>

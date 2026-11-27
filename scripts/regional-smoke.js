@@ -1,0 +1,41 @@
+const assert = require('node:assert/strict');
+const { regions } = require('../src/regions');
+const base = process.env.REGIONAL_TEST_URL || 'http://127.0.0.1:8099';
+(async () => {
+  const hub = await fetch(base + '/areas');
+  assert.equal(hub.status, 200);
+  const hubBody = await hub.text();
+  const sitemap = await (await fetch(base + '/sitemap.xml')).text();
+  let token;
+  for (const region of regions) {
+    const path = '/areas/' + region.slug;
+    assert.ok(hubBody.includes('href="' + path + '"'));
+    assert.ok(sitemap.includes('<loc>https://watairuk.co.uk' + path + '</loc>'));
+    const res = await fetch(base + path);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    const body = await res.text();
+    assert.ok(body.includes('rel="canonical" href="https://watairuk.co.uk' + path + '"'));
+    assert.ok(body.includes('name="postcode"'));
+    assert.ok(body.includes('action="' + path + '#enquire"'));
+    if (region.slug === 'cornwall') token = body.match(/name="form_token" value="([^"]+)"/)[1];
+  }
+  assert.equal((await fetch(base + '/areas/not-a-region')).status, 404);
+  await new Promise(resolve => setTimeout(resolve, 3300));
+  const payload = new URLSearchParams({name:'CI Regional',email:'ci-regional@example.com',postcode:'TR1 2AB',interest:'Home & Office',form_token:token});
+  const bad = new URLSearchParams(payload); bad.set('postcode','invalid');
+  const invalid = await fetch(base + '/areas/cornwall', {method:'POST',body:bad,redirect:'manual'});
+  assert.equal(invalid.status,400);
+  assert.ok((await invalid.text()).includes('valid UK postcode'));
+  const sent = await fetch(base + '/areas/cornwall',{method:'POST',body:payload,redirect:'manual'});
+  assert.equal(sent.status,303);
+  assert.equal(sent.headers.get('location'),'/areas/cornwall?sent=1');
+  const success = await fetch(base + sent.headers.get('location'));
+  assert.ok((await success.text()).includes('Thank you for getting in touch.'));
+  const Database = require('better-sqlite3');
+  const db = new Database('data/watair.db',{readonly:true});
+  const row = db.prepare('SELECT * FROM enquiries WHERE email=?').get('ci-regional@example.com');
+  assert.ok(row && row.message.includes('Regional enquiry: Cornwall') && row.message.includes('TR1 2AB'));
+  db.close();
+  console.log('Regional landing pages and lead persistence passed');
+})().catch(err=>{console.error(err);process.exit(1)});
