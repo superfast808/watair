@@ -98,15 +98,18 @@ else if (isProd) console.warn('TRUST_PROXY is not set; configure it when running
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(helmet({
+app.use((req,res,next) => {
+  const publicTracking = !/^\/(?:admin|order|buy|checkout|payments)(?:\/|$)/i.test(req.path) && !siteNoindex;
+  const tracking = publicTracking ? ['https://*.googletagmanager.com','https://*.google-analytics.com','https://*.analytics.google.com','https://*.googleadservices.com','https://*.doubleclick.net','https://www.google.com','https://www.google.co.uk'] : [];
+  return helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:'],
+      imgSrc: ["'self'", 'data:', ...tracking],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
-      connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
-      frameSrc: ['https://challenges.cloudflare.com'],
+      scriptSrc: ["'self'", 'https://challenges.cloudflare.com', ...tracking],
+      connectSrc: ["'self'", 'https://challenges.cloudflare.com', ...tracking],
+      frameSrc: ['https://challenges.cloudflare.com', ...tracking],
       fontSrc: ["'self'", 'data:'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"]
@@ -114,7 +117,8 @@ app.use(helmet({
   },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   strictTransportSecurity: isProd ? { maxAge: 15552000, includeSubDomains: false, preload: false } : false
-}));
+})(req,res,next);
+});
 app.use(compression());
 app.use(cookieParser());
 
@@ -2128,6 +2132,8 @@ function smtpSettingsFromBody(body) {
 }
 
 function saveSiteSettings(body) {
+  const gtm = Object.hasOwn(body, 'google_tag_manager_id') ? String(body.google_tag_manager_id || '').trim().toUpperCase() : null;
+  if (gtm !== null && gtm !== '' && !/^GTM-[A-Z0-9]{4,20}$/.test(gtm)) return 'Enter a valid GTM container ID (for example GTM-ABC1234), not the script or a GA4 measurement ID.';
   const allowed = ['site_name','email','phone','hero_title','hero_text','hero_image','hero_image_style','catalogue_hero_eyebrow','catalogue_hero_title','catalogue_hero_text','catalogue_hero_image','catalogue_hero_image_style','footer_text','company_location','facebook_url','instagram_url','linkedin_url'];
   const socialKeys = new Set(['facebook_url','instagram_url','linkedin_url']);
   const upsert = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
@@ -2138,6 +2144,8 @@ function saveSiteSettings(body) {
     upsert.run(key, value);
   }));
   tx();
+  if (gtm !== null) upsert.run('google_tag_manager_id', gtm);
+  return null;
 }
 
 function saveSmtpSettings(body) {
@@ -2164,14 +2172,16 @@ app.get('/admin/settings', (req,res) => {
 });
 
 app.post('/admin/settings', requireCsrf, (req,res) => {
-  saveSiteSettings(req.body);
+  const siteError = saveSiteSettings(req.body);
+  if (siteError) return res.redirect('/admin/settings?site_error=' + encodeURIComponent(siteError));
   const smtpError = saveSmtpSettings(req.body);
   if (smtpError) return res.redirect('/admin/settings?smtp_error=' + encodeURIComponent(smtpError));
   res.redirect('/admin/settings?saved=1');
 });
 
 app.post('/admin/settings/smtp/test', requireCsrf, async (req,res) => {
-  saveSiteSettings(req.body);
+  const siteError = saveSiteSettings(req.body);
+  if (siteError) return res.redirect('/admin/settings?site_error=' + encodeURIComponent(siteError));
   const smtpError = saveSmtpSettings(req.body);
   if (smtpError) return res.redirect('/admin/settings?smtp_error=' + encodeURIComponent(smtpError));
 

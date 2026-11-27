@@ -289,6 +289,7 @@ jobs:
             -H "$AUTH" \
             -X POST http://127.0.0.1:8099/admin/settings \
             --data-urlencode "_csrf=$ADMIN_CSRF" \
+            --data-urlencode 'google_tag_manager_id=GTM-CITEST1' \
             --data-urlencode 'site_name=WatAir UK' \
             --data-urlencode 'company_location=Glasgow, United Kingdom' \
             --data-urlencode 'email=info@watairuk.co.uk' \
@@ -330,6 +331,12 @@ jobs:
 
           curl -fsS -H "$AUTH" http://127.0.0.1:8099/admin/settings > /tmp/admin-settings-smtp.html
           grep -q 'Using CMS configuration' /tmp/admin-settings-smtp.html
+          grep -q 'GTM-CITEST1' /tmp/admin-settings-smtp.html
+          curl -fsS http://127.0.0.1:8099/ > /tmp/home-gtm.html
+          grep -q 'name="watair-gtm" content="GTM-CITEST1"' /tmp/home-gtm.html
+          ! grep -q 'src="https://www.googletagmanager.com/gtm.js' /tmp/home-gtm.html
+          curl -fsS http://127.0.0.1:8099/cookies > /tmp/cookies-gtm.html
+          grep -q 'Google Tag Manager and optional tracking' /tmp/cookies-gtm.html
           grep -q 'encrypted CMS password is stored' /tmp/admin-settings-smtp.html
           ! grep -q 'CI-SMTP-secret-987654321' /tmp/admin-settings-smtp.html
 
