@@ -1169,7 +1169,7 @@ app.post(['/contact', '/areas/:slug'], contactLimiter, async (req, res) => {
   if (req.params.slug && !region) return res.status(404).render('404', { meta: { title: 'Page not found | WatAir UK', noindex: true } });
   if (region) res.setHeader('Cache-Control', 'no-store');
   const successPath = region ? '/areas/' + region.slug + '?sent=1' : '/contact?sent=1';
-  const renderError = (response, opts) => region ? renderRegion(response, region, { ...opts, retry: true }) : renderContactError(response, opts);
+  const renderError = (response, opts) => region ? renderRegion(response, region, { status: 400, ...opts, retry: true }) : renderContactError(response, opts);
   const name = cleanFormValue(req.body.name, 150);
   const company = cleanFormValue(req.body.company, 150);
   const email = cleanFormValue(req.body.email, 254).toLowerCase();
